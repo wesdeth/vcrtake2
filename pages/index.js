@@ -12,9 +12,40 @@ export default function Home() {
     }
   };
 
+  const floatingProfiles = [
+    { name: 'vitalik.eth', status: 'Recently Updated' },
+    { name: '184.eth', status: 'Viewed by Recruiter' },
+    { name: 'zora.eth', status: 'New Resume' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex items-center justify-center px-6 py-16">
-      <div className="text-center max-w-2xl rounded-3xl p-10 shadow-xl bg-white/60 backdrop-blur-md border border-gray-200">
+    <div className="relative min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex items-center justify-center px-6 py-16">
+      
+      {/* Floating Stat Bubble */}
+      <div className="absolute top-10 left-6 z-10 bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-5 py-2 rounded-full text-sm font-semibold shadow-md animate-bounce-slow">
+        12,380 onchain resumes created
+      </div>
+
+      {/* Floating Recent Profiles */}
+      <div className="absolute top-32 right-6 z-10 flex flex-col gap-3">
+        {floatingProfiles.map((profile, idx) => (
+          <a
+            key={idx}
+            href={`/${profile.name}`}
+            className="bg-white border border-gray-200 px-4 py-2 rounded-xl shadow hover:shadow-lg transition-all duration-200 text-left"
+            style={{
+              transform: `rotate(${(Math.random() * 3 - 1.5).toFixed(2)}deg)`,
+              width: '160px'
+            }}
+          >
+            <div className="text-sm font-bold text-gray-900">{profile.name}</div>
+            <div className="text-xs text-purple-600">{profile.status}</div>
+          </a>
+        ))}
+      </div>
+
+      {/* Main Hero Box */}
+      <div className="text-center max-w-2xl rounded-3xl p-10 shadow-xl bg-white/60 backdrop-blur-md border border-gray-200 z-0">
         <h1 className="text-5xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
           Verified Chain Resume
         </h1>
