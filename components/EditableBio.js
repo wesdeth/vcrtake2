@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 
 export default function EditableBio({ ensName, connectedAddress, initialBio = '', initialLooking = false }) {
+  console.log("EditableBio props", {
+    ensName,
+    connectedAddress,
+    initialBio,
+    initialLooking
+  });
+
   const [bio, setBio] = useState(initialBio);
   const [editing, setEditing] = useState(false);
   const [lookingForWork, setLookingForWork] = useState(initialLooking);
