@@ -77,7 +77,12 @@ export default function ENSProfile({ ensName }) {
 
         <div className="text-center text-gray-700">
           {ownsProfile ? (
-            <EditableBio initialBio={ensData.bio} initialLooking={ensData.lookingForWork === 'true'} />
+            <EditableBio
+              ensName={ensName}
+              connectedAddress={connected}
+              initialBio={ensData.bio}
+              initialLooking={ensData.lookingForWork === 'true'}
+            />
           ) : (
             <p>{ensData.bio || 'Web3 builder passionate about decentralization ✨'}</p>
           )}
