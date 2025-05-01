@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { getAddress } from 'ethers';
+import { getAddress, ethers } from 'ethers';
+import { namehash } from 'viem'; // make sure viem is installed
 import { getENSData } from '../lib/ensUtils';
 import { getPOAPs } from '../lib/poapUtils';
 import { getAlchemyNFTs } from '../lib/nftUtils';
 import ConnectWallet from './ConnectWallet';
 import EditableBio from './EditableBio';
+
+const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
+const ENS_REGISTRY_ABI = ['function owner(bytes32 node) external view returns (address)'];
 
 export default function ENSProfile({ ensName }) {
   const [ensData, setEnsData] = useState({});
@@ -17,8 +21,8 @@ export default function ENSProfile({ ensName }) {
   useEffect(() => {
     async function fetchData() {
       const ens = await getENSData(ensName);
-      const poapList = await getPOAPs(ens.address);
-      const nftList = await getAlchemyNFTs(ens.address);
+      const poapList = ens.address ? await getPOAPs(ens.address) : [];
+      const nftList = ens.address ? await getAlchemyNFTs(ens.address) : [];
       setEnsData(ens);
       setPoaps(poapList);
       setNfts(nftList);
@@ -26,30 +30,43 @@ export default function ENSProfile({ ensName }) {
     fetchData();
   }, [ensName]);
 
-  // Check profile ownership
+  // Check profile ownership via ENS Registry
   useEffect(() => {
-    console.log("🔑 Checking profile access:");
-    console.log("Connected address:", connected);
-    console.log("ENS resolved address:", ensData.address);
+    async function checkOwnership() {
+      console.log("🔑 Checking profile access:");
+      console.log("Connected address:", connected);
+      console.log("ENS name:", ensName);
 
-    if (connected && ensData.address) {
+      if (!connected || !ensName || !ensName.endsWith('.eth')) return;
+
       try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const ensRegistry = new ethers.Contract(ENS_REGISTRY, ENS_REGISTRY_ABI, provider);
+        const hashedName = namehash(ensName);
+
+        const ensOwner = await ensRegistry.owner(hashedName);
         const normalizedConnected = getAddress(connected);
-        const normalizedENS = getAddress(ensData.address);
-        const owns = normalizedConnected === normalizedENS;
-        console.log("✅ Owns profile:", owns);
+        const normalizedENSOwner = getAddress(ensOwner);
+
+        const owns = normalizedConnected === normalizedENSOwner;
+        console.log("✅ ENS Registry owner:", normalizedENSOwner);
+        console.log("✅ Connected wallet:", normalizedConnected);
+        console.log("🔐 Owns profile via registry:", owns);
+
         setOwnsProfile(owns);
       } catch (err) {
-        console.error("❌ Address comparison error:", err);
+        console.error("❌ ENS registry check failed:", err);
         setOwnsProfile(false);
       }
     }
-  }, [connected, ensData]);
+
+    checkOwnership();
+  }, [connected, ensName]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
       <div className="w-full max-w-md bg-white shadow-2xl rounded-3xl p-8 space-y-6 border border-gray-200">
-        
+
         {/* Wallet Connection */}
         <div className="flex justify-end">
           <ConnectWallet onConnect={setConnected} />
@@ -90,15 +107,12 @@ export default function ENSProfile({ ensName }) {
         {/* Bio / Editable */}
         <div className="text-center text-gray-700">
           {ownsProfile ? (
-            <>
-              {console.log("📝 Rendering EditableBio for:", ensName)}
-              <EditableBio
-                ensName={ensName}
-                connectedAddress={connected}
-                initialBio={ensData.bio}
-                initialLooking={ensData.lookingForWork === 'true'}
-              />
-            </>
+            <EditableBio
+              ensName={ensName}
+              connectedAddress={connected}
+              initialBio={ensData.bio}
+              initialLooking={ensData.lookingForWork === 'true'}
+            />
           ) : connected ? (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg">
               <p>You are not the owner of this ENS name or wallet.</p>
