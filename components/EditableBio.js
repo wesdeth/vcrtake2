@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import toast from 'react-hot-toast';
 
 export default function EditableBio({ ensName, connectedAddress, initialBio = '', initialLooking = false, showAIGenerator = false }) {
   console.log("EditableBio props", {
@@ -32,11 +33,13 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
           const connectedResolver = resolver.connect(signer);
           await connectedResolver.setText('description', bio);
           await connectedResolver.setText('lookingForWork', lookingForWork ? 'true' : 'false');
+          toast.success('Profile saved successfully!');
         }
         setEditing(false);
       }
     } catch (err) {
       console.error('Failed to save ENS text records:', err);
+      alert('Something went wrong while saving.');
     }
   };
 
@@ -57,6 +60,7 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
       }
     } catch (err) {
       console.error('AI generation failed:', err);
+      alert('Failed to generate bio with AI.');
     } finally {
       setLoadingAI(false);
     }
