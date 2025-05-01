@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 
-export default function EditableBio({ ensName, connectedAddress, initialBio = '', initialLooking = false }) {
+export default function EditableBio({ ensName, connectedAddress, initialBio = '', initialLooking = false, showAIGenerator = false }) {
   console.log("EditableBio props", {
     ensName,
-    ensNameType: typeof ensName,
     connectedAddress,
     initialBio,
-    initialLooking
+    initialLooking,
+    showAIGenerator,
+    typeOfEnsName: typeof ensName
   });
 
   const [bio, setBio] = useState(initialBio);
   const [editing, setEditing] = useState(false);
   const [lookingForWork, setLookingForWork] = useState(initialLooking);
+  const [loadingAI, setLoadingAI] = useState(false);
 
   useEffect(() => {
     setBio(initialBio);
@@ -37,6 +39,19 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
     }
   };
 
+  const handleAIGenerate = async () => {
+    setLoadingAI(true);
+    try {
+      // This is mock logic. Replace with actual API call or logic.
+      const generated = `Builder. Creator. Contributor to open-source and DAO projects.`;
+      setBio(generated);
+    } catch (err) {
+      console.error('AI generation failed:', err);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {editing ? (
@@ -47,6 +62,7 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
             value={bio}
             onChange={(e) => setBio(e.target.value)}
           />
+
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-1 text-sm">
               <input
@@ -56,12 +72,23 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
               />
               Looking for Work
             </label>
+
             <button
               onClick={handleSave}
               className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg"
             >
               Save
             </button>
+
+            {showAIGenerator && (
+              <button
+                onClick={handleAIGenerate}
+                disabled={loadingAI}
+                className="px-3 py-2 bg-gray-200 text-sm rounded-lg hover:bg-gray-300"
+              >
+                {loadingAI ? 'Thinking...' : '✍️ Generate with AI'}
+              </button>
+            )}
           </div>
         </>
       ) : (
