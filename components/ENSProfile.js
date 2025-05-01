@@ -24,11 +24,17 @@ export default function ENSProfile({ ensName }) {
     fetchData();
   }, [ensName]);
 
-  useEffect(() => {
-    if (connected && ensData.address) {
-      setOwnsProfile(connected.toLowerCase() === ensData.address.toLowerCase());
+  import { getAddress } from 'ethers';
+
+useEffect(() => {
+  if (connected && ensData.address) {
+    try {
+      setOwnsProfile(getAddress(connected) === getAddress(ensData.address));
+    } catch (e) {
+      setOwnsProfile(false);
     }
-  }, [connected, ensData]);
+  }
+}, [connected, ensData]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
