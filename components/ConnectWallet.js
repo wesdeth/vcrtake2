@@ -1,24 +1,27 @@
-
 import { useEffect, useState } from 'react';
 
 export default function ConnectWallet({ onConnect }) {
   const [account, setAccount] = useState(null);
 
+  // ✅ Handle auto-connection after page reload
   useEffect(() => {
-    if (typeof window.ethereum !== 'undefined') {
-      window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+    async function checkConnection() {
+      if (typeof window.ethereum !== 'undefined') {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts.length > 0) {
-          setAccount(accounts[0]); // ✅ don't call onConnect here
+          setAccount(accounts[0]);
+          onConnect(accounts[0]); // ✅ ensure ensProfile gets connected wallet
         }
-      });
+      }
     }
-  }, []);
+    checkConnection();
+  }, [onConnect]);
 
   const connect = async () => {
     if (typeof window.ethereum !== 'undefined') {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       setAccount(accounts[0]);
-      onConnect(accounts[0]); // ✅ only trigger this on explicit user action
+      onConnect(accounts[0]);
     }
   };
 
