@@ -8,7 +8,11 @@ import ConnectWallet from './ConnectWallet';
 import EditableBio from './EditableBio';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
+const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
+
 const ENS_REGISTRY_ABI = ['function owner(bytes32 node) external view returns (address)'];
+const NAME_WRAPPER_ABI = ['function ownerOf(uint256 id) external view returns (address)'];
+const RESOLVER_ABI = ['function addr(bytes32 node) view returns (address)'];
 
 export default function ENSProfile({ ensName }) {
   const [ensData, setEnsData] = useState({});
@@ -31,29 +35,53 @@ export default function ENSProfile({ ensName }) {
 
   useEffect(() => {
     async function checkOwnership() {
-      console.log("🔑 Checking profile access:");
-      console.log("Connected address:", connected);
-      console.log("ENS name:", ensName);
-
       if (!connected || !ensName || !ensName.endsWith('.eth')) return;
 
       try {
         const provider = new ethers.BrowserProvider(window.ethereum);
-        const ensRegistry = new ethers.Contract(ENS_REGISTRY, ENS_REGISTRY_ABI, provider);
         const hashedName = namehash(ensName);
 
-        const ensOwner = await ensRegistry.owner(hashedName);
-        const normalizedConnected = getAddress(connected);
-        const normalizedENSOwner = getAddress(ensOwner);
+        const registry = new ethers.Contract(ENS_REGISTRY, ENS_REGISTRY_ABI, provider);
+        const wrapper = new ethers.Contract(NAME_WRAPPER, NAME_WRAPPER_ABI, provider);
 
-        const owns = normalizedConnected === normalizedENSOwner;
-        console.log("✅ ENS Registry owner:", normalizedENSOwner);
-        console.log("✅ Connected wallet:", normalizedConnected);
-        console.log("🔐 Owns profile via registry:", owns);
+        let registryOwner = await registry.owner(hashedName);
+        let wrapperOwner = null;
+        let resolverAddress = null;
+
+        try {
+          wrapperOwner = await wrapper.ownerOf(BigInt(hashedName));
+        } catch (e) {
+          console.log('🟡 Not a wrapped name or wrapper check failed.');
+        }
+
+        try {
+          const resolver = await provider.getResolver(ensName);
+          if (resolver) {
+            resolverAddress = await resolver.getAddress();
+          }
+        } catch (e) {
+          console.log('🟡 Resolver addr() check failed.');
+        }
+
+        const normalizedConnected = getAddress(connected);
+        const normalizedRegistry = getAddress(registryOwner);
+        const normalizedWrapper = wrapperOwner ? getAddress(wrapperOwner) : null;
+        const normalizedResolverAddr = resolverAddress ? getAddress(resolverAddress) : null;
+
+        const owns =
+          normalizedConnected === normalizedRegistry ||
+          normalizedConnected === normalizedWrapper ||
+          normalizedConnected === normalizedResolverAddr;
+
+        console.log('🔍 Connected wallet:', normalizedConnected);
+        console.log('🔍 Registry owner:', normalizedRegistry);
+        console.log('🔍 Wrapper owner:', normalizedWrapper);
+        console.log('🔍 Resolver addr():', normalizedResolverAddr);
+        console.log('✅ Owns profile:', owns);
 
         setOwnsProfile(owns);
       } catch (err) {
-        console.error("❌ ENS registry check failed:", err);
+        console.error('❌ Ownership check failed:', err);
         setOwnsProfile(false);
       }
     }
