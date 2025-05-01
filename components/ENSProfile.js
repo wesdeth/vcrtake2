@@ -46,7 +46,7 @@ export default function ENSProfile({ ensName }) {
 
       const registryOwner = await registry.owner(hashedName);
       let wrapperOwner = null;
-      let resolvedAddr = null;
+      let ethRecord = null;
 
       try {
         wrapperOwner = await wrapper.ownerOf(BigInt(hashedName));
@@ -56,25 +56,25 @@ export default function ENSProfile({ ensName }) {
 
       try {
         const resolver = await provider.getResolver(ensName);
-        resolvedAddr = resolver ? await resolver.getAddress() : null;
+        ethRecord = resolver ? await resolver.getAddress() : null;
       } catch (e) {
-        console.log('Resolver check failed.');
+        console.log('Resolver or addr() check failed.');
       }
 
       const normalizedConnected = getAddress(connected);
       const normalizedRegistry = getAddress(registryOwner);
       const normalizedWrapper = wrapperOwner ? getAddress(wrapperOwner) : null;
-      const normalizedResolverAddr = resolvedAddr ? getAddress(resolvedAddr) : null;
+      const normalizedEthRecord = ethRecord ? getAddress(ethRecord) : null;
 
       const owns =
         normalizedConnected === normalizedRegistry ||
         normalizedConnected === normalizedWrapper ||
-        normalizedConnected === normalizedResolverAddr;
+        normalizedConnected === normalizedEthRecord;
 
       console.log('🔍 Connected:', normalizedConnected);
       console.log('📘 Registry owner:', normalizedRegistry);
       console.log('📘 Wrapper owner:', normalizedWrapper);
-      console.log('📘 Resolver addr():', normalizedResolverAddr);
+      console.log('📘 Resolver addr():', normalizedEthRecord);
       console.log('✅ Owns profile:', owns);
 
       setOwnsProfile(owns);
