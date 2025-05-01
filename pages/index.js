@@ -11,6 +11,16 @@ export default function Home() {
       try {
         const res = await fetch('/api/recent-updates');
         const data = await res.json();
+
+        // Optional fallback if none are marked lookingForWork
+        const noneTagged = data.every(p => p.tag !== 'Looking for Work');
+        if (data.length > 0 && noneTagged) {
+          const index = Math.floor(Math.random() * data.length);
+          data[index].tag = 'Looking for Work';
+          data[index].color = 'text-orange-500';
+          data[index].border = 'border-orange-300';
+        }
+
         setFloatingProfiles(data);
       } catch (err) {
         console.error('Failed to fetch recent updates:', err);
