@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { getENSData } from '../lib/ensUtils';
 import { getPOAPs } from '../lib/poapUtils';
 import { getAlchemyNFTs } from '../lib/nftUtils';
@@ -12,7 +12,6 @@ export default function ENSProfile({ ensName }) {
   const [nfts, setNfts] = useState([]);
   const [connected, setConnected] = useState(null);
   const [ownsProfile, setOwnsProfile] = useState(false);
-  const contentRef = useRef(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -33,56 +32,75 @@ export default function ENSProfile({ ensName }) {
   }, [connected, ensData]);
 
   return (
-    <div className="bg-white w-full max-w-xl rounded-xl shadow-lg p-6 space-y-6">
-      <ConnectWallet onConnect={setConnected} />
-
-      <div className="flex items-center space-x-4">
-        <img src={ensData.avatar || '/avatar.png'} alt="avatar" className="w-16 h-16 rounded-full border border-gray-300" />
-        <div>
-          <h1 className="text-2xl font-bold">{ensName}</h1>
-          <p className="text-gray-600">{ensData.twitter || '@username'}</p>
-          <a href={ensData.website || '#'} className="text-blue-600 text-sm">{ensData.website || 'website.link'}</a>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-yellow-50 flex justify-center py-10 px-4">
+      <div className="max-w-2xl w-full bg-white shadow-2xl rounded-3xl p-8 space-y-6 border border-gray-200">
+        <div className="flex items-center justify-between">
+          <ConnectWallet onConnect={setConnected} />
         </div>
-      </div>
 
-      {ownsProfile ? (
-        <EditableBio initialBio={ensData.bio} />
-      ) : (
-        <p className="text-gray-700">{ensData.bio || 'Web3 builder passionate about decentralization ✨'}</p>
-      )}
+        <div className="flex items-center gap-4">
+          <img
+            src={ensData.avatar || '/avatar.png'}
+            alt="avatar"
+            className="w-20 h-20 rounded-full border-4 border-purple-200 shadow-sm"
+          />
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-800">{ensName}</h1>
+            <p className="text-sm text-gray-500">{ensData.name}</p>
+            {ensData.website && (
+              <a href={ensData.website} target="_blank" className="text-blue-500 hover:underline text-sm">
+                {ensData.website}
+              </a>
+            )}
+          </div>
+        </div>
 
-      <div className="flex space-x-2 overflow-x-auto">
-        {poaps.map((poap, idx) => (
-          <img key={idx} src={poap.image_url} alt={poap.event.name} title={poap.event.name} className="w-12 h-12" />
-        ))}
-      </div>
+        {ownsProfile ? (
+          <EditableBio initialBio={ensData.bio} />
+        ) : (
+          <p className="text-gray-700">{ensData.bio || 'Web3 builder passionate about decentralization ✨'}</p>
+        )}
 
-      <div className="bg-yellow-100 text-yellow-800 text-sm rounded p-4">
-        {ensData.summary || 'This person is a skilled contributor in the Ethereum ecosystem with participation in major Web3 events.'}
-      </div>
+        {ensData.summary && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded">
+            {ensData.summary}
+          </div>
+        )}
 
-      <div>
-        <h2 className="text-lg font-semibold mb-2">Hackathons & Grants</h2>
-        <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
-          <li>Winner - ETHGlobal Tokyo 2024</li>
-          <li>Grant Recipient - Gitcoin Grants Round 18</li>
-        </ul>
-      </div>
+        <div>
+          <h2 className="text-xl font-semibold mb-2 text-purple-700">Hackathons & Grants</h2>
+          <ul className="list-disc list-inside space-y-1 text-sm text-gray-800">
+            <li>Winner - ETHGlobal Tokyo 2024</li>
+            <li>Grant Recipient - Gitcoin Grants Round 18</li>
+          </ul>
+        </div>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-2">DAO Roles & Attestations</h2>
-        <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
-          <li>Multisig signer - DeveloperDAO</li>
-          <li>Core contributor - ENS DAO</li>
-        </ul>
-      </div>
+        <div>
+          <h2 className="text-xl font-semibold mb-2 text-purple-700">DAO Roles & Attestations</h2>
+          <ul className="list-disc list-inside space-y-1 text-sm text-gray-800">
+            <li>Multisig signer - DeveloperDAO</li>
+            <li>Core contributor - ENS DAO</li>
+          </ul>
+        </div>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-2">NFTs</h2>
-        <div className="grid grid-cols-3 gap-3">
-          {nfts.slice(0, 3).map((nft, idx) => (
-            <img key={idx} src={nft.image} alt={nft.name} className="rounded shadow border" />
-          ))}
+        <div>
+          <h2 className="text-xl font-semibold mb-2 text-purple-700">NFTs</h2>
+          <div className="grid grid-cols-3 gap-3">
+            {nfts.slice(0, 3).map((nft, idx) => (
+              <img
+                key={idx}
+                src={nft.image}
+                alt={nft.name}
+                className="rounded-lg border border-gray-200 shadow-sm"
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="pt-4">
+          <button className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold shadow-md hover:opacity-90">
+            Download PDF – $10
+          </button>
         </div>
       </div>
     </div>
