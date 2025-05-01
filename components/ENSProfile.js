@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { getENSData } from '../lib/ensUtils';
 import { getPOAPs } from '../lib/poapUtils';
@@ -64,6 +63,11 @@ export default function ENSProfile({ ensName }) {
               </a>
             )}
           </div>
+          {ensData.lookingForWork === 'true' && (
+            <p className="mt-1 px-3 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
+              ✅ Open to Work
+            </p>
+          )}
         </div>
 
         <div className="text-center text-gray-700">
