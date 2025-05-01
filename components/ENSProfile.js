@@ -91,6 +91,8 @@ export default function ENSProfile({ ensName }) {
     checkOwnership();
   }, [connected, ensName]);
 
+  const avatarSrc = ensData.avatar || '/icons/profile-default.png';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
       <div className="w-full max-w-md bg-white shadow-2xl rounded-3xl p-8 space-y-6 border border-gray-200">
@@ -100,7 +102,7 @@ export default function ENSProfile({ ensName }) {
 
         <div className="flex flex-col items-center text-center space-y-2">
           <img
-            src={ensData.avatar || '/avatar.png'}
+            src={avatarSrc}
             alt="avatar"
             className="w-20 h-20 rounded-full border-4 border-purple-200 shadow"
           />
@@ -136,6 +138,7 @@ export default function ENSProfile({ ensName }) {
               connectedAddress={connected}
               initialBio={ensData.bio}
               initialLooking={ensData.lookingForWork === 'true'}
+              showAIGenerator={true}
             />
           ) : connected ? (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg">
