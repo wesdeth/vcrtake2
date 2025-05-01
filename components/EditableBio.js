@@ -23,17 +23,18 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
 
   const handleSave = async () => {
     try {
-      if (typeof window.ethereum !== 'undefined') {
+      if (typeof window.ethereum !== 'undefined' && ensName) {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const resolver = await provider.getResolver(ensName);
 
         if (resolver) {
-          await resolver.connect(signer).setText('description', bio);
-          await resolver.connect(signer).setText('lookingForWork', lookingForWork ? 'true' : 'false');
+          const connectedResolver = resolver.connect(signer);
+          await connectedResolver.setText('description', bio);
+          await connectedResolver.setText('lookingForWork', lookingForWork ? 'true' : 'false');
         }
+        setEditing(false);
       }
-      setEditing(false);
     } catch (err) {
       console.error('Failed to save ENS text records:', err);
     }
@@ -45,12 +46,14 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
       const response = await fetch('/api/generate-bio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ensName })
+        body: JSON.stringify({ ensName, previousBio: bio })
       });
 
       const data = await response.json();
-      if (data.bio) {
+      if (data.bio && data.bio !== bio) {
         setBio(data.bio);
+      } else {
+        console.log('Same or empty bio returned, retrying...');
       }
     } catch (err) {
       console.error('AI generation failed:', err);
