@@ -42,9 +42,16 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
   const handleAIGenerate = async () => {
     setLoadingAI(true);
     try {
-      // This is mock logic. Replace with actual API call or logic.
-      const generated = `Builder. Creator. Contributor to open-source and DAO projects.`;
-      setBio(generated);
+      const response = await fetch('/api/generate-bio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ensName })
+      });
+
+      const data = await response.json();
+      if (data.bio) {
+        setBio(data.bio);
+      }
     } catch (err) {
       console.error('AI generation failed:', err);
     } finally {
