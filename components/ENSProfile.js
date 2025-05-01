@@ -13,6 +13,7 @@ export default function ENSProfile({ ensName }) {
   const [connected, setConnected] = useState(null);
   const [ownsProfile, setOwnsProfile] = useState(false);
 
+  // Fetch ENS + POAPs + NFTs
   useEffect(() => {
     async function fetchData() {
       const ens = await getENSData(ensName);
@@ -25,19 +26,21 @@ export default function ENSProfile({ ensName }) {
     fetchData();
   }, [ensName]);
 
+  // Check profile ownership
   useEffect(() => {
+    console.log("🔑 Checking profile access:");
+    console.log("Connected address:", connected);
+    console.log("ENS resolved address:", ensData.address);
+
     if (connected && ensData.address) {
       try {
         const normalizedConnected = getAddress(connected);
         const normalizedENS = getAddress(ensData.address);
         const owns = normalizedConnected === normalizedENS;
+        console.log("✅ Owns profile:", owns);
         setOwnsProfile(owns);
-
-        console.log("✅ Connected address:", normalizedConnected);
-        console.log("✅ ENS resolved address:", normalizedENS);
-        console.log("🔍 Owns profile:", owns);
       } catch (err) {
-        console.error("⚠️ Address comparison error:", err);
+        console.error("❌ Address comparison error:", err);
         setOwnsProfile(false);
       }
     }
@@ -46,10 +49,13 @@ export default function ENSProfile({ ensName }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
       <div className="w-full max-w-md bg-white shadow-2xl rounded-3xl p-8 space-y-6 border border-gray-200">
+        
+        {/* Wallet Connection */}
         <div className="flex justify-end">
           <ConnectWallet onConnect={setConnected} />
         </div>
 
+        {/* Profile Header */}
         <div className="flex flex-col items-center text-center space-y-2">
           <img
             src={ensData.avatar || '/avatar.png'}
@@ -60,22 +66,20 @@ export default function ENSProfile({ ensName }) {
             {ensName}
           </h1>
           <p className="text-sm text-gray-500">{ensData.name}</p>
+
           <div className="flex space-x-3 mt-1">
             {ensData.twitter && (
-              <a
-                href={`https://twitter.com/${ensData.twitter.replace('@', '')}`}
-                target="_blank"
-                className="text-blue-400 hover:opacity-80"
-              >
-                <img src="/icons/twitter.svg" className="w-5 h-5" alt="twitter" />
+              <a href={`https://twitter.com/${ensData.twitter.replace('@', '')}`} target="_blank" rel="noreferrer">
+                <img src="/icons/twitter.svg" className="w-5 h-5" alt="Twitter" />
               </a>
             )}
             {ensData.website && (
-              <a href={ensData.website} target="_blank" className="text-gray-600 hover:opacity-80">
-                <img src="/icons/link.svg" className="w-5 h-5" alt="website" />
+              <a href={ensData.website} target="_blank" rel="noreferrer">
+                <img src="/icons/link.svg" className="w-5 h-5" alt="Website" />
               </a>
             )}
           </div>
+
           {ensData.lookingForWork === 'true' && (
             <p className="mt-1 px-3 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
               ✅ Open to Work
@@ -83,10 +87,11 @@ export default function ENSProfile({ ensName }) {
           )}
         </div>
 
+        {/* Bio / Editable */}
         <div className="text-center text-gray-700">
           {ownsProfile ? (
             <>
-              {console.log("👤 Rendering EditableBio...")}
+              {console.log("📝 Rendering EditableBio for:", ensName)}
               <EditableBio
                 ensName={ensName}
                 connectedAddress={connected}
@@ -104,6 +109,7 @@ export default function ENSProfile({ ensName }) {
           )}
         </div>
 
+        {/* POAPs */}
         <div className="flex flex-wrap justify-center gap-3">
           {poaps.slice(0, 5).map((poap, idx) => (
             <img
@@ -116,10 +122,12 @@ export default function ENSProfile({ ensName }) {
           ))}
         </div>
 
+        {/* AI Summary */}
         <div className="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-900 text-sm p-4 rounded">
           {ensData.summary || `${ensName} is a recognized contributor in the Ethereum ecosystem. They've participated in top events like ETHGlobal and Gitcoin, and worked on meaningful DAO initiatives.`}
         </div>
 
+        {/* Roles / Grants / NFTs */}
         <div>
           <h2 className="text-lg font-bold text-purple-700 mb-2">Hackathons & Grants</h2>
           <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
@@ -156,6 +164,7 @@ export default function ENSProfile({ ensName }) {
           </div>
         </div>
 
+        {/* CTA */}
         <button className="w-full py-3 mt-4 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 shadow hover:opacity-90">
           🔒 Download PDF – $10
         </button>
