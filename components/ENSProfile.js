@@ -10,13 +10,8 @@ import EditableBio from './EditableBio';
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
 
-const ENS_REGISTRY_ABI = [
-  'function owner(bytes32 node) external view returns (address)'
-];
-
-const NAME_WRAPPER_ABI = [
-  'function ownerOf(uint256 id) external view returns (address)'
-];
+const ENS_REGISTRY_ABI = ['function owner(bytes32 node) external view returns (address)'];
+const NAME_WRAPPER_ABI = ['function ownerOf(uint256 id) external view returns (address)'];
 
 export default function ENSProfile({ ensName }) {
   const [ensData, setEnsData] = useState({});
@@ -83,15 +78,13 @@ export default function ENSProfile({ ensName }) {
 
         setOwnsProfile(owns);
       } catch (err) {
-        console.error('Ownership check failed:', err);
+        console.error('❌ Ownership check failed:', err);
         setOwnsProfile(false);
       }
     }
 
     checkOwnership();
   }, [connected, ensName]);
-
-  const avatarSrc = ensData.avatar || '/icons/profile-default.png';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
@@ -102,8 +95,9 @@ export default function ENSProfile({ ensName }) {
 
         <div className="flex flex-col items-center text-center space-y-2">
           <img
-            src={avatarSrc}
+            src={ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/avatar.png'}
             alt="avatar"
+            onError={(e) => { e.target.onerror = null; e.target.src = '/avatar.png'; }}
             className="w-20 h-20 rounded-full border-4 border-purple-200 shadow"
           />
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
