@@ -10,9 +10,13 @@ import EditableBio from './EditableBio';
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
 
-const ENS_REGISTRY_ABI = ['function owner(bytes32 node) external view returns (address)'];
-const NAME_WRAPPER_ABI = ['function ownerOf(uint256 id) external view returns (address)'];
-const RESOLVER_ABI = ['function addr(bytes32 node) view returns (address)'];
+const ENS_REGISTRY_ABI = [
+  'function owner(bytes32 node) external view returns (address)'
+];
+
+const NAME_WRAPPER_ABI = [
+  'function ownerOf(uint256 id) external view returns (address)'
+];
 
 export default function ENSProfile({ ensName }) {
   const [ensData, setEnsData] = useState({});
@@ -34,58 +38,58 @@ export default function ENSProfile({ ensName }) {
   }, [ensName]);
 
   useEffect(() => {
-  async function checkOwnership() {
-    if (!connected || !ensName || !ensName.endsWith('.eth')) return;
-
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const hashedName = namehash(ensName);
-
-      const registry = new ethers.Contract(ENS_REGISTRY, ENS_REGISTRY_ABI, provider);
-      const wrapper = new ethers.Contract(NAME_WRAPPER, NAME_WRAPPER_ABI, provider);
-
-      const registryOwner = await registry.owner(hashedName);
-      let wrapperOwner = null;
-      let ethRecord = null;
+    async function checkOwnership() {
+      if (!connected || !ensName || !ensName.endsWith('.eth')) return;
 
       try {
-        wrapperOwner = await wrapper.ownerOf(BigInt(hashedName));
-      } catch (e) {
-        console.log('Not a wrapped name or wrapper check failed.');
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const hashedName = namehash(ensName);
+
+        const registry = new ethers.Contract(ENS_REGISTRY, ENS_REGISTRY_ABI, provider);
+        const wrapper = new ethers.Contract(NAME_WRAPPER, NAME_WRAPPER_ABI, provider);
+
+        const registryOwner = await registry.owner(hashedName);
+        let wrapperOwner = null;
+        let ethRecord = null;
+
+        try {
+          wrapperOwner = await wrapper.ownerOf(BigInt(hashedName));
+        } catch (e) {
+          console.log('Not a wrapped name or wrapper check failed.');
+        }
+
+        try {
+          const resolver = await provider.getResolver(ensName);
+          ethRecord = resolver ? await resolver.getAddress() : null;
+        } catch (e) {
+          console.log('Resolver or addr() check failed.');
+        }
+
+        const normalizedConnected = getAddress(connected);
+        const normalizedRegistry = getAddress(registryOwner);
+        const normalizedWrapper = wrapperOwner ? getAddress(wrapperOwner) : null;
+        const normalizedEthRecord = ethRecord ? getAddress(ethRecord) : null;
+
+        const owns =
+          normalizedConnected === normalizedRegistry ||
+          normalizedConnected === normalizedWrapper ||
+          normalizedConnected === normalizedEthRecord;
+
+        console.log('🔍 Connected:', normalizedConnected);
+        console.log('📘 Registry owner:', normalizedRegistry);
+        console.log('📘 Wrapper owner:', normalizedWrapper);
+        console.log('📘 Resolver addr():', normalizedEthRecord);
+        console.log('✅ Owns profile:', owns);
+
+        setOwnsProfile(owns);
+      } catch (err) {
+        console.error('Ownership check failed:', err);
+        setOwnsProfile(false);
       }
-
-      try {
-        const resolver = await provider.getResolver(ensName);
-        ethRecord = resolver ? await resolver.getAddress() : null;
-      } catch (e) {
-        console.log('Resolver or addr() check failed.');
-      }
-
-      const normalizedConnected = getAddress(connected);
-      const normalizedRegistry = getAddress(registryOwner);
-      const normalizedWrapper = wrapperOwner ? getAddress(wrapperOwner) : null;
-      const normalizedEthRecord = ethRecord ? getAddress(ethRecord) : null;
-
-      const owns =
-        normalizedConnected === normalizedRegistry ||
-        normalizedConnected === normalizedWrapper ||
-        normalizedConnected === normalizedEthRecord;
-
-      console.log('🔍 Connected:', normalizedConnected);
-      console.log('📘 Registry owner:', normalizedRegistry);
-      console.log('📘 Wrapper owner:', normalizedWrapper);
-      console.log('📘 Resolver addr():', normalizedEthRecord);
-      console.log('✅ Owns profile:', owns);
-
-      setOwnsProfile(owns);
-    } catch (err) {
-      console.error('❌ Ownership check failed:', err);
-      setOwnsProfile(false);
     }
-  }
 
-  checkOwnership();
-}, [connected, ensName]);
+    checkOwnership();
+  }, [connected, ensName]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
