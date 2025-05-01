@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getAddress } from 'ethers';
 import { getENSData } from '../lib/ensUtils';
 import { getPOAPs } from '../lib/poapUtils';
 import { getAlchemyNFTs } from '../lib/nftUtils';
@@ -24,17 +25,15 @@ export default function ENSProfile({ ensName }) {
     fetchData();
   }, [ensName]);
 
-  import { getAddress } from 'ethers';
-
-useEffect(() => {
-  if (connected && ensData.address) {
-    try {
-      setOwnsProfile(getAddress(connected) === getAddress(ensData.address));
-    } catch (e) {
-      setOwnsProfile(false);
+  useEffect(() => {
+    if (connected && ensData.address) {
+      try {
+        setOwnsProfile(getAddress(connected) === getAddress(ensData.address));
+      } catch (e) {
+        setOwnsProfile(false);
+      }
     }
-  }
-}, [connected, ensData]);
+  }, [connected, ensData]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
