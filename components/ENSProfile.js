@@ -28,8 +28,16 @@ export default function ENSProfile({ ensName }) {
   useEffect(() => {
     if (connected && ensData.address) {
       try {
-        setOwnsProfile(getAddress(connected) === getAddress(ensData.address));
-      } catch (e) {
+        const normalizedConnected = getAddress(connected);
+        const normalizedENS = getAddress(ensData.address);
+        const owns = normalizedConnected === normalizedENS;
+        setOwnsProfile(owns);
+
+        console.log("✅ Connected address:", normalizedConnected);
+        console.log("✅ ENS resolved address:", normalizedENS);
+        console.log("🔍 Owns profile:", owns);
+      } catch (err) {
+        console.error("⚠️ Address comparison error:", err);
         setOwnsProfile(false);
       }
     }
@@ -77,12 +85,15 @@ export default function ENSProfile({ ensName }) {
 
         <div className="text-center text-gray-700">
           {ownsProfile ? (
-            <EditableBio
-              ensName={ensName}
-              connectedAddress={connected}
-              initialBio={ensData.bio}
-              initialLooking={ensData.lookingForWork === 'true'}
-            />
+            <>
+              {console.log("👤 Rendering EditableBio...")}
+              <EditableBio
+                ensName={ensName}
+                connectedAddress={connected}
+                initialBio={ensData.bio}
+                initialLooking={ensData.lookingForWork === 'true'}
+              />
+            </>
           ) : connected ? (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg">
               <p>You are not the owner of this ENS name or wallet.</p>
