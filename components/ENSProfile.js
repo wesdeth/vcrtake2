@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getAddress, ethers } from 'ethers';
-import { namehash } from 'viem'; // make sure viem is installed
+import { namehash } from 'viem';
 import { getENSData } from '../lib/ensUtils';
 import { getPOAPs } from '../lib/poapUtils';
 import { getAlchemyNFTs } from '../lib/nftUtils';
@@ -17,7 +17,6 @@ export default function ENSProfile({ ensName }) {
   const [connected, setConnected] = useState(null);
   const [ownsProfile, setOwnsProfile] = useState(false);
 
-  // Fetch ENS + POAPs + NFTs
   useEffect(() => {
     async function fetchData() {
       const ens = await getENSData(ensName);
@@ -30,7 +29,6 @@ export default function ENSProfile({ ensName }) {
     fetchData();
   }, [ensName]);
 
-  // Check profile ownership via ENS Registry
   useEffect(() => {
     async function checkOwnership() {
       console.log("🔑 Checking profile access:");
@@ -66,13 +64,10 @@ export default function ENSProfile({ ensName }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
       <div className="w-full max-w-md bg-white shadow-2xl rounded-3xl p-8 space-y-6 border border-gray-200">
-
-        {/* Wallet Connection */}
         <div className="flex justify-end">
           <ConnectWallet onConnect={setConnected} />
         </div>
 
-        {/* Profile Header */}
         <div className="flex flex-col items-center text-center space-y-2">
           <img
             src={ensData.avatar || '/avatar.png'}
@@ -104,7 +99,6 @@ export default function ENSProfile({ ensName }) {
           )}
         </div>
 
-        {/* Bio / Editable */}
         <div className="text-center text-gray-700">
           {ownsProfile ? (
             <EditableBio
@@ -123,7 +117,6 @@ export default function ENSProfile({ ensName }) {
           )}
         </div>
 
-        {/* POAPs */}
         <div className="flex flex-wrap justify-center gap-3">
           {poaps.slice(0, 5).map((poap, idx) => (
             <img
@@ -136,12 +129,10 @@ export default function ENSProfile({ ensName }) {
           ))}
         </div>
 
-        {/* AI Summary */}
         <div className="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-900 text-sm p-4 rounded">
           {ensData.summary || `${ensName} is a recognized contributor in the Ethereum ecosystem. They've participated in top events like ETHGlobal and Gitcoin, and worked on meaningful DAO initiatives.`}
         </div>
 
-        {/* Roles / Grants / NFTs */}
         <div>
           <h2 className="text-lg font-bold text-purple-700 mb-2">Hackathons & Grants</h2>
           <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
@@ -178,7 +169,6 @@ export default function ENSProfile({ ensName }) {
           </div>
         </div>
 
-        {/* CTA */}
         <button className="w-full py-3 mt-4 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 shadow hover:opacity-90">
           🔒 Download PDF – $10
         </button>
