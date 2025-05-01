@@ -83,6 +83,11 @@ export default function ENSProfile({ ensName }) {
               initialBio={ensData.bio}
               initialLooking={ensData.lookingForWork === 'true'}
             />
+          ) : connected ? (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg">
+              <p>You are not the owner of this ENS name or wallet.</p>
+              <p className="text-xs mt-1">Make sure you're connected with the correct wallet to edit this profile.</p>
+            </div>
           ) : (
             <p>{ensData.bio || 'Web3 builder passionate about decentralization ✨'}</p>
           )}
