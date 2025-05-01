@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 export default function EditableBio({ ensName, connectedAddress, initialBio = '', initialLooking = false }) {
   console.log("EditableBio props", {
     ensName,
+    ensNameType: typeof ensName,
     connectedAddress,
     initialBio,
     initialLooking
@@ -20,6 +21,11 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
 
   const handleSave = async () => {
     try {
+      if (!ensName || typeof ensName !== 'string' || !ensName.endsWith('.eth')) {
+        console.error('❌ Invalid ENS name:', ensName);
+        return;
+      }
+
       if (typeof window.ethereum !== 'undefined') {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
@@ -30,9 +36,10 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
           await resolver.connect(signer).setText('lookingForWork', lookingForWork ? 'true' : 'false');
         }
       }
+
       setEditing(false);
     } catch (err) {
-      console.error('Failed to save ENS text records:', err);
+      console.error('❌ Failed to save ENS text records:', err);
     }
   };
 
