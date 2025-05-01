@@ -29,12 +29,15 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
         const signer = await provider.getSigner();
         const resolver = await provider.getResolver(ensName);
 
-        if (resolver) {
-          const connectedResolver = resolver.connect(signer);
-          await connectedResolver.setText('description', bio);
-          await connectedResolver.setText('lookingForWork', lookingForWork ? 'true' : 'false');
-          toast.success('Profile saved successfully!');
+        if (!resolver) {
+          alert('ENS name does not have a resolver configured.');
+          return;
         }
+
+        const connectedResolver = resolver.connect(signer);
+        await connectedResolver.setText('description', bio);
+        await connectedResolver.setText('lookingForWork', lookingForWork ? 'true' : 'false');
+        toast.success('Profile saved successfully!');
         setEditing(false);
       }
     } catch (err) {
@@ -53,10 +56,10 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
       });
 
       const data = await response.json();
-      if (data.bio && data.bio !== bio) {
+      if (data.bio) {
         setBio(data.bio);
       } else {
-        console.log('Same or empty bio returned, retrying...');
+        alert('AI did not return a valid bio.');
       }
     } catch (err) {
       console.error('AI generation failed:', err);
