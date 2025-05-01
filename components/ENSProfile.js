@@ -34,60 +34,58 @@ export default function ENSProfile({ ensName }) {
   }, [ensName]);
 
   useEffect(() => {
-    async function checkOwnership() {
-      if (!connected || !ensName || !ensName.endsWith('.eth')) return;
+  async function checkOwnership() {
+    if (!connected || !ensName || !ensName.endsWith('.eth')) return;
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const hashedName = namehash(ensName);
+
+      const registry = new ethers.Contract(ENS_REGISTRY, ENS_REGISTRY_ABI, provider);
+      const wrapper = new ethers.Contract(NAME_WRAPPER, NAME_WRAPPER_ABI, provider);
+
+      const registryOwner = await registry.owner(hashedName);
+      let wrapperOwner = null;
+      let resolvedAddr = null;
 
       try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const hashedName = namehash(ensName);
-
-        const registry = new ethers.Contract(ENS_REGISTRY, ENS_REGISTRY_ABI, provider);
-        const wrapper = new ethers.Contract(NAME_WRAPPER, NAME_WRAPPER_ABI, provider);
-
-        let registryOwner = await registry.owner(hashedName);
-        let wrapperOwner = null;
-        let resolverAddress = null;
-
-        try {
-          wrapperOwner = await wrapper.ownerOf(BigInt(hashedName));
-        } catch (e) {
-          console.log('🟡 Not a wrapped name or wrapper check failed.');
-        }
-
-        try {
-          const resolver = await provider.getResolver(ensName);
-          if (resolver) {
-            resolverAddress = await resolver.getAddress();
-          }
-        } catch (e) {
-          console.log('🟡 Resolver addr() check failed.');
-        }
-
-        const normalizedConnected = getAddress(connected);
-        const normalizedRegistry = getAddress(registryOwner);
-        const normalizedWrapper = wrapperOwner ? getAddress(wrapperOwner) : null;
-        const normalizedResolverAddr = resolverAddress ? getAddress(resolverAddress) : null;
-
-        const owns =
-          normalizedConnected === normalizedRegistry ||
-          normalizedConnected === normalizedWrapper ||
-          normalizedConnected === normalizedResolverAddr;
-
-        console.log('🔍 Connected wallet:', normalizedConnected);
-        console.log('🔍 Registry owner:', normalizedRegistry);
-        console.log('🔍 Wrapper owner:', normalizedWrapper);
-        console.log('🔍 Resolver addr():', normalizedResolverAddr);
-        console.log('✅ Owns profile:', owns);
-
-        setOwnsProfile(owns);
-      } catch (err) {
-        console.error('❌ Ownership check failed:', err);
-        setOwnsProfile(false);
+        wrapperOwner = await wrapper.ownerOf(BigInt(hashedName));
+      } catch (e) {
+        console.log('Not a wrapped name or wrapper check failed.');
       }
-    }
 
-    checkOwnership();
-  }, [connected, ensName]);
+      try {
+        const resolver = await provider.getResolver(ensName);
+        resolvedAddr = resolver ? await resolver.getAddress() : null;
+      } catch (e) {
+        console.log('Resolver check failed.');
+      }
+
+      const normalizedConnected = getAddress(connected);
+      const normalizedRegistry = getAddress(registryOwner);
+      const normalizedWrapper = wrapperOwner ? getAddress(wrapperOwner) : null;
+      const normalizedResolverAddr = resolvedAddr ? getAddress(resolvedAddr) : null;
+
+      const owns =
+        normalizedConnected === normalizedRegistry ||
+        normalizedConnected === normalizedWrapper ||
+        normalizedConnected === normalizedResolverAddr;
+
+      console.log('🔍 Connected:', normalizedConnected);
+      console.log('📘 Registry owner:', normalizedRegistry);
+      console.log('📘 Wrapper owner:', normalizedWrapper);
+      console.log('📘 Resolver addr():', normalizedResolverAddr);
+      console.log('✅ Owns profile:', owns);
+
+      setOwnsProfile(owns);
+    } catch (err) {
+      console.error('❌ Ownership check failed:', err);
+      setOwnsProfile(false);
+    }
+  }
+
+  checkOwnership();
+}, [connected, ensName]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
