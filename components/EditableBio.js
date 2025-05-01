@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 
-export default function EditableBio({ initialBio = '', initialLooking = false }) {
+export default function EditableBio({ ensName, connectedAddress, initialBio = '', initialLooking = false }) {
   const [bio, setBio] = useState(initialBio);
   const [editing, setEditing] = useState(false);
   const [lookingForWork, setLookingForWork] = useState(initialLooking);
@@ -16,8 +16,6 @@ export default function EditableBio({ initialBio = '', initialLooking = false })
       if (typeof window.ethereum !== 'undefined') {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
-        const userAddress = await signer.getAddress();
-        const ensName = await provider.lookupAddress(userAddress);
         const resolver = await provider.getResolver(ensName);
 
         if (resolver) {
