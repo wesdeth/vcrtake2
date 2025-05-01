@@ -4,21 +4,19 @@ import { useRouter } from 'next/router';
 export default function Home() {
   const [input, setInput] = useState('');
   const router = useRouter();
-  const [floatingProfiles, setFloatingProfiles] = useState([
-    { name: 'vitalik.eth', tag: 'Recently Updated', color: 'text-blue-500', border: 'border-blue-300' },
-    { name: '184.eth', tag: 'Viewed by Recruiter', color: 'text-green-500', border: 'border-green-300' },
-    { name: 'zora.eth', tag: 'New Resume', color: 'text-yellow-500', border: 'border-yellow-300' },
-  ]);
+  const [floatingProfiles, setFloatingProfiles] = useState([]);
 
   useEffect(() => {
-    // Simulate real-time profile update fetch
-    const interval = setInterval(() => {
-      setFloatingProfiles((prev) => {
-        const shuffled = [...prev].sort(() => 0.5 - Math.random());
-        return shuffled;
-      });
-    }, 4000);
-    return () => clearInterval(interval);
+    const fetchRecentUpdates = async () => {
+      try {
+        const res = await fetch('/api/recent-updates');
+        const data = await res.json();
+        setFloatingProfiles(data);
+      } catch (err) {
+        console.error('Failed to fetch recent updates:', err);
+      }
+    };
+    fetchRecentUpdates();
   }, []);
 
   const handleSearch = (e) => {
@@ -41,10 +39,10 @@ export default function Home() {
           <div
             key={index}
             onClick={() => router.push(`/${profile.name}`)}
-            className={`cursor-pointer w-40 bg-white border ${profile.border} rounded-xl shadow hover:shadow-lg p-2 transition-all duration-500 transform hover:scale-105 animate-fadeIn`}
+            className={`cursor-pointer w-44 bg-white border ${profile.border} rounded-xl shadow hover:shadow-lg p-2 transition-all duration-500 transform hover:scale-105 animate-fadeIn`}
             style={{ animationDelay: `${index * 0.3}s` }}
           >
-            <p className="font-semibold text-sm">{profile.name}</p>
+            <p className="font-semibold text-sm truncate">{profile.name}</p>
             <p className={`text-xs ${profile.color}`}>{profile.tag}</p>
           </div>
         ))}
