@@ -89,6 +89,21 @@ export default function ENSProfile({ ensName }) {
   const resolvedAvatar =
     ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg';
 
+  const handleDownloadClick = async () => {
+    const res = await fetch('/api/stripe-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ensName }),
+    });
+
+    const data = await res.json();
+    if (data?.url) {
+      window.location.href = data.url;
+    } else {
+      alert(data.error || 'Payment failed.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
       <div className="w-full max-w-md bg-white shadow-2xl rounded-3xl p-8 space-y-6 border border-gray-200">
@@ -210,7 +225,10 @@ export default function ENSProfile({ ensName }) {
           </div>
         </div>
 
-        <button className="w-full py-3 mt-4 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 shadow hover:opacity-90">
+        <button
+          onClick={handleDownloadClick}
+          className="w-full py-3 mt-4 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 shadow hover:scale-105 hover:shadow-lg transition"
+        >
           🔒 Download PDF – $10
         </button>
       </div>
