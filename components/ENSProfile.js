@@ -6,9 +6,10 @@ import { getPOAPs } from '../lib/poapUtils';
 import { getAlchemyNFTs } from '../lib/nftUtils';
 import ConnectWallet from './ConnectWallet';
 import EditableBio from './EditableBio';
-import { Pencil, BadgeCheck } from 'lucide-react';
+import { Pencil, BadgeCheck, FileText, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Tooltip } from 'react-tooltip';
+import { useRouter } from 'next/router';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
@@ -17,6 +18,7 @@ const ENS_REGISTRY_ABI = ['function owner(bytes32 node) external view returns (a
 const NAME_WRAPPER_ABI = ['function ownerOf(uint256 id) external view returns (address)'];
 
 export default function ENSProfile({ ensName }) {
+  const router = useRouter();
   const [ensData, setEnsData] = useState({});
   const [poaps, setPoaps] = useState([]);
   const [nfts, setNfts] = useState([]);
@@ -102,6 +104,18 @@ export default function ENSProfile({ ensName }) {
       : '/Avatar.jpg';
 
   const profileLabel = ensName || customName || (connected && `${connected.slice(0, 6)}...${connected.slice(-4)}`);
+
+  const handlePreviewClick = () => {
+    router.push(`/preview/${ensName}`);
+  };
+
+  const handleDownloadClick = () => {
+    if (ownsProfile) {
+      alert('This will show a watermarked preview. Stripe + Wallet payments coming soon.');
+    } else {
+      alert('You must be the owner of this profile to download it.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fef7ff] via-[#eaf4ff] to-[#fffbe7] flex justify-center items-start px-4 py-12">
@@ -256,15 +270,26 @@ export default function ENSProfile({ ensName }) {
           </div>
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full py-3 mt-6 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 shadow hover:opacity-90"
-        >
-          🔒 Download PDF – $10
-        </motion.button>
+        <div className="flex flex-col sm:flex-row gap-3 mt-6">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handlePreviewClick}
+            className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 shadow-md hover:opacity-95"
+          >
+            <Eye size={18} /> Preview Resume
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleDownloadClick}
+            className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg hover:shadow-xl hover:opacity-95 transition"
+          >
+            <FileText size={18} /> Download PDF – $10
+          </motion.button>
+        </div>
       </div>
     </div>
   );
 }
- 
