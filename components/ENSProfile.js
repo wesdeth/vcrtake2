@@ -19,6 +19,12 @@ export default function ENSProfile({ ensName }) {
   const [nfts, setNfts] = useState([]);
   const [connected, setConnected] = useState(null);
   const [ownsProfile, setOwnsProfile] = useState(false);
+  const [customName, setCustomName] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('customName') || '';
+    }
+    return '';
+  });
 
   useEffect(() => {
     async function fetchData() {
@@ -29,7 +35,7 @@ export default function ENSProfile({ ensName }) {
       setPoaps(poapList);
       setNfts(nftList);
     }
-    fetchData();
+    if (ensName) fetchData();
   }, [ensName]);
 
   useEffect(() => {
@@ -70,12 +76,6 @@ export default function ENSProfile({ ensName }) {
           normalizedConnected === normalizedWrapper ||
           normalizedConnected === normalizedEthRecord;
 
-        console.log('🔍 Connected:', normalizedConnected);
-        console.log('📘 Registry owner:', normalizedRegistry);
-        console.log('📘 Wrapper owner:', normalizedWrapper);
-        console.log('📘 Resolver addr():', normalizedEthRecord);
-        console.log('✅ Owns profile:', owns);
-
         setOwnsProfile(owns);
       } catch (err) {
         console.error('❌ Ownership check failed:', err);
@@ -86,10 +86,18 @@ export default function ENSProfile({ ensName }) {
     checkOwnership();
   }, [connected, ensName]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('customName', customName);
+    }
+  }, [customName]);
+
   const resolvedAvatar =
     ensData.avatar && ensData.avatar.startsWith('http')
       ? ensData.avatar
       : '/Avatar.jpg';
+
+  const profileLabel = ensName || customName || (connected && `${connected.slice(0, 6)}...${connected.slice(-4)}`);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
@@ -106,9 +114,18 @@ export default function ENSProfile({ ensName }) {
             className="w-20 h-20 rounded-full border-4 border-purple-200 shadow"
           />
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
-            {ensName}
+            {profileLabel}
           </h1>
-          <p className="text-sm text-gray-500">{ensData.name}</p>
+
+          {!ensName && connected && (
+            <input
+              type="text"
+              placeholder="Enter a custom profile name"
+              value={customName}
+              onChange={(e) => setCustomName(e.target.value)}
+              className="mt-1 px-3 py-2 border rounded-lg w-full text-sm"
+            />
+          )}
 
           <div className="flex space-x-3 mt-1">
             {ensData.twitter && (
@@ -162,7 +179,7 @@ export default function ENSProfile({ ensName }) {
         </div>
 
         <div className="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-900 text-sm p-4 rounded">
-          {ensData.summary || `${ensName} is a recognized contributor in the Ethereum ecosystem. They've participated in top events like ETHGlobal and Gitcoin, and worked on meaningful DAO initiatives.`}
+          {ensData.summary || `${profileLabel} is a recognized contributor in the Ethereum ecosystem. They've participated in top events like ETHGlobal and Gitcoin, and worked on meaningful DAO initiatives.`}
         </div>
 
         <div>
