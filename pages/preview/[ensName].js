@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { getENSData } from '../../lib/ensUtils';
 import { getPOAPs } from '../../lib/poapUtils';
-import { getAlchemyNFTs } from '../../lib/nftUtils';
+import { fetchAlchemyNFTs } from '../../lib/nftUtils';
 import html2pdf from 'html2pdf.js';
 import { ethers, getAddress } from 'ethers';
 import { namehash } from 'viem';
@@ -36,7 +36,7 @@ export default function ResumePreview() {
     async function fetchData() {
       const ens = await getENSData(ensName);
       const poapList = ens.address ? await getPOAPs(ens.address) : [];
-      const nftList = ens.address ? await getAlchemyNFTs(ens.address) : [];
+      const nftList = ens.address ? await fetchAlchemyNFTs(ens.address) : [];
       setEnsData(ens);
       setPoaps(poapList);
       setNfts(nftList);
