@@ -86,6 +86,11 @@ export default function ENSProfile({ ensName }) {
     checkOwnership();
   }, [connected, ensName]);
 
+  const resolvedAvatar =
+    ensData.avatar && ensData.avatar.startsWith('http')
+      ? ensData.avatar
+      : '/Avatar.jpg';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
       <div className="w-full max-w-md bg-white shadow-2xl rounded-3xl p-8 space-y-6 border border-gray-200">
@@ -95,9 +100,9 @@ export default function ENSProfile({ ensName }) {
 
         <div className="flex flex-col items-center text-center space-y-2">
           <img
-            src={ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/avatar.png'}
+            src={resolvedAvatar}
             alt="avatar"
-            onError={(e) => { e.target.onerror = null; e.target.src = '/avatar.png'; }}
+            onError={(e) => { e.target.onerror = null; e.target.src = '/Avatar.jpg'; }}
             className="w-20 h-20 rounded-full border-4 border-purple-200 shadow"
           />
           <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
