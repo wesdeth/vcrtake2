@@ -101,19 +101,19 @@ export default function ENSProfile({ ensName }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] flex justify-center items-start px-4 py-12">
-      <div className="w-full max-w-md bg-white shadow-2xl rounded-3xl p-8 space-y-6 border border-gray-200">
+      <div className="w-full max-w-md bg-white shadow-xl rounded-3xl p-8 space-y-6 border border-gray-200">
         <div className="flex justify-end">
           <ConnectWallet onConnect={setConnected} />
         </div>
 
-        <div className="flex flex-col items-center text-center space-y-2">
+        <div className="flex flex-col items-center text-center space-y-3">
           <img
             src={resolvedAvatar}
             alt="avatar"
             onError={(e) => { e.target.onerror = null; e.target.src = '/Avatar.jpg'; }}
-            className="w-20 h-20 rounded-full border-4 border-purple-200 shadow"
+            className="w-24 h-24 rounded-full border-4 border-purple-300 shadow-md"
           />
-          <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
             {profileLabel}
           </h1>
 
@@ -127,15 +127,15 @@ export default function ENSProfile({ ensName }) {
             />
           )}
 
-          <div className="flex space-x-3 mt-1">
+          <div className="flex space-x-3 mt-2">
             {ensData.twitter && (
               <a href={`https://twitter.com/${ensData.twitter.replace('@', '')}`} target="_blank" rel="noreferrer">
-                <img src="/icons/twitter.svg" className="w-5 h-5" alt="Twitter" />
+                <img src="/icons/twitter.svg" className="w-6 h-6" alt="Twitter" />
               </a>
             )}
             {ensData.website && (
               <a href={ensData.website} target="_blank" rel="noreferrer">
-                <img src="/icons/link.svg" className="w-5 h-5" alt="Website" />
+                <img src="/icons/link.svg" className="w-6 h-6" alt="Website" />
               </a>
             )}
           </div>
@@ -183,7 +183,7 @@ export default function ENSProfile({ ensName }) {
         </div>
 
         <div>
-          <h2 className="text-lg font-bold text-purple-700 mb-2">Hackathons & Grants</h2>
+          <h2 className="text-xl font-extrabold text-purple-700 mb-2">Hackathons & Grants</h2>
           <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
             <li>🏆 Winner – ETHGlobal Tokyo 2024</li>
             <li>💸 Grant Recipient – Gitcoin Grants Round 18</li>
@@ -191,7 +191,7 @@ export default function ENSProfile({ ensName }) {
         </div>
 
         <div>
-          <h2 className="text-lg font-bold text-purple-700 mb-2">DAO Roles & Attestations</h2>
+          <h2 className="text-xl font-extrabold text-purple-700 mb-2">DAO Roles & Attestations</h2>
           <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
             <li>🧾 Multisig signer – DeveloperDAO</li>
             <li>🔧 Core contributor – ENS DAO</li>
@@ -199,7 +199,7 @@ export default function ENSProfile({ ensName }) {
         </div>
 
         <div>
-          <h2 className="text-lg font-bold text-purple-700 mb-2">NFTs</h2>
+          <h2 className="text-xl font-extrabold text-purple-700 mb-2">NFTs</h2>
           <div className="grid grid-cols-3 gap-3">
             {nfts.length > 0 ? (
               nfts.slice(0, 3).map((nft, idx) => (
@@ -209,7 +209,7 @@ export default function ENSProfile({ ensName }) {
                     alt={nft.name}
                     className="rounded-xl w-20 h-20 border border-gray-200 shadow-sm"
                   />
-                  <p className="mt-1">{nft.name?.slice(0, 20) || 'NFT'}</p>
+                  <p className="mt-1 font-semibold">{nft.name?.slice(0, 20) || 'NFT'}</p>
                 </div>
               ))
             ) : (
@@ -218,7 +218,7 @@ export default function ENSProfile({ ensName }) {
           </div>
         </div>
 
-        <button className="w-full py-3 mt-4 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 shadow hover:opacity-90">
+        <button className="w-full py-3 mt-6 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 shadow hover:opacity-90">
           🔒 Download PDF – $10
         </button>
       </div>
