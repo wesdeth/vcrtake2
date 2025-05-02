@@ -1,5 +1,3 @@
-
-// pages/api/stripe-checkout.js
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -24,7 +22,8 @@ export default async function handler(req, res) {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `Resume Download for ${ensName}`,
+              name: `Verified Chain Resume for ${ensName}`,
+              description: 'PDF download of your blockchain resume',
             },
             unit_amount: 1000, // $10
           },
@@ -32,13 +31,12 @@ export default async function handler(req, res) {
         },
       ],
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/preview/${ensName}?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/preview/${ensName}?canceled=true`,
-      metadata: { ensName },
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/preview/${ensName}?cancelled=true`,
     });
 
-    res.status(200).json({ id: session.id });
+    return res.status(200).json({ url: session.url });
   } catch (err) {
-    console.error('Stripe Checkout error:', err);
-    res.status(500).json({ error: 'Failed to create Stripe session' });
+    console.error('❌ Stripe session error:', err.message);
+    return res.status(500).json({ error: 'Something went wrong with Stripe' });
   }
 }
