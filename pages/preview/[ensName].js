@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { getAddress, ethers } from 'ethers';
 import { namehash } from 'viem';
-import { getENSData } from '../lib/ensUtils';
-import { getPOAPs } from '../lib/poapUtils';
-import { getAlchemyNFTs } from '../lib/nftUtils';
-import ConnectWallet from './ConnectWallet';
-import EditableBio from './EditableBio';
+import { getENSData } from '../../lib/ensUtils';
+import { getPOAPs } from '../../lib/poapUtils';
+import { getAlchemyNFTs } from '../../lib/nftUtils';
+import ConnectWallet from '../../components/ConnectWallet';
+import EditableBio from '../../components/EditableBio';
+
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
