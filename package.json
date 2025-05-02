@@ -11,7 +11,7 @@
     "ethers": "^6.10.0",
     "framer-motion": "^11.0.17",
     "html2pdf.js": "^0.10.1",
-    "jsPDF": "^2.5.1",
+    "jspdf": "^2.5.1",
     "lucide-react": "^0.268.0",
     "next": "13.4.19",
     "openai": "^4.20.0",
