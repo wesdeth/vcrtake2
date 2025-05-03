@@ -1,3 +1,4 @@
+import Head from 'next/head';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { getENSData } from '../../lib/ensUtils';
@@ -118,99 +119,105 @@ export default function ResumePreview() {
   const resolvedAvatar =
     ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg';
 
+  const openseaLink = `https://opensea.io/${ensData.address}`;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#ecf4ff] via-[#fffbe6] to-[#f9f5ff] py-12 px-4">
-      <div
-        ref={printRef}
-        className="max-w-3xl mx-auto bg-white shadow-2xl rounded-3xl p-10 relative border border-gray-100 transition-all duration-500 hover:shadow-[0_10px_40px_rgba(0,0,0,0.1)]"
-      >
-        <div className="absolute top-4 right-4 text-[10px] text-gray-300 uppercase tracking-widest rotate-6 select-none">
-          VCR Preview
-        </div>
+    <>
+      <Head>
+        <title>{ensName} | Verified Chain Resume</title>
+        <meta name="description" content={`Web3 resume for ${ensName}`} />
+        <meta property="og:title" content={`${ensName} | VCR`} />
+        <meta property="og:description" content={`Explore the Web3 resume of ${ensName}`} />
+        <meta property="og:image" content="/social-preview.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="/social-preview.png" />
+        <meta name="twitter:title" content={`${ensName} | VCR`} />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
 
-        <div className="flex flex-col items-center text-center animate-fade-in">
-          <img
-            src={resolvedAvatar}
-            alt="avatar"
-            className="w-28 h-28 rounded-full border-4 border-purple-300 shadow mb-4 hover:scale-110 transition-transform duration-300"
-          />
-          <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
-            {ensName}
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">{ensData.name || 'Ethereum User'}</p>
-          {ensData.bio && (
-            <p className="text-base text-gray-700 mt-4 italic max-w-lg animate-fade-in">
-              {ensData.bio}
-            </p>
-          )}
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-[#ecf4ff] via-[#fffbe6] to-[#f9f5ff] py-12 px-4">
+        <div
+          ref={printRef}
+          className="max-w-3xl mx-auto bg-white shadow-2xl rounded-3xl p-10 relative border border-gray-100 transition-all duration-500 hover:shadow-[0_10px_40px_rgba(0,0,0,0.1)]"
+        >
+          <div className="absolute top-4 right-4 text-[10px] text-gray-300 uppercase tracking-widest rotate-6 select-none">
+            VCR Preview
+          </div>
 
-        <div className="mt-8">
-          <h2 className="text-lg font-bold text-purple-700 mb-4">POAP Achievements</h2>
-          {poaps.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-              {poaps.slice(0, 8).map((poap, idx) => (
-                <div key={idx} className="group bg-white p-3 rounded-xl shadow border transition-transform hover:scale-105 cursor-pointer">
-                  <img
-                    src={poap.image_url}
-                    alt={poap.name}
-                    className="w-16 h-16 rounded-full border mb-2 shadow-sm"
-                  />
-                  <p className="text-xs font-semibold text-gray-700 line-clamp-2 leading-snug group-hover:text-purple-600">
-                    {poap.name}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400">No POAPs found.</p>
-          )}
-        </div>
-
-        <div className="mt-8">
-          <h2 className="text-lg font-bold text-purple-700 mb-2">NFT Highlights</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {nfts.length > 0 ? (
-              nfts.slice(0, 3).map((nft, idx) => (
-                <div key={idx} className="flex flex-col items-center">
-                  <img
-                    src={nft.image}
-                    alt={nft.name}
-                    className="rounded-xl w-24 h-24 object-cover border hover:scale-105 transition"
-                  />
-                  <span className="text-xs mt-1 text-gray-500 text-center">
-                    {nft.name || 'NFT'}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-400">No NFTs found.</p>
+          <div className="flex flex-col items-center text-center animate-fade-in">
+            <img
+              src={resolvedAvatar}
+              alt="avatar"
+              className="w-28 h-28 rounded-full border-4 border-purple-300 shadow mb-4 hover:scale-110 transition-transform duration-300"
+            />
+            <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
+              {ensName}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">{ensData.name || 'Ethereum User'}</p>
+            {ensData.bio && (
+              <p className="text-base text-gray-700 mt-4 italic max-w-lg animate-fade-in">
+                {ensData.bio}
+              </p>
             )}
+          </div>
+
+          <div className="mt-8">
+            <h2 className="text-lg font-bold text-purple-700 mb-4">POAP Achievements</h2>
+            {poaps.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                {poaps.slice(0, 8).map((poap, idx) => (
+                  <div key={idx} className="group bg-white p-3 rounded-xl shadow border transition-transform hover:scale-105 cursor-pointer">
+                    <img
+                      src={poap.image_url}
+                      alt={poap.name}
+                      className="w-16 h-16 rounded-full border mb-2 shadow-sm"
+                    />
+                    <p className="text-xs font-semibold text-gray-700 line-clamp-2 leading-snug group-hover:text-purple-600">
+                      {poap.name}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">No POAPs found.</p>
+            )}
+          </div>
+
+          <div className="mt-8 text-center">
+            <h2 className="text-lg font-bold text-purple-700 mb-3">NFT Highlights</h2>
+            <a
+              href={openseaLink}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block bg-purple-600 text-white px-5 py-2 rounded-full text-sm font-semibold shadow-md hover:bg-purple-700 transition"
+            >
+              View Full Collection on OpenSea
+            </a>
+          </div>
+
+          <div className="mt-10 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900 p-4 rounded-xl">
+            {ensData.summary || `${ensName} is a recognized contributor in the Ethereum ecosystem. They’ve participated in top events like ETHGlobal and Gitcoin, and worked on meaningful DAO initiatives.`}
           </div>
         </div>
 
-        <div className="mt-10 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900 p-4 rounded-xl">
-          {ensData.summary || `${ensName} is a recognized contributor in the Ethereum ecosystem. They’ve participated in top events like ETHGlobal and Gitcoin, and worked on meaningful DAO initiatives.`}
-        </div>
-      </div>
-
-      <div className="text-center mt-10 space-y-4">
-        <button
-          onClick={handleDownload}
-          className={`bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-6 rounded-full shadow-xl hover:scale-105 transition duration-200 ${!ownsProfile && 'opacity-50 cursor-not-allowed'}`}
-        >
-          📄 Download Resume as PDF
-        </button>
-
-        <div>
+        <div className="text-center mt-10 space-y-4">
           <button
-            onClick={handleCopyLink}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-2 px-4 rounded-full shadow-md hover:scale-105 transition duration-200"
+            onClick={handleDownload}
+            className={`bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-6 rounded-full shadow-xl hover:scale-105 transition duration-200 ${!ownsProfile && 'opacity-50 cursor-not-allowed'}`}
           >
-            {copied ? '✅ Link Copied!' : '🔗 Copy Share Link'}
+            📄 Download Resume as PDF
           </button>
+
+          <div>
+            <button
+              onClick={handleCopyLink}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-2 px-4 rounded-full shadow-md hover:scale-105 transition duration-200"
+            >
+              {copied ? '✅ Link Copied!' : '🔗 Copy Share Link'}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
