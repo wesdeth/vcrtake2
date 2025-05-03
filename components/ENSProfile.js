@@ -3,7 +3,7 @@ import { getAddress, ethers } from 'ethers';
 import { namehash } from 'viem';
 import { getENSData } from '../lib/ensUtils';
 import { getPOAPs } from '../lib/poapUtils';
-import { getAlchemyNFTs } from '../lib/nftUtils';
+import { fetchAlchemyNFTs } from '../lib/nftUtils';
 import ConnectWallet from './ConnectWallet';
 import EditableBio from './EditableBio';
 import { Pencil, BadgeCheck, FileText, Eye } from 'lucide-react';
