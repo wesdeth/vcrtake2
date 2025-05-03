@@ -55,24 +55,24 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="max-w-2xl w-full bg-white/70 backdrop-blur-md border border-gray-200 shadow-2xl rounded-3xl p-10 text-center animate-fadeIn">
+      <div className="max-w-2xl w-full bg-white/80 backdrop-blur-md border border-gray-200 shadow-2xl rounded-3xl p-10 text-center animate-fadeIn">
         <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 mb-4">
           Verified Chain Resume
         </h1>
         <p className="text-lg text-gray-700 mb-3 font-medium">
-          Your onchain LinkedIn. Built from ENS, POAPs, Gitcoin Grants, and DAOs.
+          Your Web3 identity, beautifully packaged.
         </p>
         <p className="text-md text-gray-600 mb-4">
-          Input your ENS or wallet to generate a web3-native resume, complete with a downloadable PDF.
+          Discover a new kind of resume — one that's fully onchain. Powered by ENS, POAPs, Gitcoin Grants, and DAOs.
         </p>
         <p className="text-sm text-gray-500 italic mb-6">
-          No signups. No forms. Just pure onchain proof of work.
+          Enter your ENS or wallet to create a PDF-ready resume that shows what you've actually done in Web3.
         </p>
 
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4 justify-center">
           <input
             type="text"
-            placeholder="Enter ENS or wallet (e.g. wesd.eth)"
+            placeholder="Enter ENS or wallet (e.g. yourname.eth)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             className="w-full sm:w-80 px-5 py-3 border border-gray-300 rounded-lg shadow-inner focus:ring-2 focus:ring-purple-500 focus:outline-none"
@@ -81,12 +81,12 @@ export default function Home() {
             type="submit"
             className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg shadow hover:scale-105 transition"
           >
-            View Resume
+            Generate Resume
           </button>
         </form>
 
         <div className="mt-10 text-xs text-gray-400">
-          ✨ Built for builders. Respected by the chain.
+          ⚡ Powered by Ethereum. Loved by builders.
         </div>
       </div>
     </div>
