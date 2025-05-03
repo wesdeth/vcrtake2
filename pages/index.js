@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 
@@ -7,7 +7,10 @@ export default function Home() {
   const [input, setInput] = useState('');
   const router = useRouter();
   const [floatingProfiles, setFloatingProfiles] = useState([]);
+  const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2]);
+  const [fade, setFade] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -27,7 +30,7 @@ export default function Home() {
   useEffect(() => {
     const fetchRecentUpdates = async () => {
       try {
-        const res = await fetch('/api/recent-updates');
+        const res = await fetch('/api/recent-updates?limit=15');
         const data = await res.json();
 
         const enrichedData = await Promise.all(
@@ -45,8 +48,7 @@ export default function Home() {
                 color: hasPoaps ? 'text-purple-500' : 'text-blue-500',
                 border: hasPoaps ? 'border-purple-300' : 'border-blue-300',
               };
-            } catch (poapError) {
-              console.warn(`Failed to fetch POAPs for ${profile.name}`, poapError);
+            } catch {
               return {
                 ...profile,
                 tag: profile.tag || 'Active Builder',
@@ -70,8 +72,24 @@ export default function Home() {
         console.error('Failed to fetch recent updates:', err);
       }
     };
+
     fetchRecentUpdates();
   }, []);
+
+  useEffect(() => {
+    if (floatingProfiles.length === 0) return;
+    timerRef.current = setInterval(() => {
+      setFade(false);
+      setTimeout(() => {
+        setCurrentIndexes((prev) => {
+          return prev.map(i => (i + 3) % floatingProfiles.length);
+        });
+        setFade(true);
+      }, 400);
+    }, 7000);
+
+    return () => clearInterval(timerRef.current);
+  }, [floatingProfiles]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -79,6 +97,8 @@ export default function Home() {
       router.push(`/preview/${input}`);
     }
   };
+
+  const currentProfiles = currentIndexes.map(i => floatingProfiles[i]).filter(Boolean);
 
   return (
     <>
@@ -95,6 +115,8 @@ export default function Home() {
       </Head>
 
       <div className="min-h-screen bg-gradient-to-br from-[#fef6fb] via-[#eef4ff] to-[#fffce6] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white relative overflow-hidden">
+        <div className="absolute inset-0 z-0 bg-[radial-gradient(#ddd_1px,transparent_1px)] dark:bg-[radial-gradient(#444_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
+
         <button
           onClick={toggleDarkMode}
           className="fixed top-4 right-4 z-50 bg-gray-200 dark:bg-gray-700 text-sm px-3 py-1 rounded-full shadow hover:scale-105 transition"
@@ -102,17 +124,25 @@ export default function Home() {
           {darkMode ? '☀ Light Mode' : '🌙 Dark Mode'}
         </button>
 
-        <div className="absolute top-8 left-6 animate-pulse bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md">
+        <div className="absolute top-8 left-6 animate-pulse bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md z-10">
           12,380 onchain resumes created
         </div>
 
-        <div className="absolute top-28 right-4 space-y-4">
-          {floatingProfiles.map((profile, index) => (
+        <div className="absolute top-28 right-4 space-y-4 max-h-[calc(100vh-7rem)] overflow-hidden hidden sm:block z-10"
+          onMouseEnter={() => clearInterval(timerRef.current)}
+          onMouseLeave={() => timerRef.current = setInterval(() => {
+            setFade(false);
+            setTimeout(() => {
+              setCurrentIndexes((prev) => prev.map(i => (i + 3) % floatingProfiles.length));
+              setFade(true);
+            }, 400);
+          }, 7000)}>
+          {currentProfiles.map((profile, index) => (
             <div
               key={index}
-              onClick={() => router.push(`/${profile.name}`)}
-              className={`cursor-pointer w-44 bg-white dark:bg-gray-800 border ${profile.border} dark:border-gray-700 rounded-xl shadow-md hover:shadow-lg p-3 transition transform hover:scale-105 animate-fadeIn`}
-              style={{ animationDelay: `${index * 0.2}s` }}
+              onClick={() => router.push(`/preview/${profile.name}`)}
+              className={`cursor-pointer w-44 bg-white dark:bg-gray-800 border ${profile.border} dark:border-gray-700 rounded-xl shadow-md hover:shadow-lg p-3 transition-all duration-500 ease-in-out transform hover:scale-105 ${fade ? 'opacity-100' : 'opacity-0'}`}
+              style={{ transitionDelay: `${index * 150}ms` }}
             >
               <p className="font-semibold text-sm truncate">{profile.name}</p>
               <p className={`text-xs ${profile.color}`}>{profile.tag}</p>
@@ -120,18 +150,18 @@ export default function Home() {
           ))}
         </div>
 
-        <div className="flex flex-col items-center justify-center px-6 py-16">
-          <div className="max-w-2xl w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-2xl rounded-3xl p-10 text-center animate-fadeIn">
-            <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 mb-4">
+        <div className="flex flex-col items-center justify-center px-4 sm:px-6 py-16 z-10 relative">
+          <div className="max-w-2xl w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-2xl rounded-3xl p-6 sm:p-10 text-center animate-fadeIn">
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 mb-4">
               Verified Chain Resume
             </h1>
-            <p className="text-lg text-gray-700 dark:text-gray-300 mb-3 font-medium">
+            <p className="text-md sm:text-lg text-gray-700 dark:text-gray-300 mb-3 font-medium">
               Your Web3 identity, beautifully packaged.
             </p>
-            <p className="text-md text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-sm sm:text-md text-gray-600 dark:text-gray-400 mb-4">
               Discover a new kind of resume — one that's fully onchain. Powered by ENS, POAPs, Gitcoin Grants, and DAOs.
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-6">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 italic mb-6">
               Enter your ENS or wallet to preview a Web3 resume.
             </p>
 
@@ -156,8 +186,11 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        <footer className="text-center text-xs text-gray-400 dark:text-gray-500 py-6 z-10 relative">
+          © {new Date().getFullYear()} Verified Chain Resume — Built with ❤️ for the Web3 community.
+        </footer>
       </div>
     </>
   );
 }
- 
