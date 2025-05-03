@@ -154,16 +154,27 @@ export default function ResumePreview() {
           <div className="mt-6">
             <h2 className="text-md font-semibold text-purple-700 mb-2">POAP Achievements</h2>
             {poaps.length > 0 ? (
-              <div className="flex overflow-x-scroll gap-4 py-2 scrollbar-hide">
-                {poaps.slice(0, 10).map((poap, idx) => (
-                  <div key={idx} className="flex-none w-20 text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {poaps.slice(0, 4).map((poap, idx) => (
+                  <a
+                    key={idx}
+                    href={poap.event_url || poap.event_url_fallback}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex flex-col items-center bg-gray-50 rounded-xl p-3 hover:bg-yellow-50 transition border border-gray-100 shadow-sm hover:scale-105 duration-200 ease-in-out"
+                  >
                     <img
                       src={poap.image_url}
                       alt={poap.name}
-                      className="w-16 h-16 rounded-full border shadow mx-auto mb-1 hover:scale-105 transition"
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border"
                     />
-                    <p className="text-[10px] text-gray-600 truncate leading-tight">{poap.name}</p>
-                  </div>
+                    <p className="text-xs font-medium text-gray-700 mt-2 text-center truncate">
+                      {poap.name}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-1 text-center">
+                      {poap.date} · {poap.location}
+                    </p>
+                  </a>
                 ))}
               </div>
             ) : (
