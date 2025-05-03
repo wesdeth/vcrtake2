@@ -10,7 +10,7 @@ export default function PreviewPage() {
   const router = useRouter();
   const { ensName } = router.query;
   const { isReady } = router;
-  const { address: connectedWallet } = useAccount();
+  const { address: connectedWallet, isConnected } = useAccount();
 
   const [ensData, setEnsData] = useState(null);
   const [error, setError] = useState(null);
@@ -33,7 +33,6 @@ export default function PreviewPage() {
         const isOwner = connectedWallet && connectedWallet.toLowerCase() === lowerAddr;
         setOwnsProfile(isOwner);
 
-        // Update Supabase
         await fetch('/api/update-profile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -61,8 +60,17 @@ export default function PreviewPage() {
       ) : (
         <>
           <ProfileCard data={ensData} />
-          <ResumeSections data={ensData} />
+          <ResumeSections
+            poaps={ensData.poaps}
+            gitcoinGrants={ensData.gitcoinGrants}
+            daos={ensData.daos}
+          />
           {ownsProfile && <DownloadButton ensData={ensData} />}
+          {!isConnected && (
+            <div className="mt-6 text-center text-sm text-yellow-600 dark:text-yellow-400">
+              Connect your wallet to verify ownership and unlock download.
+            </div>
+          )}
         </>
       )}
     </div>
