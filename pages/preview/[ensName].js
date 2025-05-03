@@ -53,14 +53,13 @@ export default function PreviewPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white p-6">
-      <h1 className="text-2xl font-bold mb-4">Resume Preview</h1>
-
       {error ? (
         <div className="text-red-500 text-center mt-10">{error}</div>
       ) : !ensData ? (
         <div className="text-center text-gray-500">Loading resume...</div>
       ) : (
         <>
+          <h1 className="text-2xl font-bold mb-4">{ensData.name || ensData.address}</h1>
           <ProfileCard data={ensData} />
           <ResumeSections
             poaps={ensData.poaps}
