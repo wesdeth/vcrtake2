@@ -1,24 +1,26 @@
-export default function handler(req, res) {
-  const profiles = [
-    {
-      name: "vitalik.eth",
-      tag: "Recently Updated",
-      color: "text-blue-500",
-      border: "border-blue-300"
-    },
-    {
-      name: "184.eth",
-      tag: "Viewed by Recruiter",
-      color: "text-green-500",
-      border: "border-green-300"
-    },
-    {
-      name: "zora.eth",
-      tag: "New Resume",
-      color: "text-yellow-500",
-      border: "border-yellow-300"
-    }
-  ];
+import { createClient } from '@supabase/supabase-js';
 
-  res.status(200).json(profiles);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+export default async function handler(req, res) {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('name, address, tag, updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error('Supabase fetch error:', error);
+      return res.status(500).json({ error: 'Failed to fetch data' });
+    }
+
+    return res.status(200).json(data);
+  } catch (err) {
+    console.error('Unexpected error in recent-updates API:', err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
 }
