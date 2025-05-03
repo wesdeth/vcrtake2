@@ -80,28 +80,37 @@ export default function PreviewPage() {
             gitcoinGrants={ensData.gitcoinGrants}
             daos={ensData.daos}
           />
-          {ownsProfile ? (
-            <DownloadButton ensData={ensData} />
-          ) : (
-            <div className="mt-6 text-center text-sm text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg shadow-md max-w-md mx-auto">
-              {isConnected ? (
-                'You are connected but not the owner of this profile.'
-              ) : (
-                <>
-                  Connect your wallet to verify ownership and unlock the resume download feature.
-                  <button
-                    onClick={() => connect()}
-                    className="ml-2 underline text-purple-600 dark:text-purple-400 hover:text-purple-800"
-                  >
-                    Connect Wallet
-                  </button>
-                </>
-              )}
-            </div>
-          )}
+
+          <div className="mt-10 flex flex-col items-center space-y-4">
+            <button
+              className="px-6 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 text-white font-semibold hover:scale-105 transition shadow"
+              onClick={() => alert('Resume preview coming soon.')}
+            >
+              Preview Resume
+            </button>
+
+            {ownsProfile ? (
+              <DownloadButton ensData={ensData} />
+            ) : (
+              <div className="text-sm text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg shadow-md text-center">
+                {isConnected ? (
+                  'You are connected but not the owner of this profile.'
+                ) : (
+                  <>
+                    Connect your wallet to verify ownership and unlock the resume download feature.
+                    <button
+                      onClick={() => connect()}
+                      className="ml-2 underline text-purple-600 dark:text-purple-400 hover:text-purple-800"
+                    >
+                      Connect Wallet
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>
   );
 }
- 
