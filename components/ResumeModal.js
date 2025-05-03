@@ -1,69 +1,69 @@
-// /components/ResumeModal.js
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 
-export default function ResumeModal({ ensName, onClose }) {
+export default function ResumeModal({ ensName, avatar, bio, poaps = [], nfts = [], onClose }) {
+  const openSeaLink = nfts.length > 0 ? `https://opensea.io/${nfts[0].contractAddress}` : null;
+
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center px-4">
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white dark:bg-gray-900 w-full max-w-3xl rounded-3xl shadow-xl relative p-8 overflow-y-auto max-h-[90vh]"
-      >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-white"
-        >
-          <X size={20} />
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+          <X size={24} />
         </button>
 
         <div className="text-center space-y-4">
-          <img
-            src="/Avatar.jpg"
+          <motion.img
+            src={avatar || '/Avatar.jpg'}
             alt="avatar"
-            className="mx-auto w-24 h-24 rounded-full border-4 border-blue-400 shadow-lg"
+            className="w-24 h-24 rounded-full mx-auto border-4 border-purple-300"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4 }}
           />
-          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-500 to-pink-400">
-            {ensName}
-          </h1>
-          <p className="text-gray-700 dark:text-gray-300">
-            Web3 builder with a passion for decentralized tech and community innovation.
-          </p>
+
+          <h1 className="text-3xl font-extrabold text-gray-900">{ensName}</h1>
+
+          <div className="text-gray-700 text-md leading-relaxed">
+            {bio || 'A recognized contributor in Web3 with active roles across DAOs, hackathons, and community events.'}
+          </div>
+
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold text-purple-700 mb-2">Recent POAPs</h2>
+            {poaps.length > 0 ? (
+              <div className="flex justify-center gap-2 flex-wrap">
+                {poaps.slice(0, 4).map((poap, idx) => (
+                  <img
+                    key={idx}
+                    src={poap.image_url}
+                    alt={poap.event.name}
+                    title={poap.event.name}
+                    className="w-10 h-10 rounded-full border border-gray-300 shadow-sm"
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">No POAPs available.</p>
+            )}
+          </div>
+
+          {openSeaLink && (
+            <div className="mt-4">
+              <a
+                href={openSeaLink}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-600 underline text-sm"
+              >
+                View NFTs on OpenSea
+              </a>
+            </div>
+          )}
+
+          <div className="mt-6 text-sm text-gray-500 italic">
+            Resume powered by onchain identity — built with ENS + POAP
+          </div>
         </div>
-
-        <div className="mt-6 text-sm space-y-6">
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg shadow-sm">
-            <h2 className="text-lg font-semibold text-blue-600 dark:text-blue-300">Summary</h2>
-            <p>
-              {ensName} is a proven contributor to the Ethereum ecosystem. They've built at ETHGlobal events, received
-              Gitcoin Grants, and helped scale DAOs from the ground up.
-            </p>
-          </div>
-
-          <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg shadow-sm">
-            <h2 className="text-lg font-semibold text-purple-600 dark:text-purple-300">Experience</h2>
-            <ul className="list-disc list-inside mt-2">
-              <li>🧾 Multisig signer – DeveloperDAO</li>
-              <li>🔧 Core contributor – ENS DAO</li>
-              <li>🪪 Identity work – Namewrapper, EFP, POAP integrations</li>
-            </ul>
-          </div>
-
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg shadow-sm">
-            <h2 className="text-lg font-semibold text-yellow-600 dark:text-yellow-300">Achievements</h2>
-            <ul className="list-disc list-inside mt-2">
-              <li>🏆 Winner – ETHGlobal Tokyo 2024</li>
-              <li>💸 Grant Recipient – Gitcoin Grants Round 18</li>
-              <li>📜 Speaker – frENSday Bangkok 2024</li>
-            </ul>
-          </div>
-
-          <div className="text-right">
-            <p className="text-xs text-gray-400">Resume preview only. Wallet ownership required to download PDF.</p>
-          </div>
-        </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
