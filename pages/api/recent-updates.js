@@ -1,26 +1,71 @@
 import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const querySchema = z.object({
+  limit: z.string().optional().transform((val) => (val ? parseInt(val) : 20)),
+  tag: z.string().optional()
+});
+
 export default async function handler(req, res) {
   try {
-    const { data, error } = await supabase
+    const parseResult = querySchema.safeParse(req.query);
+
+    if (!parseResult.success) {
+      return res.status(400).json({ error: 'Invalid query parameters' });
+    }
+
+    const { limit, tag } = parseResult.data;
+
+    let query = supabase
       .from('profiles')
       .select('name, address, tag, updated_at')
       .order('updated_at', { ascending: false })
-      .limit(20);
+      .limit(limit);
+
+    if (tag) {
+      query = query.eq('tag', tag);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Supabase fetch error:', error);
       return res.status(500).json({ error: 'Failed to fetch data' });
     }
 
-    return res.status(200).json(data);
+    // Format the updated_at field to human-readable form
+    const enriched = data.map((profile) => {
+      const timeAgo = timeSince(new Date(profile.updated_at));
+      return { ...profile, timeAgo };
+    });
+
+    return res.status(200).json(enriched);
   } catch (err) {
     console.error('Unexpected error in recent-updates API:', err);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
+}
+
+function timeSince(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+  const intervals = [
+    { label: 'year', seconds: 31536000 },
+    { label: 'month', seconds: 2592000 },
+    { label: 'day', seconds: 86400 },
+    { label: 'hour', seconds: 3600 },
+    { label: 'minute', seconds: 60 },
+    { label: 'second', seconds: 1 }
+  ];
+  for (const interval of intervals) {
+    const count = Math.floor(seconds / interval.seconds);
+    if (count > 0) {
+      return `${count} ${interval.label}${count !== 1 ? 's' : ''} ago`;
+    }
+  }
+  return 'just now';
 }
