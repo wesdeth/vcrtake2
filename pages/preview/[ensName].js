@@ -18,8 +18,25 @@ export default function ResumePreview() {
   const [poaps, setPoaps] = useState([]);
   const [connected, setConnected] = useState(null);
   const [ownsProfile, setOwnsProfile] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [resumeCount, setResumeCount] = useState(null);
   const printRef = useRef();
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const prefersDark = localStorage.getItem('theme') === 'dark';
+      setDarkMode(prefersDark);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = !darkMode;
+    setDarkMode(newTheme);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('theme', newTheme ? 'dark' : 'light');
+    }
+  };
 
   useEffect(() => {
     if (typeof window.ethereum !== 'undefined') {
@@ -95,6 +112,19 @@ export default function ResumePreview() {
     checkOwnershipAndUpdateProfile();
   }, [connected, ensName]);
 
+  useEffect(() => {
+    async function fetchCount() {
+      try {
+        const res = await fetch('/api/recent-updates');
+        const json = await res.json();
+        setResumeCount(json.length);
+      } catch (err) {
+        console.error('Failed to fetch resume count:', err);
+      }
+    }
+    fetchCount();
+  }, []);
+
   const handleDownload = async () => {
     if (!ownsProfile) return alert("You can only download your own resume");
     const element = printRef.current;
@@ -139,10 +169,23 @@ export default function ResumePreview() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-tr from-purple-50 via-yellow-50 to-blue-50 py-12 px-4">
+      <div className={`${darkMode ? 'dark' : ''} min-h-screen bg-gradient-to-tr from-purple-50 via-yellow-50 to-blue-50 py-12 px-4`}>
+        <button
+          onClick={toggleTheme}
+          className="fixed top-4 right-4 bg-gray-200 dark:bg-gray-800 text-xs px-3 py-1 rounded shadow"
+        >
+          {darkMode ? '🌙 Light Mode' : '🌞 Dark Mode'}
+        </button>
+
+        {resumeCount !== null && (
+          <div className="absolute top-6 left-6 bg-purple-600 text-white text-xs px-4 py-1 rounded-full shadow">
+            {resumeCount.toLocaleString()} onchain resumes created
+          </div>
+        )}
+
         <div
           ref={printRef}
-          className="mx-auto max-w-md bg-white border border-gray-100 rounded-3xl shadow-2xl p-6 transition-all duration-500 hover:shadow-[0_8px_32px_rgba(0,0,0,0.1)]"
+          className="mx-auto max-w-md bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-3xl shadow-2xl p-6 transition-all duration-500 hover:shadow-[0_8px_32px_rgba(0,0,0,0.1)]"
         >
           <div className="text-center">
             <img
@@ -153,14 +196,14 @@ export default function ResumePreview() {
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
               {ensName}
             </h1>
-            <p className="text-sm text-gray-500 mt-1">{ensData.name || 'Ethereum User'}</p>
+            <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">{ensData.name || 'Ethereum User'}</p>
             {ensData.bio && (
-              <p className="text-sm text-gray-700 mt-3 italic">{ensData.bio}</p>
+              <p className="text-sm text-gray-700 mt-3 italic dark:text-gray-300">{ensData.bio}</p>
             )}
           </div>
 
           <div className="mt-6">
-            <h2 className="text-md font-semibold text-purple-700 mb-2">POAP Achievements</h2>
+            <h2 className="text-md font-semibold text-purple-700 dark:text-purple-300 mb-2">POAP Achievements</h2>
             {poaps.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {poaps.slice(0, 4).map((poap, idx) => (
@@ -169,24 +212,24 @@ export default function ResumePreview() {
                     href={poap.event_url || poap.event_url_fallback}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex flex-col items-center bg-gray-50 rounded-xl p-3 hover:bg-yellow-50 transition border border-gray-100 shadow-sm hover:scale-105 duration-200 ease-in-out"
+                    className="flex flex-col items-center bg-gray-50 dark:bg-gray-800 rounded-xl p-3 hover:bg-yellow-50 dark:hover:bg-yellow-900 transition border border-gray-100 dark:border-gray-600 shadow-sm hover:scale-105 duration-200 ease-in-out"
                   >
                     <img
                       src={poap.image_url}
                       alt={poap.name}
                       className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border"
                     />
-                    <p className="text-xs font-medium text-gray-700 mt-2 text-center truncate">
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2 text-center truncate">
                       {poap.name}
                     </p>
-                    <p className="text-[10px] text-gray-400 mt-1 text-center">
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 text-center">
                       {poap.date} · {poap.location}
                     </p>
                   </a>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400">No POAPs found.</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">No POAPs found.</p>
             )}
           </div>
 
@@ -195,26 +238,26 @@ export default function ResumePreview() {
               href={openseaLink}
               target="_blank"
               rel="noreferrer"
-              className="inline-block text-sm font-medium text-blue-600 hover:underline"
+              className="inline-block text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
             >
               View this wallet on OpenSea ↗
             </a>
           </div>
 
-          <div className="mt-6 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900 p-3 rounded-xl">
+          <div className="mt-6 bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 text-yellow-900 dark:text-yellow-100 p-3 rounded-xl">
             {ensData.summary || `${ensName} is a recognized contributor in the Ethereum ecosystem. They’ve participated in top events like ETHGlobal and Gitcoin, and worked on meaningful DAO initiatives.`}
           </div>
 
           <div className="mt-6 flex flex-col gap-2 items-center">
             <button
               onClick={handleDownload}
-              className={`bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-2 px-4 rounded-full shadow hover:scale-105 transition duration-200 ${!ownsProfile && 'opacity-50 cursor-not-allowed'}`}
+              className={`bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-2 px-4 rounded-full shadow hover:scale-105 transition duration-200 ${!ownsProfile && 'hidden'}`}
             >
               📄 Download PDF Resume
             </button>
             <button
               onClick={handleCopyLink}
-              className="text-xs text-blue-500 underline hover:text-blue-700"
+              className="text-xs text-blue-500 dark:text-blue-300 underline hover:text-blue-700 dark:hover:text-blue-400"
             >
               {copied ? '✅ Link Copied!' : '🔗 Copy Share Link'}
             </button>
