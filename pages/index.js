@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import axios from 'axios';
 
 export default function Home() {
   const [input, setInput] = useState('');
@@ -12,15 +13,42 @@ export default function Home() {
         const res = await fetch('/api/recent-updates');
         const data = await res.json();
 
-        const noneTagged = data.every(p => p.tag !== 'Looking for Work');
-        if (data.length > 0 && noneTagged) {
-          const index = Math.floor(Math.random() * data.length);
-          data[index].tag = 'Looking for Work';
-          data[index].color = 'text-orange-500';
-          data[index].border = 'border-orange-300';
+        const enrichedData = await Promise.all(
+          data.map(async (profile) => {
+            try {
+              const poapRes = await axios.get(`https://api.poap.tech/actions/scan/${profile.address}`, {
+                headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' }
+              });
+              const poaps = poapRes.data || [];
+              const hasPoaps = poaps.length > 0;
+
+              return {
+                ...profile,
+                tag: hasPoaps ? 'POAP Verified' : profile.tag || 'Active Builder',
+                color: hasPoaps ? 'text-purple-500' : 'text-blue-500',
+                border: hasPoaps ? 'border-purple-300' : 'border-blue-300',
+              };
+            } catch (poapError) {
+              console.warn(`Failed to fetch POAPs for ${profile.name}`, poapError);
+              return {
+                ...profile,
+                tag: profile.tag || 'Active Builder',
+                color: 'text-blue-500',
+                border: 'border-blue-300',
+              };
+            }
+          })
+        );
+
+        const noneTagged = enrichedData.every(p => p.tag !== 'Looking for Work');
+        if (enrichedData.length > 0 && noneTagged) {
+          const index = Math.floor(Math.random() * enrichedData.length);
+          enrichedData[index].tag = 'Looking for Work';
+          enrichedData[index].color = 'text-orange-500';
+          enrichedData[index].border = 'border-orange-300';
         }
 
-        setFloatingProfiles(data);
+        setFloatingProfiles(enrichedData);
       } catch (err) {
         console.error('Failed to fetch recent updates:', err);
       }
