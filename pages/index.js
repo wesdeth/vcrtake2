@@ -12,7 +12,6 @@ export default function Home() {
         const res = await fetch('/api/recent-updates');
         const data = await res.json();
 
-        // Optional fallback if none are marked lookingForWork
         const noneTagged = data.every(p => p.tag !== 'Looking for Work');
         if (data.length > 0 && noneTagged) {
           const index = Math.floor(Math.random() * data.length);
@@ -37,20 +36,18 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f9f5ff] via-[#ecf4ff] to-[#fffbe6] relative flex items-center justify-center px-6 py-16 overflow-hidden">
-      {/* Floating Stat Bubble */}
-      <div className="absolute top-6 left-6 animate-pulse bg-purple-600 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-md">
+    <div className="min-h-screen bg-gradient-to-br from-[#fef6fb] via-[#eef4ff] to-[#fffce6] flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden">
+      <div className="absolute top-8 left-6 animate-pulse bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md">
         12,380 onchain resumes created
       </div>
 
-      {/* Floating ENS Profiles */}
-      <div className="absolute top-24 right-4 space-y-3">
+      <div className="absolute top-28 right-4 space-y-4">
         {floatingProfiles.map((profile, index) => (
           <div
             key={index}
             onClick={() => router.push(`/${profile.name}`)}
-            className={`cursor-pointer w-44 bg-white border ${profile.border} rounded-xl shadow hover:shadow-lg p-2 transition-all duration-500 transform hover:scale-105 animate-fadeIn`}
-            style={{ animationDelay: `${index * 0.3}s` }}
+            className={`cursor-pointer w-44 bg-white border ${profile.border} rounded-xl shadow-md hover:shadow-lg p-3 transition transform hover:scale-105 animate-fadeIn`}
+            style={{ animationDelay: `${index * 0.2}s` }}
           >
             <p className="font-semibold text-sm truncate">{profile.name}</p>
             <p className={`text-xs ${profile.color}`}>{profile.tag}</p>
@@ -58,35 +55,36 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Main Box */}
-      <div className="text-center max-w-2xl rounded-3xl p-10 shadow-xl bg-white/60 backdrop-blur-md border border-gray-200 animate-fadeIn">
-        <h1 className="text-5xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
+      <div className="max-w-2xl w-full bg-white/70 backdrop-blur-md border border-gray-200 shadow-2xl rounded-3xl p-10 text-center animate-fadeIn">
+        <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 mb-4">
           Verified Chain Resume
         </h1>
-        <p className="text-lg text-gray-800 mb-4 font-medium">
-          The first real onchain resume — auto-generated from your ENS, POAPs, Gitcoin Grants, hackathons, and DAO roles.
+        <p className="text-lg text-gray-700 mb-3 font-medium">
+          Your onchain LinkedIn. Built from ENS, POAPs, Gitcoin Grants, and DAOs.
         </p>
-        <p className="text-md text-gray-600 mb-6">
-          No more LinkedIn. No more résumé templates. Just connect your wallet or input your ENS, and we’ll show the world what you’ve accomplished in Web3.
+        <p className="text-md text-gray-600 mb-4">
+          Input your ENS or wallet to generate a web3-native resume, complete with a downloadable PDF.
         </p>
-        <p className="text-sm text-gray-500 mb-8 italic">
-          Generate your profile. Download a PDF. Get seen by hiring managers. Your chain activity tells your story — we just format it.
+        <p className="text-sm text-gray-500 italic mb-6">
+          No signups. No forms. Just pure onchain proof of work.
         </p>
+
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4 justify-center">
           <input
             type="text"
-            placeholder="Enter ENS or wallet (e.g. abigail.eth)"
+            placeholder="Enter ENS or wallet (e.g. wesd.eth)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="w-full sm:w-80 px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500"
+            className="w-full sm:w-80 px-5 py-3 border border-gray-300 rounded-lg shadow-inner focus:ring-2 focus:ring-purple-500 focus:outline-none"
           />
           <button
             type="submit"
-            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition"
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg shadow hover:scale-105 transition"
           >
             View Resume
           </button>
         </form>
+
         <div className="mt-10 text-xs text-gray-400">
           ✨ Built for builders. Respected by the chain.
         </div>
