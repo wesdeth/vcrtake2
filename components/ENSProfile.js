@@ -6,6 +6,7 @@ import { getPOAPs } from '../lib/poapUtils';
 import { fetchAlchemyNFTs } from '../lib/nftUtils';
 import ConnectWallet from './ConnectWallet';
 import EditableBio from './EditableBio';
+import ResumeModal from './ResumeModal';
 import { Pencil, BadgeCheck, FileText, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Tooltip } from 'react-tooltip';
@@ -16,7 +17,7 @@ const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
 const ENS_REGISTRY_ABI = ['function owner(bytes32 node) external view returns (address)'];
 const NAME_WRAPPER_ABI = ['function ownerOf(uint256 id) external view returns (address)'];
 
-export default function ENSProfile({ ensName, setShowPreviewModal }) {
+export default function ENSProfile({ ensName }) {
   const [ensData, setEnsData] = useState({});
   const [poaps, setPoaps] = useState([]);
   const [nfts, setNfts] = useState([]);
@@ -29,6 +30,7 @@ export default function ENSProfile({ ensName, setShowPreviewModal }) {
     return '';
   });
   const [editingName, setEditingName] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -112,136 +114,149 @@ export default function ENSProfile({ ensName, setShowPreviewModal }) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white dark:bg-gray-900 shadow-xl rounded-3xl p-8 space-y-6 border border-gray-200 dark:border-gray-800">
-      <div className="flex justify-end">
-        <ConnectWallet onConnect={setConnected} />
-      </div>
-
-      <div className="flex flex-col items-center text-center space-y-3">
-        <motion.img
-          src={resolvedAvatar}
-          alt="avatar"
-          onError={(e) => { e.target.onerror = null; e.target.src = '/Avatar.jpg'; }}
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          className="w-24 h-24 rounded-full border-4 border-purple-300 shadow-md"
+    <>
+      {showPreviewModal && (
+        <ResumeModal
+          ensName={ensName}
+          poaps={poaps}
+          nfts={nfts}
+          bio={ensData.bio}
+          avatar={resolvedAvatar}
+          onClose={() => setShowPreviewModal(false)}
         />
+      )}
 
-        <div className="flex items-center gap-2">
-          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
-            {profileLabel}
-          </h1>
-          {connected && (
-            <motion.button
-              onClick={() => setEditingName(!editingName)}
-              whileHover={{ rotate: -10, scale: 1.3 }}
-              whileTap={{ scale: 0.95 }}
-              className="text-blue-600 hover:text-blue-800 transition-transform duration-300"
-              data-tooltip-id="editNameTooltip"
-              data-tooltip-content="Click to edit name"
-            >
-              <Pencil size={18} />
-            </motion.button>
-          )}
-          <Tooltip id="editNameTooltip" />
+      <div className="w-full max-w-md mx-auto bg-white dark:bg-gray-900 shadow-xl rounded-3xl p-8 space-y-6 border border-gray-200 dark:border-gray-800">
+        <div className="flex justify-end">
+          <ConnectWallet onConnect={setConnected} />
         </div>
 
-        {editingName && (
-          <input
-            type="text"
-            placeholder="Enter a custom profile name"
-            value={customName}
-            onChange={(e) => setCustomName(e.target.value)}
-            className="mt-1 px-3 py-2 border rounded-lg w-full text-sm"
-          />
-        )}
-
-        <div className="flex justify-center items-center gap-3 mt-2">
-          {ensData.twitter && (
-            <a href={`https://twitter.com/${ensData.twitter.replace('@', '')}`} target="_blank" rel="noreferrer">
-              <motion.img whileHover={{ scale: 1.2 }} src="/icons/twitter.svg" className="w-6 h-6" alt="Twitter" />
-            </a>
-          )}
-          {ensData.website && (
-            <a href={ensData.website} target="_blank" rel="noreferrer">
-              <motion.img whileHover={{ scale: 1.2 }} src="/icons/link.svg" className="w-6 h-6" alt="Website" />
-            </a>
-          )}
-          {ownsProfile && (
-            <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-semibold flex items-center gap-1">
-              <BadgeCheck size={14} /> Verified Owner
-            </span>
-          )}
-        </div>
-
-        {ensData.lookingForWork === 'true' && (
-          <motion.p
-            className="mt-1 px-3 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            ✅ Open to Work
-          </motion.p>
-        )}
-      </div>
-
-      <div className="text-center text-gray-700 dark:text-gray-300">
-        {ownsProfile ? (
-          <EditableBio
-            ensName={ensName}
-            connectedAddress={connected}
-            initialBio={ensData.bio}
-            initialLooking={ensData.lookingForWork === 'true'}
-            showAIGenerator={true}
-          />
-        ) : connected ? (
-          <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg">
-            <p>You are not the owner of this ENS name or wallet.</p>
-            <p className="text-xs mt-1">Make sure you're connected with the correct wallet to edit this profile.</p>
-          </div>
-        ) : (
-          <p>{ensData.bio || 'Web3 builder passionate about decentralization ✨'}</p>
-        )}
-      </div>
-
-      <div className="flex flex-wrap justify-center gap-3">
-        {poaps.slice(0, 5).map((poap, idx) => (
+        <div className="flex flex-col items-center text-center space-y-3">
           <motion.img
-            whileHover={{ scale: 1.15, boxShadow: '0 0 10px #ffb703' }}
-            key={idx}
-            src={poap.image_url}
-            alt={poap.event.name}
-            title={poap.event.name}
-            className="w-10 h-10 rounded-full border border-gray-300 shadow-sm"
+            src={resolvedAvatar}
+            alt="avatar"
+            onError={(e) => { e.target.onerror = null; e.target.src = '/Avatar.jpg'; }}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="w-24 h-24 rounded-full border-4 border-purple-300 shadow-md"
           />
-        ))}
-      </div>
 
-      <div className="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-900 text-sm p-4 rounded">
-        {ensData.summary || `${profileLabel} is a recognized contributor in the Ethereum ecosystem. They've participated in top events like ETHGlobal and Gitcoin, and worked on meaningful DAO initiatives.`}
-      </div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
+              {profileLabel}
+            </h1>
+            {connected && (
+              <motion.button
+                onClick={() => setEditingName(!editingName)}
+                whileHover={{ rotate: -10, scale: 1.3 }}
+                whileTap={{ scale: 0.95 }}
+                className="text-blue-600 hover:text-blue-800 transition-transform duration-300"
+                data-tooltip-id="editNameTooltip"
+                data-tooltip-content="Click to edit name"
+              >
+                <Pencil size={18} />
+              </motion.button>
+            )}
+            <Tooltip id="editNameTooltip" />
+          </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mt-6">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowPreviewModal(true)}
-          className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 shadow-md hover:opacity-95"
-        >
-          <Eye size={18} /> Preview Resume
-        </motion.button>
+          {editingName && (
+            <input
+              type="text"
+              placeholder="Enter a custom profile name"
+              value={customName}
+              onChange={(e) => setCustomName(e.target.value)}
+              className="mt-1 px-3 py-2 border rounded-lg w-full text-sm"
+            />
+          )}
 
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleDownloadClick}
-          className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg hover:shadow-xl hover:opacity-95 transition"
-        >
-          <FileText size={18} /> Download PDF – $10
-        </motion.button>
+          <div className="flex justify-center items-center gap-3 mt-2">
+            {ensData.twitter && (
+              <a href={`https://twitter.com/${ensData.twitter.replace('@', '')}`} target="_blank" rel="noreferrer">
+                <motion.img whileHover={{ scale: 1.2 }} src="/icons/twitter.svg" className="w-6 h-6" alt="Twitter" />
+              </a>
+            )}
+            {ensData.website && (
+              <a href={ensData.website} target="_blank" rel="noreferrer">
+                <motion.img whileHover={{ scale: 1.2 }} src="/icons/link.svg" className="w-6 h-6" alt="Website" />
+              </a>
+            )}
+            {ownsProfile && (
+              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-semibold flex items-center gap-1">
+                <BadgeCheck size={14} /> Verified Owner
+              </span>
+            )}
+          </div>
+
+          {ensData.lookingForWork === 'true' && (
+            <motion.p
+              className="mt-1 px-3 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              ✅ Open to Work
+            </motion.p>
+          )}
+        </div>
+
+        <div className="text-center text-gray-700 dark:text-gray-300">
+          {ownsProfile ? (
+            <EditableBio
+              ensName={ensName}
+              connectedAddress={connected}
+              initialBio={ensData.bio}
+              initialLooking={ensData.lookingForWork === 'true'}
+              showAIGenerator={true}
+            />
+          ) : connected ? (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg">
+              <p>You are not the owner of this ENS name or wallet.</p>
+              <p className="text-xs mt-1">Make sure you're connected with the correct wallet to edit this profile.</p>
+            </div>
+          ) : (
+            <p>{ensData.bio || 'Web3 builder passionate about decentralization ✨'}</p>
+          )}
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-3">
+          {poaps.slice(0, 5).map((poap, idx) => (
+            <motion.img
+              whileHover={{ scale: 1.15, boxShadow: '0 0 10px #ffb703' }}
+              key={idx}
+              src={poap.image_url}
+              alt={poap.event.name}
+              title={poap.event.name}
+              className="w-10 h-10 rounded-full border border-gray-300 shadow-sm"
+            />
+          ))}
+        </div>
+
+        <div className="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-900 text-sm p-4 rounded">
+          {ensData.summary || `${profileLabel} is a recognized contributor in the Ethereum ecosystem. They've participated in top events like ETHGlobal and Gitcoin, and worked on meaningful DAO initiatives.`}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 mt-6">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowPreviewModal(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 shadow-md hover:opacity-95"
+          >
+            <Eye size={18} /> Preview Resume
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleDownloadClick}
+            className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg hover:shadow-xl hover:opacity-95 transition"
+          >
+            <FileText size={18} /> Download PDF – $10
+          </motion.button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
