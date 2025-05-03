@@ -22,21 +22,6 @@ export default function ResumePreview() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark') {
-        document.documentElement.classList.add('dark');
-      }
-    }
-  }, []);
-
-  const toggleDarkMode = () => {
-    const html = document.documentElement;
-    const isDark = html.classList.toggle('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  };
-
-  useEffect(() => {
     if (typeof window.ethereum !== 'undefined') {
       window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
         if (accounts.length > 0) setConnected(accounts[0]);
@@ -56,7 +41,7 @@ export default function ResumePreview() {
   }, [ensName]);
 
   useEffect(() => {
-    async function checkOwnership() {
+    async function checkOwnershipAndUpdateProfile() {
       if (!connected || !ensName || !ensName.endsWith('.eth')) return;
 
       try {
@@ -94,12 +79,20 @@ export default function ResumePreview() {
           normalizedConnected === normalizedEthRecord;
 
         setOwnsProfile(owns);
+
+        if (owns && ensName && ethRecord) {
+          await fetch('/api/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: ensName, address: ethRecord, tag: 'Active Builder' })
+          });
+        }
       } catch (err) {
         console.error('❌ Ownership check failed:', err);
         setOwnsProfile(false);
       }
     }
-    checkOwnership();
+    checkOwnershipAndUpdateProfile();
   }, [connected, ensName]);
 
   const handleDownload = async () => {
@@ -146,17 +139,10 @@ export default function ResumePreview() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <button
-        onClick={toggleDarkMode}
-        className="fixed top-4 right-4 z-50 bg-gray-200 dark:bg-gray-700 text-sm px-3 py-1 rounded-full shadow hover:scale-105 transition"
-      >
-        Toggle Theme
-      </button>
-
-      <div className="min-h-screen bg-gradient-to-tr from-purple-50 via-yellow-50 to-blue-50 py-12 px-4 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 dark:text-white">
+      <div className="min-h-screen bg-gradient-to-tr from-purple-50 via-yellow-50 to-blue-50 py-12 px-4">
         <div
           ref={printRef}
-          className="mx-auto max-w-md bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-3xl shadow-2xl p-6 transition-all duration-500 hover:shadow-[0_8px_32px_rgba(0,0,0,0.1)]"
+          className="mx-auto max-w-md bg-white border border-gray-100 rounded-3xl shadow-2xl p-6 transition-all duration-500 hover:shadow-[0_8px_32px_rgba(0,0,0,0.1)]"
         >
           <div className="text-center">
             <img
@@ -167,14 +153,14 @@ export default function ResumePreview() {
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-500 to-yellow-400">
               {ensName}
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">{ensData.name || 'Ethereum User'}</p>
+            <p className="text-sm text-gray-500 mt-1">{ensData.name || 'Ethereum User'}</p>
             {ensData.bio && (
-              <p className="text-sm text-gray-700 dark:text-gray-400 mt-3 italic">{ensData.bio}</p>
+              <p className="text-sm text-gray-700 mt-3 italic">{ensData.bio}</p>
             )}
           </div>
 
           <div className="mt-6">
-            <h2 className="text-md font-semibold text-purple-700 dark:text-purple-300 mb-2">POAP Achievements</h2>
+            <h2 className="text-md font-semibold text-purple-700 mb-2">POAP Achievements</h2>
             {poaps.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {poaps.slice(0, 4).map((poap, idx) => (
@@ -183,24 +169,24 @@ export default function ResumePreview() {
                     href={poap.event_url || poap.event_url_fallback}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex flex-col items-center bg-gray-50 dark:bg-gray-700 rounded-xl p-3 hover:bg-yellow-50 dark:hover:bg-yellow-900 transition border border-gray-100 dark:border-gray-600 shadow-sm hover:scale-105 duration-200 ease-in-out"
+                    className="flex flex-col items-center bg-gray-50 rounded-xl p-3 hover:bg-yellow-50 transition border border-gray-100 shadow-sm hover:scale-105 duration-200 ease-in-out"
                   >
                     <img
                       src={poap.image_url}
                       alt={poap.name}
                       className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border"
                     />
-                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2 text-center truncate">
+                    <p className="text-xs font-medium text-gray-700 mt-2 text-center truncate">
                       {poap.name}
                     </p>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 text-center">
+                    <p className="text-[10px] text-gray-400 mt-1 text-center">
                       {poap.date} · {poap.location}
                     </p>
                   </a>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 dark:text-gray-500">No POAPs found.</p>
+              <p className="text-sm text-gray-400">No POAPs found.</p>
             )}
           </div>
 
@@ -209,13 +195,13 @@ export default function ResumePreview() {
               href={openseaLink}
               target="_blank"
               rel="noreferrer"
-              className="inline-block text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              className="inline-block text-sm font-medium text-blue-600 hover:underline"
             >
               View this wallet on OpenSea ↗
             </a>
           </div>
 
-          <div className="mt-6 bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 dark:border-yellow-700 text-yellow-900 dark:text-yellow-300 p-3 rounded-xl">
+          <div className="mt-6 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900 p-3 rounded-xl">
             {ensData.summary || `${ensName} is a recognized contributor in the Ethereum ecosystem. They’ve participated in top events like ETHGlobal and Gitcoin, and worked on meaningful DAO initiatives.`}
           </div>
 
@@ -228,7 +214,7 @@ export default function ResumePreview() {
             </button>
             <button
               onClick={handleCopyLink}
-              className="text-xs text-blue-500 dark:text-blue-300 underline hover:text-blue-700 dark:hover:text-blue-400"
+              className="text-xs text-blue-500 underline hover:text-blue-700"
             >
               {copied ? '✅ Link Copied!' : '🔗 Copy Share Link'}
             </button>
