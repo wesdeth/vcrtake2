@@ -68,9 +68,9 @@ export default function PreviewPage() {
           />
 
           <div className="mt-10 text-center space-y-4">
-            <button className="px-6 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold rounded-lg shadow hover:scale-105 transition">
+            {/* <button className="px-6 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold rounded-lg shadow hover:scale-105 transition">
               Preview Resume
-            </button>
+            </button> */}
 
             {!isConnected && (
               <div className="bg-amber-900 text-yellow-300 p-4 rounded-md max-w-md mx-auto">
