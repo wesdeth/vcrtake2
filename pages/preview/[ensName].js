@@ -3,7 +3,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { getENSData } from '../../lib/ensUtils';
 import { getPOAPs } from '../../lib/poapUtils';
-import { fetchAlchemyNFTs } from '../../lib/nftUtils';
 import { ethers, getAddress } from 'ethers';
 import { namehash } from 'viem';
 
