@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAccount } from 'wagmi';
-import ENSProfile from '../../components/ensprofile';
+import ENSProfile from '../../components/ENSProfile';
 
 export default function ProfilePage() {
   const router = useRouter();
