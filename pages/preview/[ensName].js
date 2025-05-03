@@ -22,6 +22,21 @@ export default function ResumePreview() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const html = document.documentElement;
+    const isDark = html.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  };
+
+  useEffect(() => {
     if (typeof window.ethereum !== 'undefined') {
       window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
         if (accounts.length > 0) setConnected(accounts[0]);
@@ -130,6 +145,13 @@ export default function ResumePreview() {
         <meta name="twitter:title" content={`${ensName} | VCR`} />
         <link rel="icon" href="/favicon.ico" />
       </Head>
+
+      <button
+        onClick={toggleDarkMode}
+        className="fixed top-4 right-4 z-50 bg-gray-200 dark:bg-gray-700 text-sm px-3 py-1 rounded-full shadow hover:scale-105 transition"
+      >
+        Toggle Theme
+      </button>
 
       <div className="min-h-screen bg-gradient-to-tr from-purple-50 via-yellow-50 to-blue-50 py-12 px-4 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 dark:text-white">
         <div
