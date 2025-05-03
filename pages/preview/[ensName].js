@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import axios from 'axios';
 import { useAccount } from 'wagmi';
-
 import DownloadButton from '../../components/DownloadButton';
 import ProfileCard from '../../components/ProfileCard';
 import ResumeSections from '../../components/ResumeSections';
@@ -11,6 +9,7 @@ import { getEnsData } from '../../lib/ensUtils';
 export default function PreviewPage() {
   const router = useRouter();
   const { ensName } = router.query;
+  const { isReady } = router;
   const { address: connectedWallet } = useAccount();
 
   const [ensData, setEnsData] = useState(null);
@@ -18,18 +17,20 @@ export default function PreviewPage() {
   const [ownsProfile, setOwnsProfile] = useState(false);
 
   useEffect(() => {
+    if (!isReady || !ensName) return;
+
     const fetchData = async () => {
-      if (!ensName) return;
       try {
         const data = await getEnsData(ensName);
+
+        if (!data || !data.address) {
+          throw new Error('ENS resolution failed');
+        }
+
         setEnsData(data);
 
-        const lowerEnsName = data.name?.toLowerCase();
         const lowerAddr = data.address?.toLowerCase();
-        const isOwner = connectedWallet && (
-          connectedWallet.toLowerCase() === lowerAddr ||
-          connectedWallet.toLowerCase() === lowerEnsName
-        );
+        const isOwner = connectedWallet && connectedWallet.toLowerCase() === lowerAddr;
         setOwnsProfile(isOwner);
 
         // Update Supabase
@@ -39,17 +40,17 @@ export default function PreviewPage() {
           body: JSON.stringify({
             name: data.name || data.address,
             address: data.address,
-            tag: data.tag || 'Active Builder'
-          })
+            tag: data.tag || 'Active Builder',
+          }),
         });
       } catch (err) {
         console.error('Error fetching ENS data:', err);
-        setError('Failed to load resume. Please try again later.');
+        setError('Failed to load resume. Please check the ENS name or try again later.');
       }
     };
 
     fetchData();
-  }, [ensName, connectedWallet]);
+  }, [ensName, isReady, connectedWallet]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white p-6">
