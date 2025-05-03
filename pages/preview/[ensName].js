@@ -59,49 +59,52 @@ export default function ResumePreview() {
 
   useEffect(() => {
     async function checkOwnershipAndUpdateProfile() {
-      if (!connected || !ensName || !ensName.endsWith('.eth')) return;
+      if (!connected || !ensName) return;
 
       try {
         const provider = new ethers.BrowserProvider(window.ethereum);
-        const hashedName = namehash(ensName);
-
-        const registry = new ethers.Contract(ENS_REGISTRY, ENS_REGISTRY_ABI, provider);
-        const wrapper = new ethers.Contract(NAME_WRAPPER, NAME_WRAPPER_ABI, provider);
-
-        const registryOwner = await registry.owner(hashedName);
+        let resolvedAddress = ensName;
+        let hashedName;
+        let registryOwner = null;
         let wrapperOwner = null;
         let ethRecord = null;
 
-        try {
-          wrapperOwner = await wrapper.ownerOf(BigInt(hashedName));
-        } catch (e) {
-          console.log('Not a wrapped name or wrapper check failed.');
-        }
+        if (ensName.endsWith('.eth')) {
+          hashedName = namehash(ensName);
+          const registry = new ethers.Contract(ENS_REGISTRY, ENS_REGISTRY_ABI, provider);
+          const wrapper = new ethers.Contract(NAME_WRAPPER, NAME_WRAPPER_ABI, provider);
 
-        try {
-          const resolver = await provider.getResolver(ensName);
-          ethRecord = resolver ? await resolver.getAddress() : null;
-        } catch (e) {
-          console.log('Resolver or addr() check failed.');
+          registryOwner = await registry.owner(hashedName);
+
+          try {
+            wrapperOwner = await wrapper.ownerOf(BigInt(hashedName));
+          } catch (e) {}
+
+          try {
+            const resolver = await provider.getResolver(ensName);
+            ethRecord = resolver ? await resolver.getAddress() : null;
+          } catch (e) {}
         }
 
         const normalizedConnected = getAddress(connected);
-        const normalizedRegistry = getAddress(registryOwner);
+        const normalizedRegistry = registryOwner ? getAddress(registryOwner) : null;
         const normalizedWrapper = wrapperOwner ? getAddress(wrapperOwner) : null;
         const normalizedEthRecord = ethRecord ? getAddress(ethRecord) : null;
+        const normalizedENS = ensName.startsWith('0x') ? getAddress(ensName) : null;
 
         const owns =
           normalizedConnected === normalizedRegistry ||
           normalizedConnected === normalizedWrapper ||
-          normalizedConnected === normalizedEthRecord;
+          normalizedConnected === normalizedEthRecord ||
+          normalizedConnected === normalizedENS;
 
         setOwnsProfile(owns);
 
-        if (owns && ensName && ethRecord) {
+        if (owns && ensData?.address) {
           await fetch('/api/update-profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: ensName, address: ethRecord, tag: 'Active Builder' })
+            body: JSON.stringify({ name: ensName, address: ensData.address, tag: 'Active Builder' })
           });
         }
       } catch (err) {
@@ -110,7 +113,7 @@ export default function ResumePreview() {
       }
     }
     checkOwnershipAndUpdateProfile();
-  }, [connected, ensName]);
+  }, [connected, ensName, ensData]);
 
   useEffect(() => {
     async function fetchCount() {
