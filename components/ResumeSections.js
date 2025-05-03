@@ -1,5 +1,7 @@
 // /components/ResumeSections.js
-export default function ResumeSections({ poaps, gitcoinGrants, daos }) {
+export default function ResumeSections({ data }) {
+  const { poaps, gitcoinGrants, daos } = data || {};
+
   return (
     <div className="space-y-6">
       {poaps && poaps.length > 0 && (
