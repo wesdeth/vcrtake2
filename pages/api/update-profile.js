@@ -18,7 +18,12 @@ export default async function handler(req, res) {
 
   try {
     const { error } = await supabase.from('profiles').upsert(
-      [{ name, address, tag: tag || 'Active Builder' }],
+      [{
+        name,
+        address,
+        tag: tag || 'Active Builder',
+        updated_at: new Date().toISOString()
+      }],
       { onConflict: 'address' }
     );
 
