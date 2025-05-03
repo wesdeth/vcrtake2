@@ -6,7 +6,7 @@ import ProfileCard from '../../components/ProfileCard';
 import ResumeSections from '../../components/ResumeSections';
 import { getEnsData } from '../../lib/ensUtils';
 
-export default function PreviewPage() {
+export default function ProfilePage() {
   const router = useRouter();
   const { ensName } = router.query;
   const { isReady } = router;
@@ -44,7 +44,7 @@ export default function PreviewPage() {
         });
       } catch (err) {
         console.error('Error fetching ENS data:', err);
-        setError('Failed to load resume. Please check the ENS name or try again later.');
+        setError('Failed to load profile. Please check the ENS name or try again later.');
       }
     };
 
@@ -56,7 +56,7 @@ export default function PreviewPage() {
       {error ? (
         <div className="text-red-500 text-center mt-10">{error}</div>
       ) : !ensData ? (
-        <div className="text-center text-gray-500">Loading resume...</div>
+        <div className="text-center text-gray-500">Loading profile...</div>
       ) : (
         <>
           <h1 className="text-2xl font-bold mb-4">{ensData.name || ensData.address}</h1>
@@ -68,9 +68,7 @@ export default function PreviewPage() {
           />
 
           <div className="mt-10 text-center space-y-4">
-            {/* <button className="px-6 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold rounded-lg shadow hover:scale-105 transition">
-              Preview Resume
-            </button> */}
+            {ownsProfile && <DownloadButton ensData={ensData} />}
 
             {!isConnected && (
               <div className="bg-amber-900 text-yellow-300 p-4 rounded-md max-w-md mx-auto">
@@ -80,8 +78,6 @@ export default function PreviewPage() {
                 </a>
               </div>
             )}
-
-            {ownsProfile && <DownloadButton ensData={ensData} />}
           </div>
         </>
       )}
