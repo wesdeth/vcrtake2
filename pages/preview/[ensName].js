@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import { getENSData } from '../../lib/ensUtils';
 import { getPOAPs } from '../../lib/poapUtils';
 import { fetchAlchemyNFTs } from '../../lib/nftUtils';
-import html2pdf from 'html2pdf.js';
 import { ethers, getAddress } from 'ethers';
 import { namehash } from 'viem';
 
@@ -91,9 +90,11 @@ export default function ResumePreview() {
     checkOwnership();
   }, [connected, ensName]);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!ownsProfile) return alert("You can only download your own resume");
     const element = printRef.current;
+    const html2pdf = (await import('html2pdf.js')).default;
+
     const opt = {
       margin: 0,
       filename: `${ensName}-resume.pdf`,
@@ -101,6 +102,7 @@ export default function ResumePreview() {
       html2canvas: { scale: 2 },
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
+
     html2pdf().set(opt).from(element).save();
   };
 
