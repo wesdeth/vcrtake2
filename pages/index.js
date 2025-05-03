@@ -76,7 +76,7 @@ export default function Home() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (input.endsWith('.eth') || input.startsWith('0x')) {
-      router.push(`/${input}`);
+      router.push(`/preview/${input}`);
     }
   };
 
@@ -132,7 +132,7 @@ export default function Home() {
               Discover a new kind of resume — one that's fully onchain. Powered by ENS, POAPs, Gitcoin Grants, and DAOs.
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-6">
-              Enter your ENS or wallet to create a PDF-ready resume that shows what you've actually done in Web3.
+              Enter your ENS or wallet to preview a Web3 resume.
             </p>
 
             <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -147,7 +147,7 @@ export default function Home() {
                 type="submit"
                 className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg shadow hover:scale-105 transition"
               >
-                Generate Resume
+                View Resume
               </button>
             </form>
 
