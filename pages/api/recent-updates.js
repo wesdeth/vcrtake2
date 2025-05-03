@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 
 const querySchema = z.object({
-  limit: z.string().optional().transform((val) => (val ? parseInt(val) : 20)),
+  limit: z.string().optional().transform((val) => (val ? parseInt(val) : 5)),
   tag: z.string().optional()
 });
 
@@ -24,8 +24,8 @@ export default async function handler(req, res) {
     let query = supabase
       .from('profiles')
       .select('name, address, tag, updated_at')
-      .order('updated_at', { ascending: false })
-      .limit(limit);
+      .gte('updated_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // last 7 days
+      .order('updated_at', { ascending: false });
 
     if (tag) {
       query = query.eq('tag', tag);
@@ -38,8 +38,10 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Failed to fetch data' });
     }
 
-    // Format the updated_at field to human-readable form
-    const enriched = data.map((profile) => {
+    // Shuffle and trim the result
+    const shuffled = data.sort(() => 0.5 - Math.random()).slice(0, limit);
+
+    const enriched = shuffled.map((profile) => {
       const timeAgo = timeSince(new Date(profile.updated_at));
       return { ...profile, timeAgo };
     });
