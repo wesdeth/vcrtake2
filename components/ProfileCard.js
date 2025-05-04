@@ -1,5 +1,7 @@
 // /components/ProfileCard.js
 import { Copy, Users, Landmark, ShieldCheck } from 'lucide-react';
+import { useAccount, useConnect } from 'wagmi';
+import { InjectedConnector } from 'wagmi/connectors/injected';
 
 export default function ProfileCard({ data }) {
   const { name, address, avatar, bio, twitter, website, tag, efpFollows = [], daos = [] } = data;
@@ -13,15 +15,28 @@ export default function ProfileCard({ data }) {
 
   const isAdmin = name?.toLowerCase() === 'wesd.eth';
 
+  const { address: connectedAddress, isConnected } = useAccount();
+  const { connect } = useConnect({ connector: new InjectedConnector() });
+
   return (
-    <div className="bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 rounded-2xl p-6 flex flex-col items-center text-center">
+    <div className="relative bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 rounded-2xl p-6 flex flex-col items-center text-center transition-all duration-300">
+      {/* Wallet Connect Button */}
+      {!isConnected && (
+        <button
+          onClick={() => connect()}
+          className="absolute top-4 right-4 px-4 py-1 text-sm font-semibold bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white rounded-full shadow hover:scale-105 transition"
+        >
+          Connect Wallet
+        </button>
+      )}
+
       <img
         src={avatar || '/default-avatar.png'}
         alt="avatar"
-        className="w-24 h-24 rounded-full border-2 border-gray-300 dark:border-gray-600 mb-4 object-cover"
+        className="w-24 h-24 rounded-full border-4 border-white dark:border-gray-700 mb-4 object-cover shadow-md"
       />
 
-      <h2 className="text-xl font-bold truncate">{name || shortenAddress(address)}</h2>
+      <h2 className="text-2xl font-black text-gray-800 dark:text-white truncate">{name || shortenAddress(address)}</h2>
 
       <p
         onClick={handleCopy}
@@ -32,25 +47,25 @@ export default function ProfileCard({ data }) {
         <Copy size={12} />
       </p>
 
-      <div className="flex flex-wrap justify-center gap-2 mt-2">
+      <div className="flex flex-wrap justify-center gap-2 mt-3">
         {tag && (
-          <span className="text-xs font-medium text-white bg-gradient-to-r from-purple-600 to-blue-500 px-3 py-1 rounded-full">
+          <span className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full">
             {tag}
           </span>
         )}
 
         {isAdmin && (
-          <span className="text-xs font-medium text-white bg-gradient-to-r from-yellow-400 to-red-500 px-3 py-1 rounded-full flex items-center gap-1">
+          <span className="text-xs font-semibold text-white bg-gradient-to-r from-yellow-400 to-pink-500 px-4 py-1 rounded-full flex items-center gap-1 shadow-md">
             <ShieldCheck size={14} /> Admin
           </span>
         )}
       </div>
 
       {bio && (
-        <p className="mt-3 text-sm text-gray-600 dark:text-gray-300 italic max-w-sm">{bio}</p>
+        <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 italic max-w-sm leading-relaxed">{bio}</p>
       )}
 
-      <div className="flex gap-4 mt-4 justify-center text-sm">
+      <div className="flex gap-4 mt-5 justify-center text-sm">
         {twitter && (
           <a
             href={`https://twitter.com/${twitter}`}
@@ -81,7 +96,7 @@ export default function ProfileCard({ data }) {
               href={`https://efp.social/profile/${follow}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1 rounded-full shadow-sm hover:bg-indigo-200"
+              className="flex items-center gap-1 bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1 rounded-full shadow hover:bg-indigo-200 transition"
               title={`Following ${follow}`}
             >
               <Users size={14} /> {follow}
@@ -93,7 +108,7 @@ export default function ProfileCard({ data }) {
               href={`https://daosnap.io/dao/${dao}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full shadow-sm hover:bg-yellow-200"
+              className="flex items-center gap-1 bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full shadow hover:bg-yellow-200 transition"
               title={`Member of ${dao}`}
             >
               <Landmark size={14} /> {dao}
