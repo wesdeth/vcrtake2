@@ -86,9 +86,9 @@ export default function ProfileCard({ data }) {
             href={efpLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-purple-500 hover:underline flex items-center gap-1"
+            className="text-purple-500 hover:underline flex items-center gap-1 bg-purple-100 px-3 py-1 rounded-full font-semibold"
           >
-            <UserPlus2 size={16} /> EFP
+            <UserPlus2 size={16} /> Follow on EFP
           </a>
         )}
         {farcaster && (
