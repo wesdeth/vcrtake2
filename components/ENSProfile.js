@@ -1,14 +1,11 @@
-// components/ENSProfile.js
-
 import { useEffect, useState } from 'react';
 import { getAddress, ethers } from 'ethers';
 import { namehash } from 'viem';
 import { getENSData } from '../lib/ensUtils';
 import { getPOAPs } from '../lib/poapUtils';
 import { fetchAlchemyNFTs } from '../lib/nftUtils';
-import ConnectWallet from './ConnectWallet';
-import EditableBio from './EditableBio';
 import ResumeModal from './ResumeModal';
+import EditableBio from './EditableBio';
 import ProfileCard from './ProfileCard';
 import { FileText, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -38,7 +35,6 @@ export default function ENSProfile({ ensName }) {
     }
     return '';
   });
-  const [editingName, setEditingName] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [workExperience, setWorkExperience] = useState('');
   const [saving, setSaving] = useState(false);
@@ -90,99 +86,4 @@ export default function ENSProfile({ ensName }) {
 
         const normalizedConnected = getAddress(connected);
         const normalizedRegistry = getAddress(registryOwner);
-        const normalizedWrapper = wrapperOwner ? getAddress(wrapperOwner) : null;
-        const normalizedEthRecord = ethRecord ? getAddress(ethRecord) : null;
-
-        const owns =
-          normalizedConnected === normalizedRegistry ||
-          normalizedConnected === normalizedWrapper ||
-          normalizedConnected === normalizedEthRecord;
-
-        setOwnsProfile(owns);
-      } catch (err) {
-        console.error('❌ Ownership check failed:', err);
-        setOwnsProfile(false);
-      }
-    }
-
-    checkOwnership();
-  }, [connected, ensName]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('customName', customName);
-    }
-  }, [customName]);
-
-  const handleSaveExperience = async () => {
-    setSaving(true);
-    const { error } = await supabase
-      .from('VCR')
-      .upsert({ ens_name: ensName, experience: workExperience, updated_at: new Date().toISOString() });
-
-    if (error) {
-      console.error('❌ Supabase update failed:', error);
-      toast.error('Failed to save experience');
-    } else {
-      toast.success('Experience saved!');
-      setLastSaved(new Date().toISOString());
-    }
-    setSaving(false);
-  };
-
-  const resolvedAvatar =
-    ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg';
-
-  const handlePreviewClick = () => {
-    if (!workExperience || workExperience.trim().length < 10) {
-      alert('Please enter work experience before previewing your resume.');
-      return;
-    }
-    setShowPreviewModal(true);
-  };
-
-  const handleDownloadClick = async () => {
-    toast.success('✨ Resume download coming soon!');
-  };
-
-  return (
-    <>
-      {showPreviewModal && (
-        <ResumeModal
-          ensName={ensName}
-          poaps={poaps}
-          nfts={nfts}
-          bio={ensData.bio}
-          avatar={resolvedAvatar}
-          experience={workExperience}
-          onClose={() => setShowPreviewModal(false)}
-        />
-      )}
-
-      {/* 🪪 ProfileCard Section */}
-      <div className="flex justify-center my-10">
-        <ProfileCard
-          data={{
-            name: ensName,
-            address: ensData.address,
-            avatar: resolvedAvatar,
-            bio: ensData.bio || '',
-            twitter: ensData.twitter || '',
-            website: ensData.website || '',
-            tag: 'Active Builder',
-          }}
-        />
-      </div>
-
-      {/* 📄 Download Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={handleDownloadClick}
-        className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg hover:opacity-95 transition"
-      >
-        <FileText size={18} /> Download PDF
-      </motion.button>
-    </>
-  );
-}
+        const normalizedWrapper = wrapperOwner ? getAddress(wrapperOwner) :
