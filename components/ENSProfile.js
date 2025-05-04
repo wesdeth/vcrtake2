@@ -6,6 +6,7 @@ import { getEnsData } from '../lib/ensUtils';
 import { getPOAPs } from '../lib/poapUtils';
 import { fetchAlchemyNFTs } from '../lib/nftUtils';
 import ResumeModal from './ResumeModal';
+import ResumeDownloadModal from './ResumeDownloadModal';
 import EditableBio from './EditableBio';
 import ProfileCard from './ProfileCard';
 import { FileText, Loader2, AlertCircle } from 'lucide-react';
@@ -40,6 +41,7 @@ export default function ENSProfile({ ensName }) {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [customTitle, setCustomTitle] = useState('');
   const [customAvatar, setCustomAvatar] = useState('');
 
@@ -156,10 +158,6 @@ export default function ENSProfile({ ensName }) {
   const resolvedAvatar =
     customAvatar || (ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg');
 
-  const handleDownloadClick = async () => {
-    toast.success('✨ Resume download coming soon!');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="flex justify-end mb-4">
@@ -182,6 +180,18 @@ export default function ENSProfile({ ensName }) {
           avatar={resolvedAvatar}
           experience={workExperience}
           onClose={() => setShowPreviewModal(false)}
+        />
+      )}
+
+      {showDownloadModal && (
+        <ResumeDownloadModal
+          ensName={ensName}
+          poaps={poaps}
+          nfts={nfts}
+          bio={ensData.bio}
+          avatar={resolvedAvatar}
+          experience={workExperience}
+          onClose={() => setShowDownloadModal(false)}
         />
       )}
 
@@ -285,7 +295,7 @@ export default function ENSProfile({ ensName }) {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={handleDownloadClick}
+            onClick={() => setShowDownloadModal(true)}
             className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg hover:opacity-95"
           >
             <FileText size={18} /> Download PDF
