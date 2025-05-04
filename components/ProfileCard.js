@@ -1,14 +1,11 @@
 // /components/ProfileCard.js
-import { Copy, Users, Landmark, ShieldCheck, Twitter, Link2, CircleUserRound } from 'lucide-react';
+import { Copy, Users, Landmark, ShieldCheck, Globe, Twitter, LinkIcon, Pencil } from 'lucide-react';
 import { useAccount, useConnect } from 'wagmi';
 import { InjectedConnector } from 'wagmi/connectors/injected';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-export default function ProfileCard({ data, ownsProfile = false, onUpdateFarcaster }) {
-  const { name, address, avatar, bio, twitter, website, tag, efpFollows = [], daos = [], efp, farcaster } = data;
-
-  const [editableFarcaster, setEditableFarcaster] = useState(farcaster || '');
-  const [isEditing, setIsEditing] = useState(false);
+export default function ProfileCard({ data, onUpdateFarcaster }) {
+  const { name, address, avatar, bio, twitter, website, tag, efpFollows = [], daos = [], efpLink, farcaster } = data;
 
   const shortenAddress = (addr) =>
     addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
@@ -22,16 +19,14 @@ export default function ProfileCard({ data, ownsProfile = false, onUpdateFarcast
   const { address: connectedAddress, isConnected } = useAccount();
   const { connect } = useConnect({ connector: new InjectedConnector() });
 
-  const handleFarcasterSave = () => {
-    if (onUpdateFarcaster) {
-      onUpdateFarcaster(editableFarcaster);
-    }
-    setIsEditing(false);
-  };
+  const isOwner = connectedAddress?.toLowerCase() === address?.toLowerCase();
+  const [editingFarcaster, setEditingFarcaster] = useState(false);
+  const [farcasterInput, setFarcasterInput] = useState(farcaster || '');
 
-  useEffect(() => {
-    setEditableFarcaster(farcaster || '');
-  }, [farcaster]);
+  const handleSaveFarcaster = () => {
+    if (onUpdateFarcaster) onUpdateFarcaster(farcasterInput);
+    setEditingFarcaster(false);
+  };
 
   return (
     <div className="relative bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 rounded-2xl p-6 flex flex-col items-center text-center transition-all duration-300">
@@ -79,13 +74,13 @@ export default function ProfileCard({ data, ownsProfile = false, onUpdateFarcast
         <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 italic max-w-sm leading-relaxed">{bio}</p>
       )}
 
-      <div className="flex gap-4 mt-5 justify-center text-sm">
+      <div className="flex gap-4 mt-5 justify-center text-sm flex-wrap">
         {twitter && (
           <a
             href={`https://twitter.com/${twitter}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-blue-500 hover:underline"
+            className="text-blue-500 hover:underline flex items-center gap-1"
           >
             <Twitter size={14} /> X / Twitter
           </a>
@@ -95,32 +90,32 @@ export default function ProfileCard({ data, ownsProfile = false, onUpdateFarcast
             href={website}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-green-500 hover:underline"
+            className="text-green-500 hover:underline flex items-center gap-1"
           >
-            <Link2 size={14} /> Website
+            <LinkIcon size={14} /> Website
           </a>
         )}
-        {efp && (
+        {efpLink && (
           <a
-            href={efp}
+            href={efpLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-purple-500 hover:underline"
+            className="text-purple-500 hover:underline flex items-center gap-1"
           >
             <Users size={14} /> EFP
           </a>
         )}
-        {ownsProfile ? (
+        {editingFarcaster ? (
           <div className="flex items-center gap-2">
             <input
               type="text"
-              value={editableFarcaster}
-              onChange={(e) => setEditableFarcaster(e.target.value)}
+              value={farcasterInput}
+              onChange={(e) => setFarcasterInput(e.target.value)}
               placeholder="https://warpcast.com/username"
-              className="text-xs px-2 py-1 rounded border border-gray-300"
+              className="border border-gray-300 rounded px-2 py-1 text-xs w-48"
             />
             <button
-              onClick={handleFarcasterSave}
+              onClick={handleSaveFarcaster}
               className="text-xs text-blue-600 font-semibold hover:underline"
             >
               Save
@@ -132,11 +127,19 @@ export default function ProfileCard({ data, ownsProfile = false, onUpdateFarcast
               href={farcaster}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-pink-500 hover:underline"
+              className="text-pink-500 hover:underline flex items-center gap-1"
             >
-              <CircleUserRound size={14} /> Farcaster
+              <Globe size={14} /> Farcaster
             </a>
           )
+        )}
+        {isOwner && !editingFarcaster && (
+          <button
+            onClick={() => setEditingFarcaster(true)}
+            className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-xs"
+          >
+            <Pencil size={12} /> Edit Farcaster
+          </button>
         )}
       </div>
 
