@@ -1,8 +1,9 @@
 // ProfileCard.js
-import { Copy, Users, Landmark, ShieldCheck, Twitter, Link as LinkIcon, UserPlus2, MessageSquare } from 'lucide-react';
+import { Copy, ShieldCheck, Twitter, Link as LinkIcon, UserPlus2, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
-import Jazzicon from 'react-jazzicon';
 import { utils } from 'ethers';
+import * as identicon from '@dicebear/identicon';
+import { createAvatar } from '@dicebear/avatars';
 
 function generateColorSeed(str = '') {
   let hash = 0;
@@ -45,9 +46,11 @@ export default function ProfileCard({ data }) {
   };
 
   const isAdmin = name?.toLowerCase() === 'wesd.eth';
-
   const seed = generateColorSeed(name || address);
   const bgGradient = getGradientFromSeed(seed);
+
+  const identiconSvg = createAvatar(identicon.default, { seed: address });
+  const identiconDataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(identiconSvg)}`;
 
   return (
     <motion.div
@@ -60,11 +63,11 @@ export default function ProfileCard({ data }) {
 
       <div className="relative z-10 p-6 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
         <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-white shadow-md">
-          {avatar ? (
-            <img src={avatar} alt="avatar" className="object-cover w-full h-full" />
-          ) : (
-            <Jazzicon diameter={96} seed={parseInt(utils.getAddress(address).slice(2, 10), 16)} />
-          )}
+          <img
+            src={avatar || identiconDataUrl}
+            alt="avatar"
+            className="object-cover w-full h-full"
+          />
         </div>
 
         <h2 className="text-2xl font-black text-gray-800 dark:text-white truncate">{name || shortenAddress(address)}</h2>
