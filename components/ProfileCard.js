@@ -1,11 +1,18 @@
-// /components/ProfileCard.js
-import { Copy, Users, Landmark, ShieldCheck, Globe, Twitter, LinkIcon, Pencil } from 'lucide-react';
-import { useAccount, useConnect } from 'wagmi';
-import { InjectedConnector } from 'wagmi/connectors/injected';
-import { useState } from 'react';
+// ProfileCard.js
+import { Copy, Users, Landmark, ShieldCheck, Twitter, Link as LinkIcon, UsersRound, MessageSquare } from 'lucide-react';
 
-export default function ProfileCard({ data, onUpdateFarcaster }) {
-  const { name, address, avatar, bio, twitter, website, tag, efpFollows = [], daos = [], efpLink, farcaster } = data;
+export default function ProfileCard({ data }) {
+  const {
+    name,
+    address,
+    avatar,
+    bio,
+    twitter,
+    website,
+    tag,
+    efpLink,
+    farcaster
+  } = data;
 
   const shortenAddress = (addr) =>
     addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
@@ -16,29 +23,8 @@ export default function ProfileCard({ data, onUpdateFarcaster }) {
 
   const isAdmin = name?.toLowerCase() === 'wesd.eth';
 
-  const { address: connectedAddress, isConnected } = useAccount();
-  const { connect } = useConnect({ connector: new InjectedConnector() });
-
-  const isOwner = connectedAddress?.toLowerCase() === address?.toLowerCase();
-  const [editingFarcaster, setEditingFarcaster] = useState(false);
-  const [farcasterInput, setFarcasterInput] = useState(farcaster || '');
-
-  const handleSaveFarcaster = () => {
-    if (onUpdateFarcaster) onUpdateFarcaster(farcasterInput);
-    setEditingFarcaster(false);
-  };
-
   return (
     <div className="relative bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 rounded-2xl p-6 flex flex-col items-center text-center transition-all duration-300">
-      {!isConnected && (
-        <button
-          onClick={() => connect()}
-          className="absolute top-4 right-4 px-4 py-1 text-sm font-semibold bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white rounded-full shadow hover:scale-105 transition"
-        >
-          Connect Wallet
-        </button>
-      )}
-
       <img
         src={avatar || '/default-avatar.png'}
         alt="avatar"
@@ -74,7 +60,7 @@ export default function ProfileCard({ data, onUpdateFarcaster }) {
         <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 italic max-w-sm leading-relaxed">{bio}</p>
       )}
 
-      <div className="flex gap-4 mt-5 justify-center text-sm flex-wrap">
+      <div className="flex gap-4 mt-5 justify-center text-sm">
         {twitter && (
           <a
             href={`https://twitter.com/${twitter}`}
@@ -82,7 +68,7 @@ export default function ProfileCard({ data, onUpdateFarcaster }) {
             rel="noopener noreferrer"
             className="text-blue-500 hover:underline flex items-center gap-1"
           >
-            <Twitter size={14} /> X / Twitter
+            <Twitter size={16} /> X / Twitter
           </a>
         )}
         {website && (
@@ -92,7 +78,7 @@ export default function ProfileCard({ data, onUpdateFarcaster }) {
             rel="noopener noreferrer"
             className="text-green-500 hover:underline flex items-center gap-1"
           >
-            <LinkIcon size={14} /> Website
+            <LinkIcon size={16} /> Website
           </a>
         )}
         {efpLink && (
@@ -102,75 +88,20 @@ export default function ProfileCard({ data, onUpdateFarcaster }) {
             rel="noopener noreferrer"
             className="text-purple-500 hover:underline flex items-center gap-1"
           >
-            <Users size={14} /> EFP
+            <UsersRound size={16} /> EFP
           </a>
         )}
-        {editingFarcaster ? (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={farcasterInput}
-              onChange={(e) => setFarcasterInput(e.target.value)}
-              placeholder="https://warpcast.com/username"
-              className="border border-gray-300 rounded px-2 py-1 text-xs w-48"
-            />
-            <button
-              onClick={handleSaveFarcaster}
-              className="text-xs text-blue-600 font-semibold hover:underline"
-            >
-              Save
-            </button>
-          </div>
-        ) : (
-          farcaster && (
-            <a
-              href={farcaster}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-pink-500 hover:underline flex items-center gap-1"
-            >
-              <Globe size={14} /> Farcaster
-            </a>
-          )
-        )}
-        {isOwner && !editingFarcaster && (
-          <button
-            onClick={() => setEditingFarcaster(true)}
-            className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-xs"
+        {farcaster && (
+          <a
+            href={farcaster}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-fuchsia-600 hover:underline flex items-center gap-1"
           >
-            <Pencil size={12} /> Edit Farcaster
-          </button>
+            <MessageSquare size={16} /> Farcaster
+          </a>
         )}
       </div>
-
-      {(efpFollows.length > 0 || daos.length > 0) && (
-        <div className="flex flex-wrap justify-center gap-2 mt-5">
-          {efpFollows.map((follow, i) => (
-            <a
-              key={`efp-${i}`}
-              href={`https://efp.social/profile/${follow}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1 rounded-full shadow hover:bg-indigo-200 transition"
-              title={`Following ${follow}`}
-            >
-              <Users size={14} /> {follow}
-            </a>
-          ))}
-          {daos.map((dao, i) => (
-            <a
-              key={`dao-${i}`}
-              href={`https://daosnap.io/dao/${dao}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full shadow hover:bg-yellow-200 transition"
-              title={`Member of ${dao}`}
-            >
-              <Landmark size={14} /> {dao}
-            </a>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
