@@ -8,11 +8,10 @@ import { fetchAlchemyNFTs } from '../lib/nftUtils';
 import ResumeModal from './ResumeModal';
 import EditableBio from './EditableBio';
 import ProfileCard from './ProfileCard';
-import { FileText, Loader2, Link2 } from 'lucide-react';
+import { FileText, Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { createClient } from '@supabase/supabase-js';
-import { useConnect } from 'wagmi';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
@@ -34,8 +33,6 @@ export default function ENSProfile({ ensName }) {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-
-  const { connect } = useConnect();
 
   useEffect(() => {
     async function fetchData() {
@@ -127,11 +124,11 @@ export default function ENSProfile({ ensName }) {
     ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg';
 
   const handleDownloadClick = async () => {
-    toast.success('✨ PDF download is free and coming soon!');
+    toast.success('✨ Resume download coming soon!');
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-gradient-to-b from-purple-100 to-pink-100 py-10 px-4">
       {showPreviewModal && (
         <ResumeModal
           ensName={ensName}
@@ -144,7 +141,7 @@ export default function ENSProfile({ ensName }) {
         />
       )}
 
-      <div className="flex justify-center my-10 bg-gradient-to-tr from-purple-100 to-indigo-100 dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl shadow-md">
+      <div className="flex justify-center mb-10">
         <ProfileCard
           data={{
             name: ensName,
@@ -153,7 +150,7 @@ export default function ENSProfile({ ensName }) {
             bio: ensData.bio || '',
             twitter: ensData.twitter || '',
             website: ensData.website || '',
-            tag: ensData.lookingForWork === 'true' ? 'Looking for Work' : 'Active Builder',
+            tag: ensData.tag || '',
             efpFollows: ensData.efpFollows || [],
             daos: ensData.daos || []
           }}
@@ -161,38 +158,43 @@ export default function ENSProfile({ ensName }) {
       </div>
 
       {!ownsProfile && (
-        <div className="text-center text-gray-600 mt-4 px-4 max-w-xl mx-auto italic">
+        <div className="text-center text-gray-600 italic max-w-xl mx-auto">
           {ensData.bio || 'No bio set for this ENS name.'}
         </div>
       )}
 
+      {connected && !ownsProfile && (
+        <div className="text-center text-sm text-yellow-600 flex items-center justify-center gap-2 mb-4">
+          <AlertCircle size={16} /> Connect your wallet and view a name you own to edit your profile.
+        </div>
+      )}
+
       {ownsProfile && (
-        <div className="max-w-2xl mx-auto mt-6 px-4">
+        <div className="max-w-2xl mx-auto mt-6">
           <EditableBio
             ensName={ensName}
             connectedAddress={connected}
             initialBio={ensData.bio}
-            initialLooking={ensData.lookingForWork === 'true'}
             showAIGenerator={true}
           />
         </div>
       )}
 
-      <div className="max-w-2xl mx-auto mt-10 px-4">
-        <h3 className="text-lg font-semibold mb-2 text-purple-700 dark:text-purple-300">Work Experience</h3>
+      <div className="max-w-2xl mx-auto mt-10">
+        <h3 className="text-xl font-bold text-purple-700 mb-2">Work Experience</h3>
         {ownsProfile ? (
           <>
             <textarea
               value={workExperience}
               onChange={(e) => setWorkExperience(e.target.value)}
               placeholder="Share your experience..."
-              className="w-full h-32 p-3 rounded-xl border border-purple-300 dark:border-purple-500 bg-gradient-to-br from-purple-50 to-white dark:from-gray-900 dark:to-gray-800 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-purple-400"
+              className="w-full h-32 p-3 rounded-lg border border-gray-300 bg-white text-sm"
             />
             <div className="flex justify-between mt-2">
               <button
                 onClick={handleSaveExperience}
                 disabled={saving}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition"
               >
                 {saving ? <Loader2 size={16} className="animate-spin inline-block" /> : 'Save'}
               </button>
@@ -204,45 +206,43 @@ export default function ENSProfile({ ensName }) {
             </div>
           </>
         ) : (
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className="text-gray-700 italic">
             {workExperience || 'No experience listed yet.'}
           </p>
         )}
       </div>
 
-      <div className="max-w-2xl mx-auto mt-10 px-4">
-        <h3 className="text-lg font-semibold mb-3 text-purple-700 dark:text-purple-300">POAPs</h3>
+      <div className="max-w-2xl mx-auto mt-10">
+        <h3 className="text-xl font-bold text-purple-700 mb-3">POAPs</h3>
         {poaps.length > 0 ? (
           <div className="flex flex-wrap gap-3">
             {poaps.slice(0, 6).map((poap, i) => (
               <img
                 key={i}
                 src={poap.image_url}
-                alt={poap.event.name}
-                title={poap.event.name}
-                className="w-16 h-16 rounded-2xl border-2 border-purple-300 dark:border-purple-600 shadow-md transition-transform hover:scale-105"
+                alt={poap.name}
+                title={poap.name}
+                className="w-14 h-14 rounded-full border shadow"
               />
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-500 italic">No POAPs found.</p>
+          <p className="text-sm text-gray-600 italic">No POAPs found.</p>
+        )}
+
+        {nfts.length > 0 && (
+          <a
+            href={`https://opensea.io/${nfts[0].contractAddress}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-block px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-full shadow hover:bg-purple-700"
+          >
+            🔗 View NFTs on OpenSea
+          </a>
         )}
       </div>
 
-      {nfts.length > 0 && (
-        <div className="max-w-2xl mx-auto mt-10 px-4">
-          <a
-            href={`https://opensea.io/${ensData.address}`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-medium rounded-full shadow-lg hover:opacity-90 transition"
-          >
-            <Link2 size={16} /> View NFTs on OpenSea
-          </a>
-        </div>
-      )}
-
-      <div className="w-full mt-10 mb-20 px-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 rounded-xl shadow-lg py-8">
+      <div className="w-full mt-10 mb-20">
         <div className="flex flex-col gap-4 max-w-2xl mx-auto">
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -254,6 +254,6 @@ export default function ENSProfile({ ensName }) {
           </motion.button>
         </div>
       </div>
-    </>
+    </div>
   );
 }
