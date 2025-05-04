@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import QRCode from 'qrcode.react';
 import html2pdf from 'html2pdf.js';
 
-export default function ResumeDownloadModal({ ensName, bio, avatar, experience, poaps = [], nfts = [], onClose }) {
+export default function ResumeDownloadModal({ ensName, bio, avatar, experience, poaps = [], nfts = [], onClose, twitterHandle }) {
   const modalRef = useRef(null);
 
   const handleDownload = () => {
@@ -20,7 +20,8 @@ export default function ResumeDownloadModal({ ensName, bio, avatar, experience, 
 
   const address = nfts?.[0]?.owner?.address || '0x0';
   const efpLink = `https://efp.app/${address}?search=${ensName}&ssr=false`;
-  const twitterLink = `https://x.com/${ensName?.replace('.eth', '')}`;
+  const xHandle = twitterHandle || ensName?.replace('.eth', '') || '';
+  const twitterLink = `https://x.com/${xHandle}`;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex justify-center items-center">
