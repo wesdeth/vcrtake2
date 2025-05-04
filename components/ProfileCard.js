@@ -1,5 +1,5 @@
 // /components/ProfileCard.js
-import { Copy, Users, Landmark, ShieldCheck, Twitter, Link2, MessageCircle } from 'lucide-react';
+import { Copy, Users, Landmark, ShieldCheck, Twitter, Link2, CircleUserRound } from 'lucide-react';
 import { useAccount, useConnect } from 'wagmi';
 import { InjectedConnector } from 'wagmi/connectors/injected';
 import { useState, useEffect } from 'react';
@@ -134,7 +134,7 @@ export default function ProfileCard({ data, ownsProfile = false, onUpdateFarcast
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-pink-500 hover:underline"
             >
-              <MessageSquareText size={14} /> Farcaster
+              <CircleUserRound size={14} /> Farcaster
             </a>
           )
         )}
