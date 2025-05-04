@@ -7,10 +7,11 @@ import { fetchAlchemyNFTs } from '../lib/nftUtils';
 import ConnectWallet from './ConnectWallet';
 import EditableBio from './EditableBio';
 import ResumeModal from './ResumeModal';
-import { Pencil, BadgeCheck, FileText, Eye, Share2, ShieldCheck } from 'lucide-react';
+import { Pencil, BadgeCheck, FileText, Eye, Share2, ShieldCheck, Loader2, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Tooltip } from 'react-tooltip';
 import { createClient } from '@supabase/supabase-js';
+import toast from 'react-hot-toast';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
@@ -37,6 +38,8 @@ export default function ENSProfile({ ensName }) {
   const [editingName, setEditingName] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [workExperience, setWorkExperience] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -46,6 +49,12 @@ export default function ENSProfile({ ensName }) {
       setEnsData(ens);
       setPoaps(poapList);
       setNfts(nftList);
+
+      const { data, error } = await supabase.from('VCR').select('*').eq('ens_name', ensName).single();
+      if (data && data.experience) {
+        setWorkExperience(data.experience);
+        setLastSaved(data.updated_at);
+      }
     }
     if (ensName) fetchData();
   }, [ensName]);
@@ -104,27 +113,20 @@ export default function ENSProfile({ ensName }) {
     }
   }, [customName]);
 
-  useEffect(() => {
-    if (ensName && (ensData.bio || workExperience)) {
-      updateVCRTimestamp();
-    }
-  }, [ensData.bio, workExperience]);
-
-  const updateVCRTimestamp = async () => {
+  const handleSaveExperience = async () => {
+    setSaving(true);
     const { error } = await supabase
       .from('VCR')
-      .update({
-        bio: ensData.bio || '',
-        experience: workExperience,
-        updated_at: new Date().toISOString()
-      })
-      .eq('ens_name', ensName);
+      .upsert({ ens_name: ensName, experience: workExperience, updated_at: new Date().toISOString() });
 
     if (error) {
       console.error('❌ Supabase update failed:', error);
+      toast.error('Failed to save experience');
     } else {
-      console.log('✅ Supabase updated with latest profile changes.');
+      toast.success('Experience saved!');
+      setLastSaved(new Date().toISOString());
     }
+    setSaving(false);
   };
 
   const resolvedAvatar =
@@ -153,7 +155,7 @@ export default function ENSProfile({ ensName }) {
   const handleCopyLink = () => {
     const link = `${window.location.origin}/preview/${ensName}`;
     navigator.clipboard.writeText(link);
-    alert('Profile link copied to clipboard!');
+    toast.success('Profile link copied to clipboard!');
   };
 
   return (
@@ -237,6 +239,20 @@ export default function ENSProfile({ ensName }) {
                 value={workExperience}
                 onChange={(e) => setWorkExperience(e.target.value)}
               ></textarea>
+              <div className="flex justify-between items-center mt-2">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  disabled={saving}
+                  onClick={handleSaveExperience}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md shadow-md disabled:opacity-50"
+                >
+                  {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save Experience
+                </motion.button>
+                {lastSaved && (
+                  <p className="text-xs text-gray-400 italic">Last saved: {new Date(lastSaved).toLocaleString()}</p>
+                )}
+              </div>
             </div>
           ) : (
             <div className="mt-4 w-full text-center text-gray-400 text-sm italic">
