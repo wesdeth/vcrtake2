@@ -63,7 +63,7 @@ export default function ENSProfile({ ensName }) {
 
   const fetchData = useCallback(async () => {
     const ens = ensName ? await getEnsData(ensName) : { address: connected };
-    const poapList = ens.address ? await getPOAPs(ens.address) : [];
+    const poapList = ens.address ? await getPOAPs(ensName || ens.address) : [];
     const nftList = ens.address ? await fetchAlchemyNFTs(ens.address) : [];
     setEnsData(ens);
     setPoaps(poapList);
@@ -264,7 +264,7 @@ export default function ENSProfile({ ensName }) {
             {poaps.slice(0, 6).map((poap, i) => (
               <a
                 key={i}
-                href={`https://poap.gallery/event/${poap.event.id}`}
+                href={poap.event_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 title={poap.name}
