@@ -19,7 +19,7 @@ export default function ResumeDownloadModal({ ensName, avatar, bio, poaps = [], 
       const printContents = printRef.current.innerHTML;
       const win = window.open('', '', 'height=700,width=900');
       win.document.write('<html><head><title>Resume</title>');
-      win.document.write('<style>body{font-family:sans-serif;padding:40px;} img{border-radius:12px;}</style>');
+      win.document.write('<style>body{font-family:sans-serif;padding:40px;} img{border-radius:12px;} h1,h2{color:#7c3aed;} a{color:#3b82f6;}</style>');
       win.document.write('</head><body>');
       win.document.write(printContents);
       win.document.write('</body></html>');
