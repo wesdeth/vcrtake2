@@ -12,6 +12,8 @@ import { motion } from 'framer-motion';
 import { Tooltip } from 'react-tooltip';
 import { createClient } from '@supabase/supabase-js';
 import toast from 'react-hot-toast';
+import { useConnect } from 'wagmi';
+import { injected, walletConnect } from 'wagmi/connectors';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
@@ -40,6 +42,8 @@ export default function ENSProfile({ ensName }) {
   const [workExperience, setWorkExperience] = useState('');
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+
+  const { connect } = useConnect();
 
   useEffect(() => {
     async function fetchData() {
@@ -174,7 +178,12 @@ export default function ENSProfile({ ensName }) {
 
       <div className="w-full max-w-md mx-auto bg-white dark:bg-gray-900 shadow-xl rounded-3xl p-8 space-y-6 border border-gray-200 dark:border-gray-800">
         <div className="flex justify-end">
-          <ConnectWallet onConnect={setConnected} />
+          <button
+            onClick={() => connect({ connector: walletConnect() })}
+            className="text-sm px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
+          >
+            Connect Wallet
+          </button>
         </div>
 
         <div className="flex flex-col items-center text-center space-y-3">
