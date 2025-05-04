@@ -153,7 +153,7 @@ export default function ENSProfile({ ensName }) {
     const res = await fetch('/api/create-subscription', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ walletAddress: connected }),
+      body: JSON.stringify({ walletAddress: connected, priceId: 'price_1RKtIvIpFYZ1F8gdS6fPLiJ9' }),
     });
 
     const data = await res.json();
