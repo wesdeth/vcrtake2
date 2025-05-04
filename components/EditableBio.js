@@ -1,3 +1,4 @@
+// /components/EditableBio.js
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
@@ -21,6 +22,8 @@ export default function EditableBio({
   }, [initialBio, initialLooking]);
 
   const handleSave = async () => {
+    if (saving) return;
+
     if (!ensName || typeof window === 'undefined' || !window.ethereum) {
       toast.error('Wallet not detected');
       return;
@@ -83,6 +86,7 @@ export default function EditableBio({
             rows={3}
             value={bio}
             onChange={(e) => setBio(e.target.value)}
+            disabled={loadingAI || saving}
             placeholder="Enter a short bio about yourself"
           />
 
@@ -117,7 +121,14 @@ export default function EditableBio({
           </div>
         </>
       ) : (
-        <div onClick={() => setEditing(true)} className="cursor-pointer">
+        <div
+          onClick={() => setEditing(true)}
+          className="cursor-pointer"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && setEditing(true)}
+          aria-label="Click to edit bio"
+        >
           <p className="text-gray-700">{bio || 'Click to add a short bio about yourself'}</p>
           {lookingForWork && (
             <p className="text-green-600 text-xs font-semibold mt-1">✅ Open to Work</p>
