@@ -48,23 +48,26 @@ export default function ResumeDownloadModal({ ensName, poaps = [], nfts = [], bi
 
         {twitterHandle && (
           <div className="text-sm text-gray-600 mb-2">
-            X / Twitter: <a
-              href={`https://x.com/${twitterHandle}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              @{twitterHandle}
-            </a>
-            {' | '}
-            <a
-              href={efpLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-green-600 hover:underline ml-2"
-            >
-              EFP Profile
-            </a>
+            <span className="inline-block mr-2">
+              <a
+                href={`https://x.com/${twitterHandle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                @{twitterHandle}
+              </a>
+            </span>
+            <span className="inline-block">
+              <a
+                href={efpLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-green-600 hover:underline"
+              >
+                ↗ EFP Profile
+              </a>
+            </span>
           </div>
         )}
 
