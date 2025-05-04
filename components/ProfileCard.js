@@ -1,5 +1,5 @@
 // ProfileCard.js
-import { Copy, Users, Landmark, ShieldCheck, Twitter, Link as LinkIcon, UsersRound, MessageSquare } from 'lucide-react';
+import { Copy, Users, Landmark, ShieldCheck, Twitter, Link as LinkIcon, UserPlus2, MessageSquare } from 'lucide-react';
 
 export default function ProfileCard({ data }) {
   const {
@@ -88,7 +88,7 @@ export default function ProfileCard({ data }) {
             rel="noopener noreferrer"
             className="text-purple-500 hover:underline flex items-center gap-1"
           >
-            <UsersRound size={16} /> EFP
+            <UserPlus2 size={16} /> EFP
           </a>
         )}
         {farcaster && (
