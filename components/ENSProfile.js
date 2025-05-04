@@ -228,15 +228,21 @@ export default function ENSProfile({ ensName }) {
             </span>
           </div>
 
-          <div className="mt-4 w-full">
-            <textarea
-              rows={6}
-              className="w-full text-sm border rounded-lg p-2"
-              placeholder="Add your work experience here (required for resume preview)"
-              value={workExperience}
-              onChange={(e) => setWorkExperience(e.target.value)}
-            ></textarea>
-          </div>
+          {ownsProfile ? (
+            <div className="mt-4 w-full">
+              <textarea
+                rows={6}
+                className="w-full text-sm border rounded-lg p-2"
+                placeholder="Add your work experience here (required for resume preview)"
+                value={workExperience}
+                onChange={(e) => setWorkExperience(e.target.value)}
+              ></textarea>
+            </div>
+          ) : (
+            <div className="mt-4 w-full text-center text-gray-400 text-sm italic">
+              Only the ENS name owner or manager can add work experience.
+            </div>
+          )}
 
           <div className="flex flex-wrap justify-center gap-3 mt-4">
             <motion.button
@@ -262,4 +268,3 @@ export default function ENSProfile({ ensName }) {
     </>
   );
 }
- 
