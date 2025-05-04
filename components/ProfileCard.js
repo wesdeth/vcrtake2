@@ -1,10 +1,10 @@
 // /components/ProfileCard.js
-import { Copy, Users, Landmark, ShieldCheck } from 'lucide-react';
+import { Copy, Users, Landmark, ShieldCheck, Twitter, Link2 } from 'lucide-react';
 import { useAccount, useConnect } from 'wagmi';
 import { InjectedConnector } from 'wagmi/connectors/injected';
 
 export default function ProfileCard({ data }) {
-  const { name, address, avatar, bio, twitter, website, tag, efp, efpFollows = [], daos = [] } = data;
+  const { name, address, avatar, bio, twitter, website, tag, efpFollows = [], daos = [], efp } = data;
 
   const shortenAddress = (addr) =>
     addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
@@ -20,7 +20,6 @@ export default function ProfileCard({ data }) {
 
   return (
     <div className="relative bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 rounded-2xl p-6 flex flex-col items-center text-center transition-all duration-300">
-      {/* Wallet Connect Button */}
       {!isConnected && (
         <button
           onClick={() => connect()}
@@ -71,19 +70,9 @@ export default function ProfileCard({ data }) {
             href={`https://twitter.com/${twitter}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 hover:underline"
+            className="flex items-center gap-1 text-blue-500 hover:underline"
           >
-            @{twitter}
-          </a>
-        )}
-        {efp && (
-          <a
-            href={efp}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-indigo-500 hover:underline"
-          >
-            EFP Profile
+            <Twitter size={14} /> X / Twitter
           </a>
         )}
         {website && (
@@ -91,9 +80,19 @@ export default function ProfileCard({ data }) {
             href={website}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-green-500 hover:underline"
+            className="flex items-center gap-1 text-green-500 hover:underline"
           >
-            Website
+            <Link2 size={14} /> Website
+          </a>
+        )}
+        {efp && (
+          <a
+            href={efp}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-purple-500 hover:underline"
+          >
+            <Users size={14} /> EFP
           </a>
         )}
       </div>
