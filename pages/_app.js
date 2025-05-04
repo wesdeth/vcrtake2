@@ -14,18 +14,20 @@ import { publicProvider } from 'wagmi/providers/public';
 import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// RainbowKit chain and wallet configuration
+// Chain & provider setup
 const { chains, publicClient } = configureChains(
   [mainnet],
   [publicProvider()]
 );
 
+// RainbowKit wallet connector setup
 const { connectors } = getDefaultWallets({
   appName: 'Lookup.xyz',
-  projectId: 'YOUR_PROJECT_ID_HERE', // Optional but recommended (WalletConnect Cloud)
+  projectId: 'REPLACE_WITH_YOUR_WALLETCONNECT_PROJECT_ID',
   chains
 });
 
+// wagmi config
 const wagmiConfig = createConfig({
   autoConnect: true,
   connectors,
