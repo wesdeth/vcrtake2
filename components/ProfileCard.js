@@ -1,5 +1,5 @@
 // /components/ProfileCard.js
-import { Copy, Users, Landmark, ShieldCheck, Twitter, Link2, MessageSquareText } from 'lucide-react';
+import { Copy, Users, Landmark, ShieldCheck, Twitter, Link2, MessageCircle } from 'lucide-react';
 import { useAccount, useConnect } from 'wagmi';
 import { InjectedConnector } from 'wagmi/connectors/injected';
 import { useState, useEffect } from 'react';
