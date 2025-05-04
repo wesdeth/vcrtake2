@@ -1,4 +1,5 @@
-// ENSProfile.js
+// components/ENSProfile.js
+
 import { useEffect, useState } from 'react';
 import { getAddress, ethers } from 'ethers';
 import { namehash } from 'viem';
@@ -8,14 +9,12 @@ import { fetchAlchemyNFTs } from '../lib/nftUtils';
 import ConnectWallet from './ConnectWallet';
 import EditableBio from './EditableBio';
 import ResumeModal from './ResumeModal';
-import { Pencil, BadgeCheck, FileText, Eye, Share2, ShieldCheck, Loader2, Save } from 'lucide-react';
+import ProfileCard from './ProfileCard';
+import { FileText, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Tooltip } from 'react-tooltip';
-import { createClient } from '@supabase/supabase-js';
 import toast from 'react-hot-toast';
+import { createClient } from '@supabase/supabase-js';
 import { useConnect } from 'wagmi';
-import { injected, walletConnect } from 'wagmi/connectors';
-import { loadStripe } from '@stripe/stripe-js';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
@@ -134,8 +133,6 @@ export default function ENSProfile({ ensName }) {
   const resolvedAvatar =
     ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg';
 
-  const profileLabel = ensName || customName || (connected && `${connected.slice(0, 6)}...${connected.slice(-4)}`);
-
   const handlePreviewClick = () => {
     if (!workExperience || workExperience.trim().length < 10) {
       alert('Please enter work experience before previewing your resume.');
@@ -146,12 +143,6 @@ export default function ENSProfile({ ensName }) {
 
   const handleDownloadClick = async () => {
     toast.success('✨ Resume download coming soon!');
-  };
-
-  const handleCopyLink = () => {
-    const link = `${window.location.origin}/preview/${ensName}`;
-    navigator.clipboard.writeText(link);
-    toast.success('Profile link copied to clipboard!');
   };
 
   return (
@@ -168,6 +159,22 @@ export default function ENSProfile({ ensName }) {
         />
       )}
 
+      {/* 🪪 ProfileCard Section */}
+      <div className="flex justify-center my-10">
+        <ProfileCard
+          data={{
+            name: ensName,
+            address: ensData.address,
+            avatar: resolvedAvatar,
+            bio: ensData.bio || '',
+            twitter: ensData.twitter || '',
+            website: ensData.website || '',
+            tag: 'Active Builder',
+          }}
+        />
+      </div>
+
+      {/* 📄 Download Button */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
