@@ -2,20 +2,18 @@ import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
 
-export default function EditableBio({ ensName, connectedAddress, initialBio = '', initialLooking = false, showAIGenerator = false }) {
-  console.log("EditableBio props", {
-    ensName,
-    connectedAddress,
-    initialBio,
-    initialLooking,
-    showAIGenerator,
-    typeOfEnsName: typeof ensName
-  });
-
+export default function EditableBio({
+  ensName,
+  connectedAddress,
+  initialBio = '',
+  initialLooking = false,
+  showAIGenerator = false
+}) {
   const [bio, setBio] = useState(initialBio);
   const [editing, setEditing] = useState(false);
   const [lookingForWork, setLookingForWork] = useState(initialLooking);
   const [loadingAI, setLoadingAI] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setBio(initialBio);
@@ -23,26 +21,33 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
   }, [initialBio, initialLooking]);
 
   const handleSave = async () => {
+    if (!ensName || typeof window === 'undefined' || !window.ethereum) {
+      toast.error('Wallet not detected');
+      return;
+    }
+
     try {
-      if (typeof window.ethereum !== 'undefined' && ensName) {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const resolver = await provider.getResolver(ensName);
+      setSaving(true);
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const resolver = await provider.getResolver(ensName);
 
-        if (!resolver) {
-          alert('ENS name does not have a resolver configured.');
-          return;
-        }
-
-        const connectedResolver = resolver.connect(signer);
-        await connectedResolver.setText('description', bio);
-        await connectedResolver.setText('lookingForWork', lookingForWork ? 'true' : 'false');
-        toast.success('Profile saved successfully!');
-        setEditing(false);
+      if (!resolver) {
+        toast.error('ENS name does not have a resolver configured.');
+        return;
       }
+
+      const connectedResolver = resolver.connect(signer);
+      await connectedResolver.setText('description', bio);
+      await connectedResolver.setText('lookingForWork', lookingForWork ? 'true' : 'false');
+
+      toast.success('Profile saved successfully!');
+      setEditing(false);
     } catch (err) {
       console.error('Failed to save ENS text records:', err);
-      alert('Something went wrong while saving.');
+      toast.error('Failed to save.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -59,11 +64,11 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
       if (data.bio) {
         setBio(data.bio);
       } else {
-        alert('AI did not return a valid bio.');
+        toast.error('AI did not return a valid bio.');
       }
     } catch (err) {
       console.error('AI generation failed:', err);
-      alert('Failed to generate bio with AI.');
+      toast.error('Failed to generate bio.');
     } finally {
       setLoadingAI(false);
     }
@@ -78,11 +83,13 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
             rows={3}
             value={bio}
             onChange={(e) => setBio(e.target.value)}
+            placeholder="Enter a short bio about yourself"
           />
 
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-1 text-sm">
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="flex items-center gap-1 text-sm" htmlFor="lookingForWork">
               <input
+                id="lookingForWork"
                 type="checkbox"
                 checked={lookingForWork}
                 onChange={() => setLookingForWork(!lookingForWork)}
@@ -92,9 +99,10 @@ export default function EditableBio({ ensName, connectedAddress, initialBio = ''
 
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg"
+              disabled={saving}
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
             >
-              Save
+              {saving ? 'Saving...' : 'Save'}
             </button>
 
             {showAIGenerator && (
