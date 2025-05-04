@@ -14,7 +14,11 @@ export default function EditableBio({
   connectedAddress,
   initialBio = '',
   initialLooking = false,
-  showAIGenerator = false
+  showAIGenerator = false,
+  experience = '',
+  setExperience = () => {},
+  lastSaved = null,
+  setLastSaved = () => {}
 }) {
   const [bio, setBio] = useState(initialBio);
   const [editing, setEditing] = useState(false);
@@ -52,16 +56,19 @@ export default function EditableBio({
         await connectedResolver.setText('lookingForWork', lookingForWork ? 'true' : 'false');
       }
 
+      const now = new Date().toISOString();
       const { error } = await supabase.from('VCR').upsert({
         ens_name: ensName,
         bio,
         lookingForWork,
-        updated_at: new Date().toISOString(),
+        experience,
+        updated_at: now,
       });
 
       if (error) throw error;
 
       toast.success('Profile saved successfully!');
+      setLastSaved(now);
       setEditing(false);
     } catch (err) {
       console.error('Failed to save bio:', err);
@@ -107,7 +114,17 @@ export default function EditableBio({
             placeholder="Enter a short bio about yourself"
           />
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <label className="block mt-3 text-sm font-medium text-gray-700">Work Experience</label>
+          <textarea
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            rows={4}
+            value={experience}
+            onChange={(e) => setExperience(e.target.value)}
+            disabled={saving}
+            placeholder="List relevant roles, projects, or achievements"
+          />
+
+          <div className="flex items-center gap-2 flex-wrap mt-2">
             <label className="flex items-center gap-1 text-sm" htmlFor="lookingForWork">
               <input
                 id="lookingForWork"
