@@ -15,6 +15,7 @@ import { createClient } from '@supabase/supabase-js';
 import toast from 'react-hot-toast';
 import { useConnect } from 'wagmi';
 import { injected, walletConnect } from 'wagmi/connectors';
+import { loadStripe } from '@stripe/stripe-js';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
@@ -55,7 +56,7 @@ export default function ENSProfile({ ensName }) {
       setPoaps(poapList);
       setNfts(nftList);
 
-      const { data, error } = await supabase.from('VCR').select('*').eq('ens_name', ensName).single();
+      const { data } = await supabase.from('VCR').select('*').eq('ens_name', ensName).single();
       if (data && data.experience) {
         setWorkExperience(data.experience);
         setLastSaved(data.updated_at);
@@ -81,16 +82,12 @@ export default function ENSProfile({ ensName }) {
 
         try {
           wrapperOwner = await wrapper.ownerOf(BigInt(hashedName));
-        } catch (e) {
-          console.log('Not a wrapped name or wrapper check failed.');
-        }
+        } catch {}
 
         try {
           const resolver = await provider.getResolver(ensName);
           ethRecord = resolver ? await resolver.getAddress() : null;
-        } catch (e) {
-          console.log('Resolver or addr() check failed.');
-        }
+        } catch {}
 
         const normalizedConnected = getAddress(connected);
         const normalizedRegistry = getAddress(registryOwner);
@@ -135,9 +132,7 @@ export default function ENSProfile({ ensName }) {
   };
 
   const resolvedAvatar =
-    ensData.avatar && ensData.avatar.startsWith('http')
-      ? ensData.avatar
-      : '/Avatar.jpg';
+    ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg';
 
   const profileLabel = ensName || customName || (connected && `${connected.slice(0, 6)}...${connected.slice(-4)}`);
 
@@ -150,17 +145,23 @@ export default function ENSProfile({ ensName }) {
   };
 
   const handleDownloadClick = async () => {
-    const res = await fetch('/api/create-checkout-session', {
+    if (!ownsProfile) {
+      toast.error('You must be the profile owner to download your resume.');
+      return;
+    }
+
+    const res = await fetch('/api/create-subscription', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ensName }),
+      body: JSON.stringify({ walletAddress: connected }),
     });
 
     const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
+    if (data.sessionId) {
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+      await stripe.redirectToCheckout({ sessionId: data.sessionId });
     } else {
-      alert('Failed to start checkout');
+      toast.error('Failed to initiate Stripe checkout');
     }
   };
 
