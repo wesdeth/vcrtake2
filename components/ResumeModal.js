@@ -3,32 +3,9 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Loader2 } from 'lucide-react';
 
-export default function ResumeModal({ ensName, avatar, poaps = [], nfts = [], onClose }) {
-  const [bio, setBio] = useState('');
-  const [loading, setLoading] = useState(true);
+export default function ResumeModal({ ensName, avatar, poaps = [], nfts = [], bio = '', experience = '', onClose }) {
+  const [loading, setLoading] = useState(false);
   const openSeaLink = nfts.length > 0 ? `https://opensea.io/${nfts[0].contractAddress}` : null;
-
-  useEffect(() => {
-    const fetchBio = async () => {
-      try {
-        const res = await fetch('/api/generate-bio', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ensName })
-        });
-
-        const data = await res.json();
-        setBio(data.bio || '');
-      } catch (err) {
-        console.error('Bio generation failed:', err);
-        setBio('A Web3 builder active in the ecosystem.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBio();
-  }, [ensName]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
@@ -55,9 +32,16 @@ export default function ResumeModal({ ensName, avatar, poaps = [], nfts = [], on
             </div>
           ) : (
             <p className="text-gray-700 text-lg leading-relaxed max-w-2xl mx-auto">
-              {bio}
+              {bio || 'A Web3 builder active in the ecosystem.'}
             </p>
           )}
+
+          <div className="text-left max-w-2xl mx-auto">
+            <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-2">Work Experience</h2>
+            <p className="text-gray-800 whitespace-pre-line text-sm">
+              {experience || 'No work experience added yet.'}
+            </p>
+          </div>
 
           <div className="mt-8">
             <h2 className="text-xl font-semibold text-purple-700 mb-3">Recent POAPs</h2>
