@@ -34,7 +34,7 @@ Create a polished Web3-focused resume summary for "${ensName}".
 They have professional experience in: ${experience}. 
 They’ve attended these events: ${poapLocations}. 
 ${nftSummary}
-Summarize their onchain credibility in under 100 words, emphasizing their involvement in the Ethereum ecosystem, DAOs, and community events.
+Summarize their onchain credibility in under 100 words, emphasizing their involvement in the Web3 ecosystem, DAOs, grant receipts, and or attendance at community events.
 Make it feel like a verified Web3 résumé intro, similar to a college degree blurb.
 `;
 
