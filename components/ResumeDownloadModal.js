@@ -72,29 +72,37 @@ export default function ResumeDownloadModal({ ensName, poaps = [], nfts = [], bi
         )}
 
         <h4 className="font-semibold text-gray-800 mt-4 mb-1">POAPs</h4>
-        <div className="flex flex-wrap gap-2">
-          {poaps.slice(0, 5).map((poap, idx) => (
-            <img
-              key={idx}
-              src={poap.image_url}
-              alt={poap.name || 'POAP'}
-              title={poap.name}
-              className="w-10 h-10 rounded-full border"
-            />
-          ))}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {poaps.length > 0 ? (
+            poaps.slice(0, 5).map((poap, idx) => (
+              <img
+                key={idx}
+                src={poap.image_url}
+                alt={poap.name || 'POAP'}
+                title={poap.name}
+                className="w-10 h-10 rounded-full border"
+              />
+            ))
+          ) : (
+            <p className="text-sm text-gray-500 italic">No POAPs found.</p>
+          )}
         </div>
 
         <h4 className="font-semibold text-gray-800 mt-4 mb-1">NFTs</h4>
-        <div className="flex flex-wrap gap-2">
-          {nfts.slice(0, 5).map((nft, idx) => (
-            <img
-              key={idx}
-              src={nft.media?.[0]?.gateway || '/placeholder.png'}
-              alt={nft.title || 'NFT'}
-              title={nft.title}
-              className="w-10 h-10 rounded border"
-            />
-          ))}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {nfts.length > 0 ? (
+            nfts.slice(0, 5).map((nft, idx) => (
+              <img
+                key={idx}
+                src={nft.media?.[0]?.gateway || '/placeholder.png'}
+                alt={nft.title || 'NFT'}
+                title={nft.title}
+                className="w-10 h-10 rounded border"
+              />
+            ))
+          ) : (
+            <p className="text-sm text-gray-500 italic">No NFTs found.</p>
+          )}
         </div>
 
         <p className="text-xs text-center text-gray-500 mt-6 italic">
