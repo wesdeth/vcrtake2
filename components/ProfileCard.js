@@ -4,7 +4,7 @@ import { useAccount, useConnect } from 'wagmi';
 import { InjectedConnector } from 'wagmi/connectors/injected';
 
 export default function ProfileCard({ data }) {
-  const { name, address, avatar, bio, twitter, website, tag, efpFollows = [], daos = [] } = data;
+  const { name, address, avatar, bio, twitter, website, tag, efp, efpFollows = [], daos = [] } = data;
 
   const shortenAddress = (addr) =>
     addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
@@ -74,6 +74,16 @@ export default function ProfileCard({ data }) {
             className="text-blue-500 hover:underline"
           >
             @{twitter}
+          </a>
+        )}
+        {efp && (
+          <a
+            href={efp}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-indigo-500 hover:underline"
+          >
+            EFP Profile
           </a>
         )}
         {website && (
