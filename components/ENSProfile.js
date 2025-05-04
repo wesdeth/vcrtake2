@@ -262,13 +262,19 @@ export default function ENSProfile({ ensName }) {
         {poaps.length > 0 ? (
           <div className="flex flex-wrap gap-3">
             {poaps.slice(0, 6).map((poap, i) => (
-              <img
+              <a
                 key={i}
-                src={poap.image_url}
-                alt={poap.name || 'POAP'}
+                href={`https://poap.gallery/event/${poap.event.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 title={poap.name}
-                className="w-14 h-14 rounded-full border shadow"
-              />
+              >
+                <img
+                  src={poap.image_url}
+                  alt={poap.name || 'POAP'}
+                  className="w-14 h-14 rounded-full border shadow hover:scale-110 transition duration-200"
+                />
+              </a>
             ))}
           </div>
         ) : (
