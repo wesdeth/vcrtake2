@@ -7,7 +7,7 @@ import { fetchAlchemyNFTs } from '../lib/nftUtils';
 import ResumeModal from './ResumeModal';
 import EditableBio from './EditableBio';
 import ProfileCard from './ProfileCard';
-import { FileText, Loader2 } from 'lucide-react';
+import { FileText, Loader2, Link2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { createClient } from '@supabase/supabase-js';
@@ -29,16 +29,10 @@ export default function ENSProfile({ ensName }) {
   const [nfts, setNfts] = useState([]);
   const [connected, setConnected] = useState(null);
   const [ownsProfile, setOwnsProfile] = useState(false);
-  const [customName, setCustomName] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('customName') || '';
-    }
-    return '';
-  });
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [workExperience, setWorkExperience] = useState('');
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   const { connect } = useConnect();
 
@@ -59,6 +53,14 @@ export default function ENSProfile({ ensName }) {
     }
     if (ensName) fetchData();
   }, [ensName]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.ethereum) {
+      window.ethereum.request({ method: 'eth_requestAccounts' }).then((accounts) => {
+        if (accounts.length > 0) setConnected(accounts[0]);
+      });
+    }
+  }, []);
 
   useEffect(() => {
     async function checkOwnership() {
@@ -123,16 +125,8 @@ export default function ENSProfile({ ensName }) {
   const resolvedAvatar =
     ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg';
 
-  const handlePreviewClick = () => {
-    if (!workExperience || workExperience.trim().length < 10) {
-      alert('Please enter work experience before previewing your resume.');
-      return;
-    }
-    setShowPreviewModal(true);
-  };
-
   const handleDownloadClick = async () => {
-    toast.success('✨ Resume download coming soon!');
+    toast.success('✨ PDF download is free and coming soon!');
   };
 
   return (
@@ -149,7 +143,6 @@ export default function ENSProfile({ ensName }) {
         />
       )}
 
-      {/* 🪪 ProfileCard Section */}
       <div className="flex justify-center my-10">
         <ProfileCard
           data={{
@@ -164,19 +157,24 @@ export default function ENSProfile({ ensName }) {
         />
       </div>
 
-      {/* 🔧 Editable bio if owner */}
+      {!ownsProfile && (
+        <div className="text-center text-gray-600 mt-4 px-4 max-w-xl mx-auto italic">
+          {ensData.bio || 'No bio set for this ENS name.'}
+        </div>
+      )}
+
       {ownsProfile && (
         <div className="max-w-2xl mx-auto mt-6 px-4">
           <EditableBio
             ensName={ensName}
+            connectedAddress={connected}
             initialBio={ensData.bio}
-            onUpdate={(newBio) => setEnsData(prev => ({ ...prev, bio: newBio }))}
+            showAIGenerator={true}
           />
         </div>
       )}
 
-      {/* 📜 Work Experience */}
-      <div className="max-w-2xl mx-auto mt-8 px-4">
+      <div className="max-w-2xl mx-auto mt-10 px-4">
         <h3 className="text-lg font-semibold mb-2">Work Experience</h3>
         {ownsProfile ? (
           <>
@@ -202,11 +200,12 @@ export default function ENSProfile({ ensName }) {
             </div>
           </>
         ) : (
-          <p className="text-gray-600 dark:text-gray-300">{workExperience || 'No experience listed yet.'}</p>
+          <p className="text-gray-600 dark:text-gray-300">
+            {workExperience || 'No experience listed yet.'}
+          </p>
         )}
       </div>
 
-      {/* 🏅 POAPs */}
       <div className="max-w-2xl mx-auto mt-10 px-4">
         <h3 className="text-lg font-semibold mb-3">POAPs</h3>
         {poaps.length > 0 ? (
@@ -226,7 +225,19 @@ export default function ENSProfile({ ensName }) {
         )}
       </div>
 
-      {/* 📄 Download + Preview */}
+      {nfts.length > 0 && (
+        <div className="max-w-2xl mx-auto mt-10 px-4">
+          <a
+            href={`https://opensea.io/${nfts[0].contractAddress}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-blue-600 flex items-center gap-2 underline hover:text-blue-800"
+          >
+            <Link2 size={16} /> View NFTs on OpenSea
+          </a>
+        </div>
+      )}
+
       <div className="w-full mt-10 mb-20 px-4">
         <div className="flex flex-col gap-4 max-w-2xl mx-auto">
           <motion.button
