@@ -2,9 +2,6 @@
 import { Copy, ShieldCheck, Twitter, Link as LinkIcon, UserPlus2, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { utils } from 'ethers';
-import { createAvatar } from '@dicebear/avatars';
-import { identicon } from '@dicebear/collection';
-
 
 function generateColorSeed(str = '') {
   let hash = 0;
@@ -50,9 +47,6 @@ export default function ProfileCard({ data }) {
   const seed = generateColorSeed(name || address);
   const bgGradient = getGradientFromSeed(seed);
 
-  cconst identiconSvg = createAvatar(identicon, { seed: address });
-  const identiconDataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(identiconSvg)}`;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -65,7 +59,7 @@ export default function ProfileCard({ data }) {
       <div className="relative z-10 p-6 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
         <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-white shadow-md">
           <img
-            src={avatar || identiconDataUrl}
+            src={avatar || `/default-avatar.png`}
             alt="avatar"
             className="object-cover w-full h-full"
           />
