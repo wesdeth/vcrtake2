@@ -2,8 +2,9 @@
 import { Copy, ShieldCheck, Twitter, Link as LinkIcon, UserPlus2, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { utils } from 'ethers';
-import * as identicon from '@dicebear/identicon';
 import { createAvatar } from '@dicebear/avatars';
+import { identicon } from '@dicebear/collection';
+
 
 function generateColorSeed(str = '') {
   let hash = 0;
@@ -49,7 +50,7 @@ export default function ProfileCard({ data }) {
   const seed = generateColorSeed(name || address);
   const bgGradient = getGradientFromSeed(seed);
 
-  const identiconSvg = createAvatar(identicon.default, { seed: address });
+  cconst identiconSvg = createAvatar(identicon, { seed: address });
   const identiconDataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(identiconSvg)}`;
 
   return (
