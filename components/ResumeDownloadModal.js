@@ -46,8 +46,8 @@ export default function ResumeDownloadModal({ ensName, poaps = [], nfts = [], bi
         <h3 className="font-semibold text-gray-800 mb-1">Work Experience</h3>
         <p className="text-sm text-gray-700 mb-4">{experience || 'No experience listed.'}</p>
 
-        {twitterHandle && (
-          <div className="text-sm text-gray-600 mb-2">
+        <div className="text-sm text-gray-600 mb-4">
+          {twitterHandle && (
             <span className="inline-block mr-2">
               <a
                 href={`https://x.com/${twitterHandle}`}
@@ -58,18 +58,18 @@ export default function ResumeDownloadModal({ ensName, poaps = [], nfts = [], bi
                 @{twitterHandle}
               </a>
             </span>
-            <span className="inline-block">
-              <a
-                href={efpLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-green-600 hover:underline"
-              >
-                ↗ EFP Profile
-              </a>
-            </span>
-          </div>
-        )}
+          )}
+          <span className="inline-block">
+            <a
+              href={efpLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-green-600 hover:underline"
+            >
+              ↗ EFP Profile
+            </a>
+          </span>
+        </div>
 
         <h4 className="font-semibold text-gray-800 mt-4 mb-1">POAPs</h4>
         <div className="flex flex-wrap gap-2 mb-4">
