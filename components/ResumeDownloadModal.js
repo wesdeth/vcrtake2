@@ -26,6 +26,8 @@ export default function ResumeDownloadModal({ ensName, poaps = [], nfts = [], bi
     generatePDF();
   }, []);
 
+  const efpLink = `https://efp.app/${ensName}?search=${ensName}&ssr=false`;
+
   return createPortal(
     <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 relative" ref={modalRef}>
@@ -53,6 +55,15 @@ export default function ResumeDownloadModal({ ensName, poaps = [], nfts = [], bi
               className="text-blue-600 hover:underline"
             >
               @{twitterHandle}
+            </a>
+            {' | '}
+            <a
+              href={efpLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-green-600 hover:underline ml-2"
+            >
+              EFP Profile
             </a>
           </div>
         )}
