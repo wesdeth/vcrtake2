@@ -31,6 +31,7 @@ export default function ENSProfile({ ensName }) {
   });
   const [editingName, setEditingName] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [workExperience, setWorkExperience] = useState('');
 
   useEffect(() => {
     async function fetchData() {
@@ -105,6 +106,14 @@ export default function ENSProfile({ ensName }) {
 
   const profileLabel = ensName || customName || (connected && `${connected.slice(0, 6)}...${connected.slice(-4)}`);
 
+  const handlePreviewClick = () => {
+    if (!workExperience || workExperience.trim().length < 10) {
+      alert('Please enter work experience before previewing your resume.');
+      return;
+    }
+    setShowPreviewModal(true);
+  };
+
   const handleDownloadClick = () => {
     if (ownsProfile) {
       alert('This will show a watermarked preview. Stripe + Wallet payments coming soon.');
@@ -122,6 +131,7 @@ export default function ENSProfile({ ensName }) {
           nfts={nfts}
           bio={ensData.bio}
           avatar={resolvedAvatar}
+          experience={workExperience}
           onClose={() => setShowPreviewModal(false)}
         />
       )}
@@ -171,90 +181,35 @@ export default function ENSProfile({ ensName }) {
             />
           )}
 
-          <div className="flex justify-center items-center gap-3 mt-2">
-            {ensData.twitter && (
-              <a href={`https://twitter.com/${ensData.twitter.replace('@', '')}`} target="_blank" rel="noreferrer">
-                <motion.img whileHover={{ scale: 1.2 }} src="/icons/twitter.svg" className="w-6 h-6" alt="Twitter" />
-              </a>
-            )}
-            {ensData.website && (
-              <a href={ensData.website} target="_blank" rel="noreferrer">
-                <motion.img whileHover={{ scale: 1.2 }} src="/icons/link.svg" className="w-6 h-6" alt="Website" />
-              </a>
-            )}
-            {ownsProfile && (
-              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-semibold flex items-center gap-1">
-                <BadgeCheck size={14} /> Verified Owner
-              </span>
-            )}
+          <div className="mt-4 w-full">
+            <textarea
+              rows={6}
+              className="w-full text-sm border rounded-lg p-2"
+              placeholder="Add your work experience here (required for resume preview)"
+              value={workExperience}
+              onChange={(e) => setWorkExperience(e.target.value)}
+            ></textarea>
           </div>
 
-          {ensData.lookingForWork === 'true' && (
-            <motion.p
-              className="mt-1 px-3 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
+          <div className="flex flex-wrap justify-center gap-3 mt-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handlePreviewClick}
+              className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 shadow-md hover:opacity-95"
             >
-              ✅ Open to Work
-            </motion.p>
-          )}
-        </div>
+              <Eye size={18} /> Preview Resume
+            </motion.button>
 
-        <div className="text-center text-gray-700 dark:text-gray-300">
-          {ownsProfile ? (
-            <EditableBio
-              ensName={ensName}
-              connectedAddress={connected}
-              initialBio={ensData.bio}
-              initialLooking={ensData.lookingForWork === 'true'}
-              showAIGenerator={true}
-            />
-          ) : connected ? (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg">
-              <p>You are not the owner of this ENS name or wallet.</p>
-              <p className="text-xs mt-1">Make sure you're connected with the correct wallet to edit this profile.</p>
-            </div>
-          ) : (
-            <p>{ensData.bio || 'Web3 builder passionate about decentralization ✨'}</p>
-          )}
-        </div>
-
-        <div className="flex flex-wrap justify-center gap-3">
-          {poaps.slice(0, 5).map((poap, idx) => (
-            <motion.img
-              whileHover={{ scale: 1.15, boxShadow: '0 0 10px #ffb703' }}
-              key={idx}
-              src={poap.image_url}
-              alt={poap.event.name}
-              title={poap.event.name}
-              className="w-10 h-10 rounded-full border border-gray-300 shadow-sm"
-            />
-          ))}
-        </div>
-
-        <div className="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-900 text-sm p-4 rounded">
-          {ensData.summary || `${profileLabel} is a recognized contributor in the Ethereum ecosystem. They've participated in top events like ETHGlobal and Gitcoin, and worked on meaningful DAO initiatives.`}
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 mt-6">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowPreviewModal(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 shadow-md hover:opacity-95"
-          >
-            <Eye size={18} /> Preview Resume
-          </motion.button>
-
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleDownloadClick}
-            className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg hover:shadow-xl hover:opacity-95 transition"
-          >
-            <FileText size={18} /> Download PDF – $10
-          </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleDownloadClick}
+              className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg hover:shadow-xl hover:opacity-95 transition"
+            >
+              <FileText size={18} /> Download PDF – $10
+            </motion.button>
+          </div>
         </div>
       </div>
     </>
