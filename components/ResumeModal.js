@@ -1,8 +1,33 @@
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
-export default function ResumeModal({ ensName, avatar, bio, poaps = [], nfts = [], onClose }) {
+export default function ResumeModal({ ensName, avatar, bio, poaps = [], nfts = [], experience, onClose }) {
+  const [generatedBio, setGeneratedBio] = useState('');
+
   const openSeaLink = nfts.length > 0 ? `https://opensea.io/${nfts[0].contractAddress}` : null;
+
+  useEffect(() => {
+    const generateBio = async () => {
+      try {
+        const poapLocations = poaps.map(p => p.event.city || p.event.name).join(', ');
+        const prompt = `
+        Write a short but polished Web3 resume bio for someone named ${ensName}.
+        Include that they have experience in: ${experience}.
+        They've attended events in: ${poapLocations || 'various Web3 events'}.
+        They own NFTs, are active in DAOs, and care about decentralization.
+        Keep it under 80 words.`;
+        
+        const response = await axios.post('/api/generate-bio', { prompt });
+        setGeneratedBio(response.data.bio);
+      } catch (err) {
+        setGeneratedBio('A contributor in Web3, actively participating in events and projects across the decentralized ecosystem.');
+      }
+    };
+
+    generateBio();
+  }, [ensName, poaps, experience]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
@@ -23,8 +48,8 @@ export default function ResumeModal({ ensName, avatar, bio, poaps = [], nfts = [
 
           <h1 className="text-3xl font-extrabold text-gray-900">{ensName}</h1>
 
-          <div className="text-gray-700 text-md leading-relaxed">
-            {bio || 'A recognized contributor in Web3 with active roles across DAOs, hackathons, and community events.'}
+          <div className="text-gray-700 text-md leading-relaxed px-4">
+            {generatedBio || 'Generating resume summary...'}
           </div>
 
           <div className="mt-6">
@@ -60,7 +85,7 @@ export default function ResumeModal({ ensName, avatar, bio, poaps = [], nfts = [
           )}
 
           <div className="mt-6 text-sm text-gray-500 italic">
-            Resume powered by onchain identity — built with ENS + POAP
+            Resume powered by onchain identity — built with ENS, POAP & OpenAI
           </div>
         </div>
       </div>
