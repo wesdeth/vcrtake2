@@ -1,56 +1,60 @@
 // pages/api/generate-bio.js
 import OpenAI from 'openai';
+import { createClient } from '@supabase/supabase-js';
+import { getPOAPs } from '../../lib/poapUtils';
+import { fetchAlchemyNFTs } from '../../lib/nftUtils';
+import { getENSData } from '../../lib/ensUtils';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { ensName, experience, poaps = [], nfts = [] } = req.body;
+  const { ensName } = req.body;
 
   if (!ensName || typeof ensName !== 'string') {
     return res.status(400).json({ error: 'ENS name is required and must be a string' });
   }
 
-  if (!experience || experience.trim().length < 10) {
-    return res.status(400).json({ error: 'Work experience is required to generate a resume bio.' });
-  }
-
-  const poapLocations = poaps
-    .map((p) => p?.event?.city || p?.event?.name)
-    .filter(Boolean)
-    .join(', ') || 'various Web3 events';
-
-  const nftSummary = nfts.length > 0
-    ? 'They also own NFTs that reflect their onchain activity.'
-    : '';
-
-  const prompt = `
-Create a polished Web3-focused resume summary for "${ensName}". 
-They have professional experience in: ${experience}. 
-They’ve attended these events: ${poapLocations}. 
-${nftSummary}
-Summarize their onchain credibility in under 100 words, emphasizing their involvement in the Web3 ecosystem, DAOs, grant receipts, and or attendance at community events.
-Make it feel like a verified Web3 résumé intro, similar to a college degree blurb.
-`;
-
   try {
+    const ensData = await getENSData(ensName);
+    const poaps = ensData.address ? await getPOAPs(ensData.address) : [];
+    const nfts = ensData.address ? await fetchAlchemyNFTs(ensData.address) : [];
+
+    const { data, error } = await supabase
+      .from('VCR')
+      .select('experience')
+      .eq('ens_name', ensName)
+      .single();
+
+    const experience = data?.experience || '';
+
+    const poapDescriptions = poaps.map((p) => `${p.event.name} in ${p.event.city || 'unknown location'}`).join(', ');
+    const nftDescriptions = nfts.slice(0, 3).map((n) => n.name).filter(Boolean).join(', ');
+
+    const prompt = `Create a professional Web3 resume-style bio for someone with the ENS name "${ensName}". 
+
+- Their past work experience includes: ${experience || 'none provided'}.
+- They've attended events like: ${poapDescriptions || 'no major events'}.
+- Their NFT interests include: ${nftDescriptions || 'no notable NFTs'}.
+
+Summarize this as a sleek Web3-native builder resume bio. Highlight involvement, credibility, and network presence. Limit to 3–4 sentences.`;
+
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-3.5-turbo',
       messages: [
-        {
-          role: 'system',
-          content:
-            'You are a resume assistant generating professional, concise bios based on Ethereum activity, POAPs, and verified work history.',
-        },
-        { role: 'user', content: prompt },
+        { role: 'system', content: 'You are a helpful assistant writing thoughtful, professional bios for Ethereum users based on onchain and community activity.' },
+        { role: 'user', content: prompt }
       ],
-      max_tokens: 150,
-      temperature: 0.75,
+      max_tokens: 200,
+      temperature: 0.75
     });
 
     const response = completion.choices?.[0]?.message?.content?.trim();
