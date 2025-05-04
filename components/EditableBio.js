@@ -1,7 +1,13 @@
-// /components/EditableBio.js
+// EditableBio.js
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export default function EditableBio({
   ensName,
@@ -24,31 +30,42 @@ export default function EditableBio({
   const handleSave = async () => {
     if (saving) return;
 
-    if (!ensName || typeof window === 'undefined' || !window.ethereum) {
-      toast.error('Wallet not detected');
+    if (!connectedAddress) {
+      toast.error('Wallet not connected');
       return;
     }
 
     try {
       setSaving(true);
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const resolver = await provider.getResolver(ensName);
+      if (ensName.endsWith('.eth')) {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const resolver = await provider.getResolver(ensName);
 
-      if (!resolver) {
-        toast.error('ENS name does not have a resolver configured.');
-        return;
+        if (!resolver) {
+          toast.error('ENS name does not have a resolver configured.');
+          return;
+        }
+
+        const connectedResolver = resolver.connect(signer);
+        await connectedResolver.setText('description', bio);
+        await connectedResolver.setText('lookingForWork', lookingForWork ? 'true' : 'false');
       }
 
-      const connectedResolver = resolver.connect(signer);
-      await connectedResolver.setText('description', bio);
-      await connectedResolver.setText('lookingForWork', lookingForWork ? 'true' : 'false');
+      const { error } = await supabase.from('VCR').upsert({
+        ens_name: ensName,
+        bio,
+        lookingForWork,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
 
       toast.success('Profile saved successfully!');
       setEditing(false);
     } catch (err) {
-      console.error('Failed to save ENS text records:', err);
-      toast.error('Failed to save.');
+      console.error('Failed to save bio:', err);
+      toast.error('Failed to save bio.');
     } finally {
       setSaving(false);
     }
