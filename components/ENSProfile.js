@@ -153,10 +153,30 @@ export default function ENSProfile({ ensName }) {
             bio: ensData.bio || '',
             twitter: ensData.twitter || '',
             website: ensData.website || '',
-            tag: ensData.tag || 'Active Builder',
+            tag: ensData.lookingForWork === 'true' ? 'Looking for Work' : 'Active Builder',
+            efpFollows: ensData.efpFollows || [],
+            daos: ensData.daos || []
           }}
         />
       </div>
+
+      {!ownsProfile && (
+        <div className="text-center text-gray-600 mt-4 px-4 max-w-xl mx-auto italic">
+          {ensData.bio || 'No bio set for this ENS name.'}
+        </div>
+      )}
+
+      {ownsProfile && (
+        <div className="max-w-2xl mx-auto mt-6 px-4">
+          <EditableBio
+            ensName={ensName}
+            connectedAddress={connected}
+            initialBio={ensData.bio}
+            initialLooking={ensData.lookingForWork === 'true'}
+            showAIGenerator={true}
+          />
+        </div>
+      )}
 
       <div className="max-w-2xl mx-auto mt-10 px-4">
         <h3 className="text-lg font-semibold mb-2 text-purple-700 dark:text-purple-300">Work Experience</h3>
