@@ -1,5 +1,5 @@
 // ENSProfile.js
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { getAddress, ethers } from 'ethers';
 import { namehash } from 'viem';
 import { getEnsData } from '../lib/ensUtils';
@@ -46,6 +46,8 @@ export default function ENSProfile({ ensName }) {
   const [customAvatar, setCustomAvatar] = useState('');
 
   const { address } = useAccount();
+  const provider = useMemo(() => new ethers.BrowserProvider(window.ethereum), []);
+
   const { connect } = useConnect({
     connector: new WalletConnectConnector({
       options: {
@@ -58,45 +60,46 @@ export default function ENSProfile({ ensName }) {
   const isWalletOnly = !ensName && !!connected;
   const profileKey = ensName || connected;
 
-  useEffect(() => {
-    async function fetchData() {
-      const ens = ensName ? await getEnsData(ensName) : { address: connected };
-      const poapList = ens.address ? await getPOAPs(ens.address) : [];
-      const nftList = ens.address ? await fetchAlchemyNFTs(ens.address) : [];
-      setEnsData(ens);
-      setPoaps(poapList);
-      setNfts(nftList);
+  const fetchData = useCallback(async () => {
+    const ens = ensName ? await getEnsData(ensName) : { address: connected };
+    const poapList = ens.address ? await getPOAPs(ens.address) : [];
+    const nftList = ens.address ? await fetchAlchemyNFTs(ens.address) : [];
+    setEnsData(ens);
+    setPoaps(poapList);
+    setNfts(nftList);
 
-      const { data } = await supabase.from('VCR').select('*').eq('ens_name', profileKey).single();
-      if (data) {
-        if (data.experience) setWorkExperience(data.experience);
-        if (data.custom_title) setCustomTitle(data.custom_title);
-        if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
-        setLastSaved(data.updated_at);
-      }
+    const { data } = await supabase.from('VCR').select('*').eq('ens_name', profileKey).single();
+    if (data) {
+      if (data.experience) setWorkExperience(data.experience);
+      if (data.custom_title) setCustomTitle(data.custom_title);
+      if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
+      setLastSaved(data.updated_at);
     }
+  }, [connected, ensName, profileKey]);
+
+  useEffect(() => {
     if (profileKey) fetchData();
-  }, [profileKey]);
+  }, [fetchData, profileKey]);
 
   useEffect(() => {
     if (address) setConnected(address);
   }, [address]);
 
   useEffect(() => {
-    async function checkOwnership() {
+    const checkOwnership = async () => {
       if (!connected) return;
-      if (isWalletOnly) {
-        setOwnsProfile(true);
-        return;
-      }
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const hashedName = namehash(ensName);
+      if (isWalletOnly) return setOwnsProfile(true);
 
+      try {
+        const hashedName = namehash(ensName);
         const registry = new ethers.Contract(ENS_REGISTRY, ENS_REGISTRY_ABI, provider);
         const wrapper = new ethers.Contract(NAME_WRAPPER, NAME_WRAPPER_ABI, provider);
 
-        const registryOwner = await registry.owner(hashedName);
+        const [registryOwner, manager] = await Promise.all([
+          registry.owner(hashedName),
+          registry.getApproved(hashedName),
+        ]);
+
         let wrapperOwner = null;
         let ethRecord = null;
 
@@ -106,32 +109,20 @@ export default function ENSProfile({ ensName }) {
           ethRecord = resolver ? await resolver.getAddress() : null;
         } catch {}
 
-        const manager = await registry.getApproved(hashedName);
-
-        const normalizedConnected = getAddress(connected);
-        const normalizedRegistry = getAddress(registryOwner);
-        const normalizedWrapper = wrapperOwner ? getAddress(wrapperOwner) : null;
-        const normalizedEthRecord = ethRecord ? getAddress(ethRecord) : null;
-        const normalizedManager = manager ? getAddress(manager) : null;
-
-        const owns =
-          normalizedConnected === normalizedRegistry ||
-          normalizedConnected === normalizedWrapper ||
-          normalizedConnected === normalizedEthRecord ||
-          normalizedConnected === normalizedManager;
+        const connectedNorm = getAddress(connected);
+        const owns = [registryOwner, wrapperOwner, ethRecord, manager]
+          .filter(Boolean)
+          .map(getAddress)
+          .includes(connectedNorm);
 
         setOwnsProfile(owns);
       } catch (err) {
         console.error('❌ Ownership check failed:', err);
         setOwnsProfile(false);
       }
-    }
+    };
     checkOwnership();
-  }, [connected, ensName, isWalletOnly]);
-
-  useEffect(() => {
-    if (ownsProfile) handleSaveExperience();
-  }, [customTitle, customAvatar]);
+  }, [connected, ensName, isWalletOnly, provider]);
 
   const handleSaveExperience = async () => {
     setSaving(true);
@@ -159,12 +150,12 @@ export default function ENSProfile({ ensName }) {
     customAvatar || (ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f3e8ff] to-[#ffe4e6] p-4">
       <div className="flex justify-end mb-4">
         {!connected && (
           <button
             onClick={() => connect()}
-            className="text-sm bg-white border px-4 py-2 rounded-full shadow hover:bg-gray-50"
+            className="text-sm bg-white/90 backdrop-blur border border-gray-300 px-4 py-2 rounded-full shadow-md hover:bg-white hover:border-gray-400 transition-all"
           >
             Connect Wallet
           </button>
@@ -266,7 +257,7 @@ export default function ENSProfile({ ensName }) {
               <img
                 key={i}
                 src={poap.image_url}
-                alt={poap.name}
+                alt={poap.name || 'POAP'}
                 title={poap.name}
                 className="w-14 h-14 rounded-full border shadow"
               />
@@ -296,10 +287,13 @@ export default function ENSProfile({ ensName }) {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowDownloadModal(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg hover:opacity-95"
+            className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 shadow-lg hover:opacity-95 border border-white/30"
           >
-            <FileText size={18} /> Download PDF
+            <FileText size={18} /> Download VCR PDF
           </motion.button>
+          <p className="text-center text-xs text-gray-500 italic">
+            A Verified Chain Resume: Designed for Web3 hiring, backed by ENS, POAP & onchain data.
+          </p>
         </div>
       </div>
     </div>
