@@ -10,12 +10,17 @@ import ResumeModal from './ResumeModal';
 import { Pencil, BadgeCheck, FileText, Eye, Share2, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Tooltip } from 'react-tooltip';
+import { createClient } from '@supabase/supabase-js';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
-
 const ENS_REGISTRY_ABI = ['function owner(bytes32 node) external view returns (address)'];
 const NAME_WRAPPER_ABI = ['function ownerOf(uint256 id) external view returns (address)'];
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export default function ENSProfile({ ensName }) {
   const [ensData, setEnsData] = useState({});
@@ -98,6 +103,29 @@ export default function ENSProfile({ ensName }) {
       localStorage.setItem('customName', customName);
     }
   }, [customName]);
+
+  useEffect(() => {
+    if (ensName && (ensData.bio || workExperience)) {
+      updateVCRTimestamp();
+    }
+  }, [ensData.bio, workExperience]);
+
+  const updateVCRTimestamp = async () => {
+    const { error } = await supabase
+      .from('VCR')
+      .update({
+        bio: ensData.bio || '',
+        experience: workExperience,
+        updated_at: new Date().toISOString()
+      })
+      .eq('ens_name', ensName);
+
+    if (error) {
+      console.error('❌ Supabase update failed:', error);
+    } else {
+      console.log('✅ Supabase updated with latest profile changes.');
+    }
+  };
 
   const resolvedAvatar =
     ensData.avatar && ensData.avatar.startsWith('http')
