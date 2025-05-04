@@ -10,9 +10,6 @@
     "@stripe/stripe-js": "1.54.1",
     "@supabase/supabase-js": "^2.39.5",
     "@tanstack/react-query": "5.20.1",
-    "@web3modal/ethereum": "^3.0.4",
-    "@web3modal/react": "^3.0.4",
-    "@web3modal/wagmi": "^3.0.4",
     "axios": "^1.6.7",
     "ethers": "^6.10.0",
     "framer-motion": "^11.0.17",
@@ -29,7 +26,7 @@
     "react-tooltip": "^5.21.4",
     "stripe": "^12.14.0",
     "viem": "^1.28.0",
-    "wagmi": "^1.4.13"
+    "wagmi": "^1.4.5"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.15",
