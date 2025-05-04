@@ -1,50 +1,29 @@
 // pages/_app.js
 import '../styles/globals.css';
-import { Toaster } from 'react-hot-toast';
-import '@rainbow-me/rainbowkit/styles.css';
-
-import {
-  WagmiConfig,
-  createConfig,
-  configureChains
-} from 'wagmi';
+import { WagmiConfig, createConfig, configureChains } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
+import { Web3Modal } from '@web3modal/react';
+import { EthereumClient, w3mConnectors, w3mProvider } from '@web3modal/ethereum';
+import { Toaster } from 'react-hot-toast';
 
-import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+const projectId = 'YOUR_WALLETCONNECT_PROJECT_ID'; // get it from https://cloud.walletconnect.com
 
-// Chain & provider setup
-const { chains, publicClient } = configureChains(
-  [mainnet],
-  [publicProvider()]
-);
-
-// RainbowKit wallet connector setup
-const { connectors } = getDefaultWallets({
-  appName: 'Lookup.xyz',
-  projectId: 'REPLACE_WITH_YOUR_WALLETCONNECT_PROJECT_ID',
-  chains
-});
-
-// wagmi config
+const chains = [mainnet];
 const wagmiConfig = createConfig({
   autoConnect: true,
-  connectors,
-  publicClient
+  connectors: w3mConnectors({ chains, projectId }),
+  publicClient: configureChains(chains, [w3mProvider({ projectId }), publicProvider()]).publicClient
 });
 
-const queryClient = new QueryClient();
+const ethereumClient = new EthereumClient(wagmiConfig, chains);
 
 export default function App({ Component, pageProps }) {
   return (
     <WagmiConfig config={wagmiConfig}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider chains={chains}>
-          <Component {...pageProps} />
-          <Toaster position="top-right" />
-        </RainbowKitProvider>
-      </QueryClientProvider>
+      <Component {...pageProps} />
+      <Web3Modal projectId={projectId} ethereumClient={ethereumClient} />
+      <Toaster position="top-right" />
     </WagmiConfig>
   );
 }
