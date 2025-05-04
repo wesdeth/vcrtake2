@@ -44,8 +44,7 @@ export default function ENSProfile({ ensName }) {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [customTitle, setCustomTitle] = useState('');
   const [customAvatar, setCustomAvatar] = useState('');
-  const [customTwitter, setCustomTwitter] = useState('');
-  const [efpLink, setEfpLink] = useState('');
+  const [farcaster, setFarcaster] = useState('');
 
   const { address } = useAccount();
   const provider = useMemo(() => new ethers.BrowserProvider(window.ethereum), []);
@@ -75,13 +74,8 @@ export default function ENSProfile({ ensName }) {
       if (data.experience) setWorkExperience(data.experience);
       if (data.custom_title) setCustomTitle(data.custom_title);
       if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
-      if (data.custom_twitter) setCustomTwitter(data.custom_twitter);
+      if (data.farcaster) setFarcaster(data.farcaster);
       setLastSaved(data.updated_at);
-    }
-
-    if (ens.address) {
-      const lower = ens.address.toLowerCase();
-      setEfpLink(`https://efp.app/${lower}?search=${profileKey}&ssr=false`);
     }
   }, [connected, ensName, profileKey]);
 
@@ -141,7 +135,7 @@ export default function ENSProfile({ ensName }) {
         experience: workExperience,
         custom_title: customTitle,
         custom_avatar: customAvatar,
-        custom_twitter: customTwitter,
+        farcaster,
         updated_at: new Date().toISOString(),
       });
 
@@ -157,6 +151,8 @@ export default function ENSProfile({ ensName }) {
 
   const resolvedAvatar =
     customAvatar || (ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg');
+
+  const efpLink = ensData.address ? `https://efp.social/profile/${ensData.address}` : '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f3e8ff] to-[#ffe4e6] p-4">
@@ -191,8 +187,6 @@ export default function ENSProfile({ ensName }) {
           bio={ensData.bio}
           avatar={resolvedAvatar}
           experience={workExperience}
-          efpLink={efpLink}
-          twitter={customTwitter || ensData.twitter}
           onClose={() => setShowDownloadModal(false)}
         />
       )}
@@ -204,13 +198,22 @@ export default function ENSProfile({ ensName }) {
             address: ensData.address || connected,
             avatar: resolvedAvatar,
             bio: ensData.bio || '',
-            twitter: customTwitter || ensData.twitter || '',
+            twitter: ensData.twitter || '',
             website: ensData.website || '',
-            tag: ensData.tag || 'Active Builder',
-            efp: efpLink,
+            tag: ensData.tag || (connected === '0x0c07...95cE' ? 'Admin' : 'Active Builder'),
+            efpLink,
+            farcaster
           }}
+          onUpdateFarcaster={(newLink) => setFarcaster(newLink)}
         />
       </div>
+
+      {!ownsProfile && !connected && (
+        <div className="text-center text-gray-500 mt-6">
+          <AlertCircle className="inline mr-2 text-red-500" />
+          Connect wallet to edit this profile
+        </div>
+      )}
 
       {ownsProfile && (
         <div className="max-w-2xl mx-auto mt-6">
@@ -220,14 +223,6 @@ export default function ENSProfile({ ensName }) {
             initialBio={ensData.bio}
             initialLooking={ensData.lookingForWork === 'true'}
             showAIGenerator={true}
-          />
-
-          <input
-            type="text"
-            value={customTwitter}
-            onChange={(e) => setCustomTwitter(e.target.value)}
-            placeholder="Link your X / Twitter handle"
-            className="mt-4 w-full border rounded-md p-2 text-sm"
           />
         </div>
       )}
