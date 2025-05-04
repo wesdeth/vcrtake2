@@ -145,30 +145,7 @@ export default function ENSProfile({ ensName }) {
   };
 
   const handleDownloadClick = async () => {
-    const isSubscriptionRequired = process.env.NEXT_PUBLIC_REQUIRE_SUBSCRIPTION === 'true';
-
-    if (!ownsProfile) {
-      toast.error('You must be the profile owner to download your resume.');
-      return;
-    }
-
-    if (isSubscriptionRequired) {
-      const res = await fetch('/api/create-subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress: connected, priceId: 'price_1RKtIvIpFYZ1F8gdS6fPLiJ9' }),
-      });
-
-      const data = await res.json();
-      if (data.sessionId) {
-        const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-        await stripe.redirectToCheckout({ sessionId: data.sessionId });
-      } else {
-        toast.error('Failed to initiate Stripe checkout');
-      }
-    } else {
-      toast.success('✨ Resume download coming soon!');
-    }
+    toast.success('✨ Resume download coming soon!');
   };
 
   const handleCopyLink = () => {
@@ -176,8 +153,6 @@ export default function ENSProfile({ ensName }) {
     navigator.clipboard.writeText(link);
     toast.success('Profile link copied to clipboard!');
   };
-
-  const isSubscriptionRequired = process.env.NEXT_PUBLIC_REQUIRE_SUBSCRIPTION === 'true';
 
   return (
     <>
@@ -197,12 +172,9 @@ export default function ENSProfile({ ensName }) {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={handleDownloadClick}
-        disabled={isSubscriptionRequired}
-        className={`w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl 
-          ${isSubscriptionRequired ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-purple-600 to-pink-500'} 
-          shadow-lg hover:opacity-95 transition`}
+        className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg hover:opacity-95 transition"
       >
-        <FileText size={18} /> Download PDF – $10
+        <FileText size={18} /> Download PDF
       </motion.button>
     </>
   );
