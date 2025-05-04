@@ -45,6 +45,7 @@ export default function ENSProfile({ ensName }) {
   const [customTitle, setCustomTitle] = useState('');
   const [customAvatar, setCustomAvatar] = useState('');
   const [customTwitter, setCustomTwitter] = useState('');
+  const [efpLink, setEfpLink] = useState('');
 
   const { address } = useAccount();
   const provider = useMemo(() => new ethers.BrowserProvider(window.ethereum), []);
@@ -76,6 +77,11 @@ export default function ENSProfile({ ensName }) {
       if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
       if (data.custom_twitter) setCustomTwitter(data.custom_twitter);
       setLastSaved(data.updated_at);
+    }
+
+    if (ens.address) {
+      const lower = ens.address.toLowerCase();
+      setEfpLink(`https://efp.app/${lower}?search=${profileKey}&ssr=false`);
     }
   }, [connected, ensName, profileKey]);
 
@@ -185,7 +191,8 @@ export default function ENSProfile({ ensName }) {
           bio={ensData.bio}
           avatar={resolvedAvatar}
           experience={workExperience}
-          twitterHandle={customTwitter}
+          efpLink={efpLink}
+          twitter={customTwitter || ensData.twitter}
           onClose={() => setShowDownloadModal(false)}
         />
       )}
@@ -199,17 +206,11 @@ export default function ENSProfile({ ensName }) {
             bio: ensData.bio || '',
             twitter: customTwitter || ensData.twitter || '',
             website: ensData.website || '',
-            tag: ensData.tag || (connected === '0x0c07...95cE' ? 'Admin' : 'Active Builder'),
+            tag: ensData.tag || 'Active Builder',
+            efp: efpLink,
           }}
         />
       </div>
-
-      {!ownsProfile && !connected && (
-        <div className="text-center text-gray-500 mt-6">
-          <AlertCircle className="inline mr-2 text-red-500" />
-          Connect wallet to edit this profile
-        </div>
-      )}
 
       {ownsProfile && (
         <div className="max-w-2xl mx-auto mt-6">
@@ -220,12 +221,13 @@ export default function ENSProfile({ ensName }) {
             initialLooking={ensData.lookingForWork === 'true'}
             showAIGenerator={true}
           />
+
           <input
             type="text"
             value={customTwitter}
             onChange={(e) => setCustomTwitter(e.target.value)}
-            placeholder="Enter your Twitter handle (no @)"
-            className="mt-3 w-full p-2 border border-gray-300 rounded"
+            placeholder="Link your X / Twitter handle"
+            className="mt-4 w-full border rounded-md p-2 text-sm"
           />
         </div>
       )}
