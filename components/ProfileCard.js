@@ -1,10 +1,14 @@
 // /components/ProfileCard.js
-import { Copy, Users, Landmark, ShieldCheck, Twitter, Link2 } from 'lucide-react';
+import { Copy, Users, Landmark, ShieldCheck, Twitter, Link2, MessageSquareText } from 'lucide-react';
 import { useAccount, useConnect } from 'wagmi';
 import { InjectedConnector } from 'wagmi/connectors/injected';
+import { useState, useEffect } from 'react';
 
-export default function ProfileCard({ data }) {
-  const { name, address, avatar, bio, twitter, website, tag, efpFollows = [], daos = [], efp } = data;
+export default function ProfileCard({ data, ownsProfile = false, onUpdateFarcaster }) {
+  const { name, address, avatar, bio, twitter, website, tag, efpFollows = [], daos = [], efp, farcaster } = data;
+
+  const [editableFarcaster, setEditableFarcaster] = useState(farcaster || '');
+  const [isEditing, setIsEditing] = useState(false);
 
   const shortenAddress = (addr) =>
     addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
@@ -17,6 +21,17 @@ export default function ProfileCard({ data }) {
 
   const { address: connectedAddress, isConnected } = useAccount();
   const { connect } = useConnect({ connector: new InjectedConnector() });
+
+  const handleFarcasterSave = () => {
+    if (onUpdateFarcaster) {
+      onUpdateFarcaster(editableFarcaster);
+    }
+    setIsEditing(false);
+  };
+
+  useEffect(() => {
+    setEditableFarcaster(farcaster || '');
+  }, [farcaster]);
 
   return (
     <div className="relative bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 rounded-2xl p-6 flex flex-col items-center text-center transition-all duration-300">
@@ -94,6 +109,34 @@ export default function ProfileCard({ data }) {
           >
             <Users size={14} /> EFP
           </a>
+        )}
+        {ownsProfile ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={editableFarcaster}
+              onChange={(e) => setEditableFarcaster(e.target.value)}
+              placeholder="https://warpcast.com/username"
+              className="text-xs px-2 py-1 rounded border border-gray-300"
+            />
+            <button
+              onClick={handleFarcasterSave}
+              className="text-xs text-blue-600 font-semibold hover:underline"
+            >
+              Save
+            </button>
+          </div>
+        ) : (
+          farcaster && (
+            <a
+              href={farcaster}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-pink-500 hover:underline"
+            >
+              <MessageSquareText size={14} /> Farcaster
+            </a>
+          )
         )}
       </div>
 
