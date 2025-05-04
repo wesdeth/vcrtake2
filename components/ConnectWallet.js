@@ -1,13 +1,15 @@
 // components/ConnectWallet.js
+'use client';
+
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 export default function ConnectWallet() {
   return (
-    <div className="mb-4">
+    <div className="flex justify-end p-4">
       <ConnectButton
-        accountStatus="address"
         showBalance={false}
         chainStatus="icon"
+        accountStatus="address"
       />
     </div>
   );
