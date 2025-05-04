@@ -50,7 +50,7 @@ export default function ResumeDownloadModal({ ensName, bio, avatar, experience, 
           <div>
             <QRCode value={twitterLink} size={80} />
             <p className="text-xs mt-2">X/Twitter Profile</p>
-            <a href={twitterLink} target="_blank" className="text-blue-500 text-xs break-all">
+            <a href={twitterLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 text-xs break-all">
               {twitterLink}
             </a>
           </div>
@@ -58,7 +58,7 @@ export default function ResumeDownloadModal({ ensName, bio, avatar, experience, 
           <div>
             <QRCode value={efpLink} size={80} />
             <p className="text-xs mt-2">EFP Profile</p>
-            <a href={efpLink} target="_blank" className="text-green-600 text-xs break-all">
+            <a href={efpLink} target="_blank" rel="noopener noreferrer" className="text-green-600 text-xs break-all">
               {efpLink}
             </a>
           </div>
