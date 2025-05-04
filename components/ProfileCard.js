@@ -1,5 +1,5 @@
 // /components/ProfileCard.js
-import { Copy, Users, Landmark } from 'lucide-react';
+import { Copy, Users, Landmark, ShieldCheck } from 'lucide-react';
 
 export default function ProfileCard({ data }) {
   const { name, address, avatar, bio, twitter, website, tag, efpFollows = [], daos = [] } = data;
@@ -10,6 +10,8 @@ export default function ProfileCard({ data }) {
   const handleCopy = () => {
     navigator.clipboard.writeText(address);
   };
+
+  const isAdmin = name?.toLowerCase() === 'wesd.eth';
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 rounded-2xl p-6 flex flex-col items-center text-center">
@@ -30,11 +32,19 @@ export default function ProfileCard({ data }) {
         <Copy size={12} />
       </p>
 
-      {tag && (
-        <span className="mt-2 text-xs font-medium text-white bg-gradient-to-r from-purple-600 to-blue-500 px-3 py-1 rounded-full">
-          {tag}
-        </span>
-      )}
+      <div className="flex flex-wrap justify-center gap-2 mt-2">
+        {tag && (
+          <span className="text-xs font-medium text-white bg-gradient-to-r from-purple-600 to-blue-500 px-3 py-1 rounded-full">
+            {tag}
+          </span>
+        )}
+
+        {isAdmin && (
+          <span className="text-xs font-medium text-white bg-gradient-to-r from-yellow-400 to-red-500 px-3 py-1 rounded-full flex items-center gap-1">
+            <ShieldCheck size={14} /> Admin
+          </span>
+        )}
+      </div>
 
       {bio && (
         <p className="mt-3 text-sm text-gray-600 dark:text-gray-300 italic max-w-sm">{bio}</p>
