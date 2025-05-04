@@ -1,8 +1,8 @@
 // /components/ProfileCard.js
-import { Copy } from 'lucide-react';
+import { Copy, Users, Landmark } from 'lucide-react';
 
 export default function ProfileCard({ data }) {
-  const { name, address, avatar, bio, twitter, website, tag } = data;
+  const { name, address, avatar, bio, twitter, website, tag, efpFollows = [], daos = [] } = data;
 
   const shortenAddress = (addr) =>
     addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
@@ -62,6 +62,35 @@ export default function ProfileCard({ data }) {
           </a>
         )}
       </div>
+
+      {(efpFollows.length > 0 || daos.length > 0) && (
+        <div className="flex flex-wrap justify-center gap-2 mt-5">
+          {efpFollows.map((follow, i) => (
+            <a
+              key={`efp-${i}`}
+              href={`https://efp.social/profile/${follow}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1 rounded-full shadow-sm hover:bg-indigo-200"
+              title={`Following ${follow}`}
+            >
+              <Users size={14} /> {follow}
+            </a>
+          ))}
+          {daos.map((dao, i) => (
+            <a
+              key={`dao-${i}`}
+              href={`https://daosnap.io/dao/${dao}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full shadow-sm hover:bg-yellow-200"
+              title={`Member of ${dao}`}
+            >
+              <Landmark size={14} /> {dao}
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
