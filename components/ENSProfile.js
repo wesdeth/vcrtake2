@@ -7,7 +7,7 @@ import { fetchAlchemyNFTs } from '../lib/nftUtils';
 import ConnectWallet from './ConnectWallet';
 import EditableBio from './EditableBio';
 import ResumeModal from './ResumeModal';
-import { Pencil, BadgeCheck, FileText, Eye } from 'lucide-react';
+import { Pencil, BadgeCheck, FileText, Eye, Share2, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Tooltip } from 'react-tooltip';
 
@@ -122,6 +122,12 @@ export default function ENSProfile({ ensName }) {
     }
   };
 
+  const handleCopyLink = () => {
+    const link = `${window.location.origin}/preview/${ensName}`;
+    navigator.clipboard.writeText(link);
+    alert('Profile link copied to clipboard!');
+  };
+
   return (
     <>
       {showPreviewModal && (
@@ -180,6 +186,19 @@ export default function ENSProfile({ ensName }) {
               className="mt-1 px-3 py-2 border rounded-lg w-full text-sm"
             />
           )}
+
+          <div className="mt-2 flex flex-wrap justify-center gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              onClick={handleCopyLink}
+              className="flex items-center gap-1 text-sm px-3 py-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800"
+            >
+              <Share2 size={14} /> Copy Profile Link
+            </motion.button>
+            <span className="flex items-center gap-1 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-semibold">
+              <ShieldCheck size={12} /> Verified Experience (coming soon)
+            </span>
+          </div>
 
           <div className="mt-4 w-full">
             <textarea
