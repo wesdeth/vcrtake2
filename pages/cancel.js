@@ -13,10 +13,11 @@ export default function CancelPage() {
         You didn’t finish checking out. No charges were made.
         You can return anytime to unlock your verified resume.
       </p>
-      <Link href="/">
-        <a className="mt-6 px-6 py-2 text-white font-semibold bg-gray-700 hover:bg-gray-800 rounded-full transition">
-          Return to Profile
-        </a>
+      <Link
+        href="/"
+        className="mt-6 px-6 py-2 text-white font-semibold bg-gray-700 hover:bg-gray-800 rounded-full transition"
+      >
+        Return to Profile
       </Link>
     </div>
   );
