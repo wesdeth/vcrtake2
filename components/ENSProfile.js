@@ -165,6 +165,18 @@ export default function ENSProfile({ ensName }) {
         )}
       </div>
 
+      {showPreviewModal && (
+        <ResumeModal
+          ensName={ensName}
+          poaps={poaps}
+          nfts={nfts}
+          bio={ensData.bio}
+          avatar={resolvedAvatar}
+          experience={workExperience}
+          onClose={() => setShowPreviewModal(false)}
+        />
+      )}
+
       {showDownloadModal && (
         <ResumeDownloadModal
           ensName={ensName}
@@ -192,8 +204,15 @@ export default function ENSProfile({ ensName }) {
         />
       </div>
 
+      {!ownsProfile && !connected && (
+        <div className="text-center text-gray-500 mt-6">
+          <AlertCircle className="inline mr-2 text-red-500" />
+          Connect wallet to edit this profile
+        </div>
+      )}
+
       {ownsProfile && (
-        <div className="max-w-2xl mx-auto mt-6 space-y-4">
+        <div className="max-w-2xl mx-auto mt-6">
           <EditableBio
             ensName={profileKey}
             connectedAddress={connected}
@@ -203,19 +222,91 @@ export default function ENSProfile({ ensName }) {
           />
           <input
             type="text"
-            placeholder="Your X/Twitter handle (without @)"
             value={customTwitter}
             onChange={(e) => setCustomTwitter(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md"
+            placeholder="Enter your Twitter handle (no @)"
+            className="mt-3 w-full p-2 border border-gray-300 rounded"
           />
-          <button
-            onClick={handleSaveExperience}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-          >
-            Save All Changes
-          </button>
         </div>
       )}
+
+      <div className="max-w-2xl mx-auto mt-10 px-4">
+        <h3 className="text-lg font-bold text-purple-700 mb-2">Work Experience</h3>
+        {ownsProfile ? (
+          <>
+            <textarea
+              value={workExperience}
+              onChange={(e) => setWorkExperience(e.target.value)}
+              placeholder="Share your experience..."
+              className="w-full h-32 p-3 rounded-lg border border-gray-300 bg-white text-sm"
+            />
+            <div className="flex justify-between mt-2">
+              <button
+                onClick={handleSaveExperience}
+                disabled={saving}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                {saving ? <Loader2 size={16} className="animate-spin inline-block" /> : 'Save'}
+              </button>
+              {lastSaved && (
+                <p className="text-sm text-gray-500 italic">
+                  Last saved: {new Date(lastSaved).toLocaleString()}
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <p className="text-gray-600 italic">{workExperience || 'No experience listed yet.'}</p>
+        )}
+      </div>
+
+      <div className="max-w-2xl mx-auto mt-10 px-4">
+        <h3 className="text-lg font-bold text-purple-700 mb-2">POAPs</h3>
+        {poaps.length > 0 ? (
+          <div className="flex flex-wrap gap-3">
+            {poaps.slice(0, 6).map((poap, i) => (
+              <img
+                key={i}
+                src={poap.image_url}
+                alt={poap.name || 'POAP'}
+                title={poap.name}
+                className="w-14 h-14 rounded-full border shadow"
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500 italic">No POAPs found.</p>
+        )}
+      </div>
+
+      <div className="flex justify-center mt-6">
+        {nfts.length > 0 && (
+          <a
+            href={`https://opensea.io/${nfts[0].contractAddress}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg shadow hover:opacity-90"
+          >
+            ↗ View NFTs on OpenSea
+          </a>
+        )}
+      </div>
+
+      <div className="w-full mt-10 mb-20 px-4">
+        <div className="flex flex-col gap-4 max-w-2xl mx-auto">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowDownloadModal(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 shadow-lg hover:opacity-95 border border-white/30"
+          >
+            <FileText size={18} /> Download VCR PDF
+          </motion.button>
+          <p className="text-center text-xs text-gray-500 italic">
+            A Verified Chain Resume: Designed for Web3 hiring, backed by ENS, POAP & onchain data.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
