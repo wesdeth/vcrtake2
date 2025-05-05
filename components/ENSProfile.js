@@ -14,7 +14,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { createClient } from '@supabase/supabase-js';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { WalletConnectConnector } from 'wagmi/connectors/walletConnect';
+import { InjectedConnector } from 'wagmi/connectors/injected';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
@@ -47,17 +47,9 @@ export default function ENSProfile({ ensName }) {
   const [farcaster, setFarcaster] = useState('');
 
   const { address, isConnected } = useAccount();
+  const { connect } = useConnect({ connector: new InjectedConnector() });
   const { disconnect } = useDisconnect();
   const provider = useMemo(() => new ethers.BrowserProvider(window.ethereum), []);
-
-  const { connect } = useConnect({
-    connector: new WalletConnectConnector({
-      options: {
-        projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo',
-        showQrModal: true,
-      },
-    }),
-  });
 
   const isWalletOnly = !ensName && !!connected;
   const profileKey = ensName || connected;
@@ -150,9 +142,7 @@ export default function ENSProfile({ ensName }) {
     setSaving(false);
   };
 
-  const resolvedAvatar =
-    customAvatar || (ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg');
-
+  const resolvedAvatar = customAvatar || (ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg');
   const efpLink = ensData.address ? `https://efp.social/profile/${ensData.address}` : '';
 
   return (
