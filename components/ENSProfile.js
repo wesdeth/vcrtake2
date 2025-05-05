@@ -1,5 +1,6 @@
 // ENSProfile.js
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { getAddress, ethers } from 'ethers';
 import { namehash } from 'viem';
 import { getEnsData } from '../lib/ensUtils';
@@ -9,7 +10,7 @@ import ResumeModal from './ResumeModal';
 import ResumeDownloadModal from './ResumeDownloadModal';
 import EditableBio from './EditableBio';
 import ProfileCard from './ProfileCard';
-import { FileText, Loader2, AlertCircle, LogOut } from 'lucide-react';
+import { FileText, Loader2, AlertCircle, LogOut, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { createClient } from '@supabase/supabase-js';
@@ -147,7 +148,14 @@ export default function ENSProfile({ ensName }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f3e8ff] to-[#ffe4e6] p-4">
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between mb-4">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-sm bg-white/90 backdrop-blur border border-gray-300 px-4 py-2 rounded-full shadow-md hover:bg-white hover:border-gray-400 transition-all"
+        >
+          <ArrowLeft size={16} /> Back to Home
+        </Link>
+
         {!isConnected ? (
           <button
             onClick={() => connect()}
@@ -171,6 +179,30 @@ export default function ENSProfile({ ensName }) {
           </div>
         )}
       </div>
+
+      {showPreviewModal && (
+        <ResumeModal
+          ensName={ensName}
+          poaps={poaps}
+          nfts={nfts}
+          bio={ensData.bio}
+          avatar={resolvedAvatar}
+          experience={workExperience}
+          onClose={() => setShowPreviewModal(false)}
+        />
+      )}
+
+      {showDownloadModal && (
+        <ResumeDownloadModal
+          ensName={ensName}
+          poaps={poaps}
+          nfts={nfts}
+          bio={ensData.bio}
+          avatar={resolvedAvatar}
+          experience={workExperience}
+          onClose={() => setShowDownloadModal(false)}
+        />
+      )}
 
       <div className="flex justify-center">
         <ProfileCard
