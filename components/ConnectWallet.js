@@ -1,27 +1,27 @@
 // components/ConnectWallet.js
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useConnect, useDisconnect, useAccount } from 'wagmi';
 import { InjectedConnector } from 'wagmi/connectors/injected';
 
 export default function ConnectWallet() {
-  const { address, isConnected } = useAccount();
   const { connect } = useConnect({
     connector: new InjectedConnector(),
   });
   const { disconnect } = useDisconnect();
+  const { isConnected, address } = useAccount();
 
   return (
     <div className="mb-4">
       {isConnected ? (
         <button
-          onClick={disconnect}
-          className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 transition"
+          onClick={() => disconnect()}
+          className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
         >
-          Disconnect ({address.slice(0, 6)}...{address.slice(-4)})
+          Disconnect
         </button>
       ) : (
         <button
           onClick={() => connect()}
-          className="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition"
+          className="bg-white border px-4 py-2 rounded shadow hover:bg-gray-100"
         >
           Connect Wallet
         </button>
