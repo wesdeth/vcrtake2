@@ -1,5 +1,4 @@
 // ENSProfile.js
-
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { getAddress, ethers } from 'ethers';
 import { namehash } from 'viem';
@@ -181,6 +180,7 @@ export default function ENSProfile({ ensName }) {
             </button>
           </div>
         )}
+      </div>
 
       <div className="flex justify-center">
         <ProfileCard
@@ -297,7 +297,7 @@ export default function ENSProfile({ ensName }) {
             <FileText size={18} /> Download VCR PDF
           </motion.button>
           <p className="text-center text-xs text-gray-500 italic">
-            A Verified Chain Resume: Designed for Web3 verification & hiring, backed by ENS, POAP, & onchain data.
+            A Verified Chain Resume: Designed for Web3 hiring, backed by ENS, POAP & onchain data.
           </p>
         </div>
       </div>
