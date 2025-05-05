@@ -47,6 +47,7 @@ export default function ENSProfile({ ensName }) {
   const [customTitle, setCustomTitle] = useState('');
   const [customAvatar, setCustomAvatar] = useState('');
   const [farcaster, setFarcaster] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const { address, isConnected } = useAccount();
   const { connect } = useConnect({ connector: new InjectedConnector() });
@@ -57,6 +58,7 @@ export default function ENSProfile({ ensName }) {
   const profileKey = ensName || connected;
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     const ens = ensName ? await getEnsData(ensName) : { address: connected };
     const poapList = ens.address ? await getPOAPs(ensName || ens.address) : [];
     const nftList = ens.address ? await fetchAlchemyNFTs(ens.address) : [];
@@ -72,6 +74,7 @@ export default function ENSProfile({ ensName }) {
       if (data.farcaster) setFarcaster(data.farcaster);
       setLastSaved(data.updated_at);
     }
+    setLoading(false);
   }, [connected, ensName, profileKey]);
 
   useEffect(() => {
@@ -150,10 +153,7 @@ export default function ENSProfile({ ensName }) {
   return (
     <>
       <Head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Comic+Relief&display=swap"
-          rel="stylesheet"
-        />
+        <link href="https://fonts.googleapis.com/css2?family=Comic+Relief&display=swap" rel="stylesheet" />
         <style>{`body { font-family: 'Comic Relief', cursive; }`}</style>
       </Head>
       <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f3e8ff] to-[#ffe4e6] p-4">
@@ -174,11 +174,7 @@ export default function ENSProfile({ ensName }) {
             </button>
           ) : (
             <div className="flex items-center gap-2 bg-white/90 border border-gray-300 px-3 py-2 rounded-full shadow-md">
-              <img
-                src={resolvedAvatar || '/Avatar.jpg'}
-                alt="avatar"
-                className="w-6 h-6 rounded-full object-cover"
-              />
+              <img src={resolvedAvatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
               <span className="text-sm font-medium text-gray-800">
                 {ensName || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
               </span>
@@ -189,22 +185,33 @@ export default function ENSProfile({ ensName }) {
           )}
         </div>
 
-        <div className="flex justify-center">
-          <ProfileCard
-            data={{
-              name: ensName || address,
-              address: ensData.address || address,
-              avatar: resolvedAvatar,
-              bio: ensData.bio || '',
-              twitter: ensData.twitter || '',
-              website: ensData.website || '',
-              tag: ensData.tag || (address === '0x0c07...95cE' ? 'Admin' : 'Active Builder'),
-              efpLink,
-              farcaster
-            }}
-            onUpdateFarcaster={(newLink) => setFarcaster(newLink)}
-          />
-        </div>
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 size={36} className="animate-spin text-purple-600" />
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="flex justify-center"
+          >
+            <ProfileCard
+              data={{
+                name: ensName || address,
+                address: ensData.address || address,
+                avatar: resolvedAvatar,
+                bio: ensData.bio || '',
+                twitter: ensData.twitter || '',
+                website: ensData.website || '',
+                tag: ensData.tag || (address === '0x0c07...95cE' ? 'Admin' : 'Active Builder'),
+                efpLink,
+                farcaster
+              }}
+              onUpdateFarcaster={(newLink) => setFarcaster(newLink)}
+            />
+          </motion.div>
+        )}
 
         {!ownsProfile && !isConnected && (
           <div className="text-center text-gray-500 mt-6">
