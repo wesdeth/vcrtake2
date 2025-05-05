@@ -1,4 +1,5 @@
 // ENSProfile.js
+
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { getAddress, ethers } from 'ethers';
 import { namehash } from 'viem';
@@ -9,12 +10,12 @@ import ResumeModal from './ResumeModal';
 import ResumeDownloadModal from './ResumeDownloadModal';
 import EditableBio from './EditableBio';
 import ProfileCard from './ProfileCard';
-import { FileText, Loader2, AlertCircle } from 'lucide-react';
+import { FileText, Loader2, AlertCircle, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { createClient } from '@supabase/supabase-js';
-import { useAccount, useConnect } from 'wagmi';
-import { InjectedConnector } from 'wagmi/connectors/injected';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { WalletConnectConnector } from 'wagmi/connectors/walletConnect';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
@@ -35,6 +36,7 @@ export default function ENSProfile({ ensName }) {
   const [ensData, setEnsData] = useState({});
   const [poaps, setPoaps] = useState([]);
   const [nfts, setNfts] = useState([]);
+  const [connected, setConnected] = useState(null);
   const [ownsProfile, setOwnsProfile] = useState(false);
   const [workExperience, setWorkExperience] = useState('');
   const [saving, setSaving] = useState(false);
@@ -46,17 +48,23 @@ export default function ENSProfile({ ensName }) {
   const [farcaster, setFarcaster] = useState('');
 
   const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
   const provider = useMemo(() => new ethers.BrowserProvider(window.ethereum), []);
 
   const { connect } = useConnect({
-    connector: new InjectedConnector(),
+    connector: new WalletConnectConnector({
+      options: {
+        projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo',
+        showQrModal: true,
+      },
+    }),
   });
 
-  const isWalletOnly = !ensName && isConnected;
-  const profileKey = ensName || address;
+  const isWalletOnly = !ensName && !!connected;
+  const profileKey = ensName || connected;
 
   const fetchData = useCallback(async () => {
-    const ens = ensName ? await getEnsData(ensName) : { address };
+    const ens = ensName ? await getEnsData(ensName) : { address: connected };
     const poapList = ens.address ? await getPOAPs(ensName || ens.address) : [];
     const nftList = ens.address ? await fetchAlchemyNFTs(ens.address) : [];
     setEnsData(ens);
@@ -71,15 +79,19 @@ export default function ENSProfile({ ensName }) {
       if (data.farcaster) setFarcaster(data.farcaster);
       setLastSaved(data.updated_at);
     }
-  }, [address, ensName, profileKey]);
+  }, [connected, ensName, profileKey]);
 
   useEffect(() => {
     if (profileKey) fetchData();
   }, [fetchData, profileKey]);
 
   useEffect(() => {
+    if (address) setConnected(address);
+  }, [address]);
+
+  useEffect(() => {
     const checkOwnership = async () => {
-      if (!isConnected) return;
+      if (!connected) return;
       if (isWalletOnly) return setOwnsProfile(true);
 
       try {
@@ -101,7 +113,7 @@ export default function ENSProfile({ ensName }) {
           ethRecord = resolver ? await resolver.getAddress() : null;
         } catch {}
 
-        const connectedNorm = getAddress(address);
+        const connectedNorm = getAddress(connected);
         const owns = [registryOwner, wrapperOwner, ethRecord, manager]
           .filter(Boolean)
           .map(getAddress)
@@ -114,7 +126,7 @@ export default function ENSProfile({ ensName }) {
       }
     };
     checkOwnership();
-  }, [isConnected, ensName, isWalletOnly, provider, address]);
+  }, [connected, ensName, isWalletOnly, provider]);
 
   const handleSaveExperience = async () => {
     setSaving(true);
@@ -147,39 +159,28 @@ export default function ENSProfile({ ensName }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f3e8ff] to-[#ffe4e6] p-4">
       <div className="flex justify-end mb-4">
-        {!isConnected && (
+        {!isConnected ? (
           <button
             onClick={() => connect()}
             className="text-sm bg-white/90 backdrop-blur border border-gray-300 px-4 py-2 rounded-full shadow-md hover:bg-white hover:border-gray-400 transition-all"
           >
             Connect Wallet
           </button>
+        ) : (
+          <div className="flex items-center gap-2 bg-white/90 border border-gray-300 px-3 py-2 rounded-full shadow-md">
+            <img
+              src={resolvedAvatar || '/Avatar.jpg'}
+              alt="avatar"
+              className="w-6 h-6 rounded-full object-cover"
+            />
+            <span className="text-sm font-medium text-gray-800">
+              {ensName || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
+            </span>
+            <button onClick={() => disconnect()} className="text-gray-500 hover:text-red-500">
+              <LogOut size={16} />
+            </button>
+          </div>
         )}
-      </div>
-
-      {showPreviewModal && (
-        <ResumeModal
-          ensName={ensName}
-          poaps={poaps}
-          nfts={nfts}
-          bio={ensData.bio}
-          avatar={resolvedAvatar}
-          experience={workExperience}
-          onClose={() => setShowPreviewModal(false)}
-        />
-      )}
-
-      {showDownloadModal && (
-        <ResumeDownloadModal
-          ensName={ensName}
-          poaps={poaps}
-          nfts={nfts}
-          bio={ensData.bio}
-          avatar={resolvedAvatar}
-          experience={workExperience}
-          onClose={() => setShowDownloadModal(false)}
-        />
-      )}
 
       <div className="flex justify-center">
         <ProfileCard
