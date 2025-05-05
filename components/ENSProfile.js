@@ -14,7 +14,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { createClient } from '@supabase/supabase-js';
 import { useAccount, useConnect } from 'wagmi';
-import { WalletConnectConnector } from 'wagmi/connectors/walletConnect';
+import { InjectedConnector } from 'wagmi/connectors/injected';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
@@ -35,7 +35,6 @@ export default function ENSProfile({ ensName }) {
   const [ensData, setEnsData] = useState({});
   const [poaps, setPoaps] = useState([]);
   const [nfts, setNfts] = useState([]);
-  const [connected, setConnected] = useState(null);
   const [ownsProfile, setOwnsProfile] = useState(false);
   const [workExperience, setWorkExperience] = useState('');
   const [saving, setSaving] = useState(false);
@@ -46,23 +45,18 @@ export default function ENSProfile({ ensName }) {
   const [customAvatar, setCustomAvatar] = useState('');
   const [farcaster, setFarcaster] = useState('');
 
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
   const provider = useMemo(() => new ethers.BrowserProvider(window.ethereum), []);
 
   const { connect } = useConnect({
-    connector: new WalletConnectConnector({
-      options: {
-        projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo',
-        showQrModal: true,
-      },
-    }),
+    connector: new InjectedConnector(),
   });
 
-  const isWalletOnly = !ensName && !!connected;
-  const profileKey = ensName || connected;
+  const isWalletOnly = !ensName && isConnected;
+  const profileKey = ensName || address;
 
   const fetchData = useCallback(async () => {
-    const ens = ensName ? await getEnsData(ensName) : { address: connected };
+    const ens = ensName ? await getEnsData(ensName) : { address };
     const poapList = ens.address ? await getPOAPs(ensName || ens.address) : [];
     const nftList = ens.address ? await fetchAlchemyNFTs(ens.address) : [];
     setEnsData(ens);
@@ -77,19 +71,15 @@ export default function ENSProfile({ ensName }) {
       if (data.farcaster) setFarcaster(data.farcaster);
       setLastSaved(data.updated_at);
     }
-  }, [connected, ensName, profileKey]);
+  }, [address, ensName, profileKey]);
 
   useEffect(() => {
     if (profileKey) fetchData();
   }, [fetchData, profileKey]);
 
   useEffect(() => {
-    if (address) setConnected(address);
-  }, [address]);
-
-  useEffect(() => {
     const checkOwnership = async () => {
-      if (!connected) return;
+      if (!isConnected) return;
       if (isWalletOnly) return setOwnsProfile(true);
 
       try {
@@ -111,7 +101,7 @@ export default function ENSProfile({ ensName }) {
           ethRecord = resolver ? await resolver.getAddress() : null;
         } catch {}
 
-        const connectedNorm = getAddress(connected);
+        const connectedNorm = getAddress(address);
         const owns = [registryOwner, wrapperOwner, ethRecord, manager]
           .filter(Boolean)
           .map(getAddress)
@@ -124,7 +114,7 @@ export default function ENSProfile({ ensName }) {
       }
     };
     checkOwnership();
-  }, [connected, ensName, isWalletOnly, provider]);
+  }, [isConnected, ensName, isWalletOnly, provider, address]);
 
   const handleSaveExperience = async () => {
     setSaving(true);
@@ -157,7 +147,7 @@ export default function ENSProfile({ ensName }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f3e8ff] to-[#ffe4e6] p-4">
       <div className="flex justify-end mb-4">
-        {!connected && (
+        {!isConnected && (
           <button
             onClick={() => connect()}
             className="text-sm bg-white/90 backdrop-blur border border-gray-300 px-4 py-2 rounded-full shadow-md hover:bg-white hover:border-gray-400 transition-all"
@@ -194,13 +184,13 @@ export default function ENSProfile({ ensName }) {
       <div className="flex justify-center">
         <ProfileCard
           data={{
-            name: ensName || connected,
-            address: ensData.address || connected,
+            name: ensName || address,
+            address: ensData.address || address,
             avatar: resolvedAvatar,
             bio: ensData.bio || '',
             twitter: ensData.twitter || '',
             website: ensData.website || '',
-            tag: ensData.tag || (connected === '0x0c07...95cE' ? 'Admin' : 'Active Builder'),
+            tag: ensData.tag || (address === '0x0c07...95cE' ? 'Admin' : 'Active Builder'),
             efpLink,
             farcaster
           }}
@@ -208,7 +198,7 @@ export default function ENSProfile({ ensName }) {
         />
       </div>
 
-      {!ownsProfile && !connected && (
+      {!ownsProfile && !isConnected && (
         <div className="text-center text-gray-500 mt-6">
           <AlertCircle className="inline mr-2 text-red-500" />
           Connect wallet to edit this profile
@@ -219,7 +209,7 @@ export default function ENSProfile({ ensName }) {
         <div className="max-w-2xl mx-auto mt-6">
           <EditableBio
             ensName={profileKey}
-            connectedAddress={connected}
+            connectedAddress={address}
             initialBio={ensData.bio}
             initialLooking={ensData.lookingForWork === 'true'}
             showAIGenerator={true}
@@ -306,7 +296,7 @@ export default function ENSProfile({ ensName }) {
             <FileText size={18} /> Download VCR PDF
           </motion.button>
           <p className="text-center text-xs text-gray-500 italic">
-            A Verified Chain Resume: Designed for Web3 hiring, backed by ENS, POAP & onchain data.
+            A Verified Chain Resume: Designed for Web3 verification & hiring, backed by ENS, POAP, & onchain data.
           </p>
         </div>
       </div>
