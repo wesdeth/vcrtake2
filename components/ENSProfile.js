@@ -150,9 +150,13 @@ export default function ENSProfile({ ensName }) {
       </Head>
       <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f3e8ff] to-[#ffe4e6] p-4">
         <div className="flex justify-between mb-4">
-          <Link href="/" className="flex items-center gap-2 text-sm bg-white/90 backdrop-blur border border-gray-300 px-4 py-2 rounded-full shadow-md hover:bg-white hover:border-gray-400 transition-all">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-sm bg-white/90 backdrop-blur border border-gray-300 px-4 py-2 rounded-full shadow-md hover:bg-white hover:border-gray-400 transition-all"
+          >
             <ArrowLeft size={16} /> Back to Home
           </Link>
+
           {!isConnected ? (
             <button
               onClick={() => connect()}
@@ -173,133 +177,87 @@ export default function ENSProfile({ ensName }) {
           )}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="flex justify-center"
-        >
-          <ProfileCard
-            data={{
-              name: ensName || address,
-              address: ensData.address || address,
-              avatar: resolvedAvatar,
-              bio: ensData.bio || '',
-              twitter: ensData.twitter || '',
-              website: ensData.website || '',
-              tag: ensData.tag || (address === '0x0c07...95cE' ? 'Admin' : 'Active Builder'),
-              efpLink,
-              farcaster
-            }}
-          />
-        </motion.div>
-
-        {ownsProfile && (
-          <div className="max-w-2xl mx-auto mt-6">
-            <EditableBio
-              ensName={profileKey}
-              connectedAddress={address}
-              initialBio={ensData.bio}
-              initialLooking={ensData.lookingForWork === 'true'}
-              showAIGenerator={true}
-            />
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 size={36} className="animate-spin text-purple-600" />
           </div>
-        )}
+        ) : (
+          <>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              className="flex justify-center"
+            >
+              <ProfileCard
+                data={{
+                  name: ensName || address,
+                  address: ensData.address || address,
+                  avatar: resolvedAvatar,
+                  bio: ensData.bio || '',
+                  twitter: ensData.twitter || '',
+                  website: ensData.website || '',
+                  tag: ensData.tag || (address === '0x0c07...95cE' ? 'Admin' : 'Active Builder'),
+                  efpLink,
+                  farcaster
+                }}
+              />
+            </motion.div>
 
-        <div className="max-w-2xl mx-auto mt-10 px-4">
-          <h3 className="text-lg font-bold text-purple-700 mb-2">Work Experience</h3>
-          {ownsProfile ? (
-            <textarea
-              value={workExperience}
-              onChange={(e) => {
-                setWorkExperience(e.target.value);
-                handleInputSave('experience', e.target.value);
-              }}
-              placeholder="Share your experience..."
-              className="w-full h-32 p-3 rounded-lg border border-gray-300 bg-white text-sm"
-            />
-          ) : (
-            <p className="text-gray-600 italic">{workExperience || 'No experience listed yet.'}</p>
-          )}
-        </div>
+            {ownsProfile && (
+              <div className="max-w-2xl mx-auto mt-6 space-y-4">
+                <EditableBio
+                  ensName={profileKey}
+                  connectedAddress={address}
+                  initialBio={ensData.bio}
+                  initialLooking={ensData.lookingForWork === 'true'}
+                  showAIGenerator={true}
+                />
 
-        <div className="max-w-2xl mx-auto mt-10 px-4">
-          <h3 className="text-lg font-bold text-purple-700 mb-2">POAPs</h3>
-          {poaps.length > 0 ? (
-            <div className="flex flex-wrap gap-3">
-              {poaps.slice(0, 6).map((poap, i) => (
-                <a key={i} href={poap.event_url} target="_blank" rel="noopener noreferrer" title={poap.name}>
-                  <img
-                    src={poap.image_url}
-                    alt={poap.name || 'POAP'}
-                    className="w-14 h-14 rounded-full border shadow hover:scale-110 transition duration-200"
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Custom Title</label>
+                  <input
+                    type="text"
+                    value={customTitle}
+                    onChange={(e) => {
+                      setCustomTitle(e.target.value);
+                      handleInputSave('custom_title', e.target.value);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    placeholder="ex: Smart Contract Engineer"
                   />
-                </a>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500 italic">No POAPs found.</p>
-          )}
-        </div>
+                </div>
 
-        <div className="flex justify-center mt-6">
-          {nfts.length > 0 && (
-            <a
-              href={`https://opensea.io/${nfts[0].contractAddress}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-purple-600 text-white px-4 py-2 rounded-lg shadow hover:opacity-90"
-            >
-              ↗ View NFTs on OpenSea
-            </a>
-          )}
-        </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Custom Avatar URL</label>
+                  <input
+                    type="text"
+                    value={customAvatar}
+                    onChange={(e) => {
+                      setCustomAvatar(e.target.value);
+                      handleInputSave('custom_avatar', e.target.value);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    placeholder="Paste image URL here"
+                  />
+                </div>
 
-        <div className="w-full mt-10 mb-20 px-4">
-          <div className="flex flex-col gap-4 max-w-2xl mx-auto">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowDownloadModal(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 font-bold text-white rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 shadow-lg hover:opacity-95 border border-white/30"
-            >
-              <FileText size={18} /> Download VCR PDF
-            </motion.button>
-            <p className="text-center text-xs text-gray-500 italic">
-              A Verified Chain Resume: Designed for Web3 hiring, backed by ENS, POAP & onchain data.
-            </p>
-          </div>
-        </div>
-
-        {!ownsProfile && !isConnected && (
-          <div className="text-center text-gray-500 mt-6">
-            <AlertCircle className="inline mr-2 text-red-500" />
-            Connect wallet to edit this profile
-          </div>
-        )}
-
-        {showPreviewModal && (
-          <ResumeModal
-            ensName={ensName}
-            poaps={poaps}
-            nfts={nfts}
-            bio={ensData.bio}
-            avatar={resolvedAvatar}
-            experience={workExperience}
-            onClose={() => setShowPreviewModal(false)}
-          />
-        )}
-
-        {showDownloadModal && (
-          <ResumeDownloadModal
-            ensName={ensName}
-            poaps={poaps}
-            nfts={nfts}
-            bio={ensData.bio}
-            avatar={resolvedAvatar}
-            experience={workExperience}
-            onClose={() => setShowDownloadModal(false)}
-          />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Farcaster Link</label>
+                  <input
+                    type="text"
+                    value={farcaster}
+                    onChange={(e) => {
+                      setFarcaster(e.target.value);
+                      handleInputSave('farcaster', e.target.value);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    placeholder="https://warpcast.com/yourname"
+                  />
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </>
