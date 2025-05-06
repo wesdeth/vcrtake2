@@ -1,11 +1,19 @@
 // components/POAPDisplay.js
-export default function POAPDisplay({ poaps = [] }) {
+import { ClipboardCopyButton } from './ClipboardCopyButton';
+
+export default function POAPDisplay({ poaps = [], address = '' }) {
   if (!poaps.length) return null;
 
   const displayedPoaps = poaps.slice(0, 5);
 
   return (
     <section className="mt-12 bg-white/70 backdrop-blur-sm border border-gray-200 rounded-3xl p-6 shadow-lg max-w-4xl mx-auto">
+      <div className="text-center mb-4">
+        <div className="flex justify-center items-center gap-1 text-sm text-gray-600">
+          <span>{address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ''}</span>
+          <ClipboardCopyButton text={address} />
+        </div>
+      </div>
       <h2 className="text-center text-xl font-semibold text-gray-800 mb-6">Recent POAPs</h2>
       <div className="overflow-x-auto">
         <div className="flex gap-4 px-2 pb-2">
