@@ -208,6 +208,7 @@ export default function ENSProfile({ ensName }) {
                   location="Remote"
                   logo="/enslabs.png"
                   showDownload={true}
+                  ownsProfile={false}
                 />
               )}
             </div>
@@ -232,4 +233,3 @@ export default function ENSProfile({ ensName }) {
     </>
   );
 }
- 
