@@ -1,7 +1,9 @@
-// ProfileCard.js
+// components/ProfileCard.js
+import { useState } from 'react';
 import { Copy, ShieldCheck, Twitter, Link as LinkIcon, UserPlus2, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { utils } from 'ethers';
+import { useAccount } from 'wagmi';
 
 function generateColorSeed(str = '') {
   let hash = 0;
@@ -36,12 +38,19 @@ export default function ProfileCard({ data }) {
     farcaster
   } = data;
 
+  const { address: connected } = useAccount();
+  const isOwner = connected?.toLowerCase() === address?.toLowerCase();
+
   const shortenAddress = (addr) =>
     addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(address);
   };
+
+  const [editTwitter, setEditTwitter] = useState(twitter);
+  const [editWebsite, setEditWebsite] = useState(website);
+  const [editTag, setEditTag] = useState(tag);
 
   const isAdmin = name?.toLowerCase() === 'wesd.eth';
   const seed = generateColorSeed(name || address);
@@ -77,10 +86,18 @@ export default function ProfileCard({ data }) {
         </p>
 
         <div className="flex flex-wrap justify-center gap-2 mt-3">
-          {tag && (
-            <span className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full">
-              {tag}
-            </span>
+          {isOwner ? (
+            <input
+              value={editTag}
+              onChange={(e) => setEditTag(e.target.value)}
+              className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full"
+            />
+          ) : (
+            tag && (
+              <span className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full">
+                {tag}
+              </span>
+            )
           )}
 
           {isAdmin && (
@@ -95,26 +112,48 @@ export default function ProfileCard({ data }) {
         )}
 
         <div className="flex gap-4 mt-5 justify-center text-sm">
-          {twitter && (
-            <a
-              href={`https://twitter.com/${twitter}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline flex items-center gap-1"
-            >
-              <Twitter size={16} /> X / Twitter
-            </a>
+          {isOwner ? (
+            <input
+              type="text"
+              placeholder="Twitter username"
+              value={editTwitter}
+              onChange={(e) => setEditTwitter(e.target.value)}
+              className="text-blue-500 bg-transparent border-b border-blue-300 px-2"
+            />
+          ) : (
+            twitter && (
+              <a
+                href={`https://twitter.com/${twitter}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline flex items-center gap-1"
+              >
+                <Twitter size={16} /> X / Twitter
+              </a>
+            )
           )}
-          {website && (
-            <a
-              href={website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-green-500 hover:underline flex items-center gap-1"
-            >
-              <LinkIcon size={16} /> Website
-            </a>
+
+          {isOwner ? (
+            <input
+              type="text"
+              placeholder="Website URL"
+              value={editWebsite}
+              onChange={(e) => setEditWebsite(e.target.value)}
+              className="text-green-500 bg-transparent border-b border-green-300 px-2"
+            />
+          ) : (
+            website && (
+              <a
+                href={website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-green-500 hover:underline flex items-center gap-1"
+              >
+                <LinkIcon size={16} /> Website
+              </a>
+            )
           )}
+
           {efpLink && (
             <a
               href={efpLink}
@@ -125,6 +164,7 @@ export default function ProfileCard({ data }) {
               <UserPlus2 size={16} /> Follow on EFP
             </a>
           )}
+
           {farcaster && (
             <a
               href={farcaster}
