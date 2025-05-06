@@ -1,6 +1,6 @@
 // components/ProfileCard.js
 import { useState, useEffect } from 'react';
-import { Copy, ShieldCheck, Twitter, Link as LinkIcon, UserPlus2, MessageSquare, Save } from 'lucide-react';
+import { Copy, ShieldCheck, Twitter, Link as LinkIcon, UserPlus2, MessageSquare, Save, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { utils } from 'ethers';
 import { useAccount } from 'wagmi';
@@ -50,7 +50,8 @@ export default function ProfileCard({ data }) {
     efpLink,
     farcaster,
     twitter: ensTwitter,
-    website: ensWebsite
+    website: ensWebsite,
+    poaps = []
   } = data;
 
   const { address: connected } = useAccount();
@@ -114,6 +115,22 @@ export default function ProfileCard({ data }) {
     }
   };
 
+  const handleGenerateAI = async () => {
+    const poapName = poaps.length > 0 ? poaps[0].event?.name : '';
+    const prompt = `Write a 2-3 sentence bio for a Web3 user named ${name}. They attended ${poapName}, are interested in ${editTag}, and work on interesting crypto projects.`;
+    try {
+      const res = await fetch('/api/generate-bio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      const json = await res.json();
+      setEditWork(json.bio);
+    } catch (err) {
+      alert('Failed to generate bio.');
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -170,10 +187,6 @@ export default function ProfileCard({ data }) {
           )}
         </div>
 
-        {bio && (
-          <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 italic max-w-sm leading-relaxed">{bio}</p>
-        )}
-
         <div className="flex flex-col gap-3 mt-5 justify-center text-sm items-center">
           <div className="flex gap-4">
             {isOwner ? (
@@ -220,13 +233,21 @@ export default function ProfileCard({ data }) {
           </div>
 
           {isOwner ? (
-            <textarea
-              placeholder="Add a short bio about yourself or generate one via AI"
-              value={editWork}
-              onChange={(e) => setEditWork(e.target.value)}
-              className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              rows={4}
-            />
+            <>
+              <textarea
+                placeholder="Add a short bio about yourself or generate one via AI"
+                value={editWork}
+                onChange={(e) => setEditWork(e.target.value)}
+                className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                rows={4}
+              />
+              <button
+                onClick={handleGenerateAI}
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-indigo-600 text-white rounded-full hover:bg-indigo-700"
+              >
+                <Sparkles size={16} /> Generate with AI
+              </button>
+            </>
           ) : (
             editWork && (
               <div className="text-sm text-gray-700 dark:text-gray-300 text-left max-w-md mt-2">
