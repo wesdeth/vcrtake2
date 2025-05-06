@@ -149,7 +149,7 @@ export default function ENSProfile({ ensName }) {
 
         <div className="flex justify-center mb-6">
           <span className={`flex items-center gap-2 text-xs px-3 py-1 rounded-full font-medium ${ownsProfile ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>
-            {ownsProfile ? <><Pencil size={12} /> Editing Enabled</> : <><Eye size={12} /> View Only</>}
+            {ownsProfile ? <><Pencil size={12} /> Edit Mode</> : <><Eye size={12} /> View Only</>}
           </span>
         </div>
 
