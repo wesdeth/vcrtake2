@@ -171,7 +171,7 @@ export default function ENSProfile({ ensName }) {
                   name: ensName || address,
                   address: ensData.address || address,
                   avatar: resolvedAvatar,
-                  bio: ensData.bio || '',
+                  bio: '',
                   twitter: ensData.twitter || '',
                   website: ensData.website || '',
                   tag: ensData.tag || 'Active Builder',
@@ -182,17 +182,19 @@ export default function ENSProfile({ ensName }) {
             </motion.div>
 
             <div className="max-w-2xl mx-auto mt-8">
-              <EditableBio
-                ensName={profileKey}
-                connectedAddress={address}
-                initialBio={ensData.bio}
-                initialLooking={ensData.lookingForWork === 'true'}
-                showAIGenerator={true}
-                experience={workExperience}
-                setExperience={setWorkExperience}
-                lastSaved={lastSaved}
-                setLastSaved={setLastSaved}
-              />
+              {ownsProfile && (
+                <EditableBio
+                  ensName={profileKey}
+                  connectedAddress={address}
+                  initialBio={ensData.bio}
+                  initialLooking={ensData.lookingForWork === 'true'}
+                  showAIGenerator={true}
+                  experience={workExperience}
+                  setExperience={setWorkExperience}
+                  lastSaved={lastSaved}
+                  setLastSaved={setLastSaved}
+                />
+              )}
 
               {ownsProfile ? (
                 <EditableWorkExperience
