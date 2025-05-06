@@ -54,6 +54,7 @@ export default function ProfileCard({ data }) {
   const [editTwitter, setEditTwitter] = useState('');
   const [editWebsite, setEditWebsite] = useState('');
   const [editTag, setEditTag] = useState('');
+  const [editWork, setEditWork] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -69,6 +70,7 @@ export default function ProfileCard({ data }) {
         setEditTwitter(data.twitter || '');
         setEditWebsite(data.website || '');
         setEditTag(data.tag || '');
+        setEditWork(data.work || '');
       }
       setLoading(false);
     };
@@ -87,6 +89,7 @@ export default function ProfileCard({ data }) {
       twitter: editTwitter,
       website: editWebsite,
       tag: editTag,
+      work: editWork,
       updated_at: new Date().toISOString()
     });
     if (error) {
@@ -195,6 +198,23 @@ export default function ProfileCard({ data }) {
               )
             )}
           </div>
+
+          {isOwner ? (
+            <textarea
+              placeholder="Add your work experience..."
+              value={editWork}
+              onChange={(e) => setEditWork(e.target.value)}
+              className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              rows={4}
+            />
+          ) : (
+            editWork && (
+              <div className="text-sm text-gray-700 dark:text-gray-300 text-left max-w-md mt-2">
+                <strong>Work Experience:</strong>
+                <p className="mt-1 whitespace-pre-line">{editWork}</p>
+              </div>
+            )
+          )}
 
           {efpLink && (
             <a
