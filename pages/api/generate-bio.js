@@ -6,15 +6,15 @@ export default async function handler(req, res) {
 
   const { prompt } = req.body;
 
-  if (!prompt) {
-    return res.status(400).json({ error: 'Missing prompt' });
+  if (!prompt || typeof prompt !== 'string') {
+    return res.status(400).json({ error: 'Missing or invalid prompt' });
   }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/completions', {
+    const openaiRes = await fetch('https://api.openai.com/v1/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -25,8 +25,18 @@ export default async function handler(req, res) {
       })
     });
 
-    const data = await response.json();
-    const text = data?.choices?.[0]?.text?.trim();
+    const data = await openaiRes.json();
+
+    if (!data.choices || !data.choices.length) {
+      console.error('Invalid OpenAI response:', data);
+      return res.status(500).json({ error: 'OpenAI did not return a valid response' });
+    }
+
+    const text = data.choices[0].text?.trim();
+
+    if (!text) {
+      return res.status(500).json({ error: 'Empty AI response' });
+    }
 
     return res.status(200).json({ bio: text });
   } catch (err) {
