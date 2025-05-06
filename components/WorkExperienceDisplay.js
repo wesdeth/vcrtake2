@@ -36,3 +36,4 @@ export default function WorkExperienceDisplay({ experience = '', title = '', com
     </section>
   );
 }
+ 
