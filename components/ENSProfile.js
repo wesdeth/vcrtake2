@@ -106,7 +106,7 @@ export default function ENSProfile({ ensName }) {
       }
     };
     checkOwnership();
-  }, [connected, ensName, isWalletOnly, provider]);
+  }, [connected, ensName, isWalletOnly, provider, ensData.address]);
 
   const resolvedAvatar = customAvatar || (ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg');
   const efpLink = ensData.address ? `https://efp.social/profile/${ensData.address}` : '';
