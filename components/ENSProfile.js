@@ -11,7 +11,6 @@ import ResumeDownloadModal from './ResumeDownloadModal';
 import EditableBio from './EditableBio';
 import ProfileCard from './ProfileCard';
 import POAPDisplay from './POAPDisplay';
-import NFTDisplay from './NFTDisplay';
 import { FileText, Loader2, AlertCircle, LogOut, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -198,7 +197,6 @@ export default function ENSProfile({ ensName }) {
 
             <div className="max-w-4xl mx-auto mt-10">
               <POAPDisplay poaps={poaps} />
-              <NFTDisplay nfts={nfts} />
               {openSeaLink && (
                 <div className="text-center mt-4">
                   <a href={openSeaLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
