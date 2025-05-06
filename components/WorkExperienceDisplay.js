@@ -1,10 +1,24 @@
 // components/WorkExperienceDisplay.js
-export default function WorkExperienceDisplay({ experience = '', title = '', company = '', startDate = '', location = '', logo = '' }) {
+export default function WorkExperienceDisplay({ experience = '', title = '', company = '', startDate = '', location = '', logo = '', showDownload = false }) {
   if (!title && !company && !startDate && !location && !experience) return null;
 
   return (
     <section className="mt-8 px-6 py-5 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl shadow max-w-3xl mx-auto">
-      <h3 className="text-xl font-semibold text-gray-800 mb-6">Work Experience</h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-semibold text-gray-800">Work Experience</h3>
+        {showDownload && (
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              alert('Downloading resume...'); // Replace with actual download logic
+            }}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            Download Résumé ↗
+          </a>
+        )}
+      </div>
 
       <div className="flex items-start gap-4">
         {logo && (
@@ -36,4 +50,3 @@ export default function WorkExperienceDisplay({ experience = '', title = '', com
     </section>
   );
 }
- 
