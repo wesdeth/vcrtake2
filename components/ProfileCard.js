@@ -31,6 +31,16 @@ function getGradientFromSeed(seed) {
   return gradients[seed % gradients.length];
 }
 
+const TAG_OPTIONS = [
+  'ai', 'analyst', 'backend', 'bitcoin', 'blockchain', 'community manager', 'crypto', 'cryptography',
+  'cto', 'customer support', 'dao', 'data science', 'defi', 'design', 'developer relations', 'devops',
+  'discord', 'economy designer', 'entry level', 'erc', 'erc 20', 'evm', 'front end', 'full stack',
+  'gaming', 'ganache', 'golang', 'hardhat', 'intern', 'java', 'javascript', 'layer 2', 'marketing',
+  'mobile', 'moderator', 'nft', 'node', 'non tech', 'open source', 'openzeppelin', 'pay in crypto',
+  'product manager', 'project manager', 'react', 'refi', 'research', 'ruby', 'rust', 'sales',
+  'smart contract', 'solana', 'solidity', 'truffle', 'web3 py', 'web3js', 'zero knowledge'
+];
+
 export default function ProfileCard({ data }) {
   const {
     name,
@@ -38,7 +48,9 @@ export default function ProfileCard({ data }) {
     avatar,
     bio,
     efpLink,
-    farcaster
+    farcaster,
+    twitter: ensTwitter,
+    website: ensWebsite
   } = data;
 
   const { address: connected } = useAccount();
@@ -67,16 +79,19 @@ export default function ProfileCard({ data }) {
         .single();
 
       if (data) {
-        setEditTwitter(data.twitter || '');
-        setEditWebsite(data.website || '');
+        setEditTwitter(data.twitter || ensTwitter || '');
+        setEditWebsite(data.website || ensWebsite || '');
         setEditTag(data.tag || '');
         setEditWork(data.work || '');
+      } else {
+        setEditTwitter(ensTwitter || '');
+        setEditWebsite(ensWebsite || '');
       }
       setLoading(false);
     };
 
     if (address) fetchProfile();
-  }, [address]);
+  }, [address, ensTwitter, ensWebsite]);
 
   const isAdmin = name?.toLowerCase() === 'wesd.eth';
   const seed = generateColorSeed(name || address);
@@ -130,11 +145,16 @@ export default function ProfileCard({ data }) {
 
         <div className="flex flex-wrap justify-center gap-2 mt-3">
           {isOwner ? (
-            <input
+            <select
               value={editTag}
               onChange={(e) => setEditTag(e.target.value)}
               className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full"
-            />
+            >
+              <option value="">Select a tag</option>
+              {TAG_OPTIONS.map(tag => (
+                <option key={tag} value={tag}>{tag}</option>
+              ))}
+            </select>
           ) : (
             editTag && (
               <span className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full">
@@ -201,7 +221,7 @@ export default function ProfileCard({ data }) {
 
           {isOwner ? (
             <textarea
-              placeholder="Add your work experience..."
+              placeholder="Add a short bio about yourself or generate one via AI"
               value={editWork}
               onChange={(e) => setEditWork(e.target.value)}
               className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -210,7 +230,7 @@ export default function ProfileCard({ data }) {
           ) : (
             editWork && (
               <div className="text-sm text-gray-700 dark:text-gray-300 text-left max-w-md mt-2">
-                <strong>Work Experience:</strong>
+                <strong>Bio:</strong>
                 <p className="mt-1 whitespace-pre-line">{editWork}</p>
               </div>
             )
