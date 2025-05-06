@@ -2,33 +2,32 @@
 export default function POAPDisplay({ poaps = [] }) {
   if (!poaps.length) return null;
 
+  const displayedPoaps = poaps.slice(0, 5);
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-      {poaps.map((poap) => (
-        <div
-          key={poap.id}
-          className="bg-white rounded-lg shadow border p-3 text-center"
-        >
-          <img
-            src={poap.image_url}
-            alt={poap.name}
-            className="w-20 h-20 mx-auto object-contain rounded"
-          />
-          <h3 className="text-sm font-semibold mt-2">{poap.name}</h3>
-          <p className="text-xs text-gray-500">{poap.fancy_date}</p>
-          {poap.location !== 'Unknown' && (
-            <p className="text-xs text-gray-400">{poap.location}</p>
-          )}
-          <a
-            href={poap.event_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block mt-1 text-xs text-blue-600 hover:underline"
+    <div className="overflow-x-auto">
+      <div className="flex space-x-4">
+        {displayedPoaps.map((poap) => (
+          <div
+            key={poap.id}
+            className="flex-shrink-0 bg-white rounded-full shadow border p-2 w-24 h-24 flex flex-col items-center justify-center text-center"
           >
-            View on POAP Gallery ↗
-          </a>
-        </div>
-      ))}
+            <img
+              src={poap.image_url}
+              alt={poap.name}
+              className="w-16 h-16 object-contain rounded-full mb-1"
+            />
+            <a
+              href={poap.event_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] text-blue-600 hover:underline"
+            >
+              View ↗
+            </a>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
