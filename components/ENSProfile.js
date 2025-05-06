@@ -182,7 +182,7 @@ export default function ENSProfile({ ensName }) {
             </motion.div>
 
             <div className="max-w-2xl mx-auto mt-8">
-              {ownsProfile && (
+              {ownsProfile ? (
                 <EditableBio
                   ensName={profileKey}
                   connectedAddress={address}
@@ -194,6 +194,10 @@ export default function ENSProfile({ ensName }) {
                   lastSaved={lastSaved}
                   setLastSaved={setLastSaved}
                 />
+              ) : (
+                <div className="px-4 py-4 bg-white/80 border border-gray-200 rounded-xl text-sm text-gray-600 text-center">
+                  Connect your wallet to edit this bio.
+                </div>
               )}
 
               {ownsProfile ? (
