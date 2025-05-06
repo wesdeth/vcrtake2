@@ -108,93 +108,90 @@ export default function EditableBio({
   };
 
   return (
-    <>
-      <link href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap" rel="stylesheet" />
-      <div className="space-y-4">
-        {editing ? (
-          <>
-            <textarea
-              className="w-full p-2 border border-gray-300 rounded-lg"
-              rows={3}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              disabled={loadingAI || saving}
-              placeholder="Enter a short bio about yourself"
-            />
+    <div className="space-y-4">
+      {editing ? (
+        <>
+          <textarea
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            rows={3}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            disabled={loadingAI || saving}
+            placeholder="Enter a short bio about yourself"
+          />
 
-            <input
-              type="text"
-              className="w-full p-2 border border-gray-300 rounded-lg"
-              value={twitter}
-              onChange={(e) => setTwitter(e.target.value)}
-              placeholder="Twitter handle (e.g., @yourhandle)"
-            />
+          <input
+            type="text"
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            value={twitter}
+            onChange={(e) => setTwitter(e.target.value)}
+            placeholder="Twitter handle (e.g., @yourhandle)"
+          />
 
-            <input
-              type="text"
-              className="w-full p-2 border border-gray-300 rounded-lg"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-              placeholder="Website URL"
-            />
+          <input
+            type="text"
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            placeholder="Website URL"
+          />
 
-            <textarea
-              className="w-full p-2 border border-gray-300 rounded-lg mt-2"
-              rows={4}
-              value={experience}
-              onChange={(e) => setExperience(e.target.value)}
+          <textarea
+            className="w-full p-2 border border-gray-300 rounded-lg mt-2"
+            rows={4}
+            value={experience}
+            onChange={(e) => setExperience(e.target.value)}
+            disabled={saving}
+            placeholder="List relevant roles, projects, or achievements"
+          />
+
+          <div className="flex items-center gap-2 flex-wrap mt-2">
+            <label className="flex items-center gap-1 text-sm" htmlFor="lookingForWork">
+              <input
+                id="lookingForWork"
+                type="checkbox"
+                checked={lookingForWork}
+                onChange={() => setLookingForWork(!lookingForWork)}
+              />
+              Looking for Work
+            </label>
+
+            <button
+              onClick={handleSave}
               disabled={saving}
-              placeholder="List relevant roles, projects, or achievements"
-            />
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
 
-            <div className="flex items-center gap-2 flex-wrap mt-2">
-              <label className="flex items-center gap-1 text-sm" htmlFor="lookingForWork">
-                <input
-                  id="lookingForWork"
-                  type="checkbox"
-                  checked={lookingForWork}
-                  onChange={() => setLookingForWork(!lookingForWork)}
-                />
-                Looking for Work
-              </label>
-
+            {showAIGenerator && (
               <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+                onClick={handleAIGenerate}
+                disabled={loadingAI}
+                className="px-3 py-2 bg-gray-200 text-sm rounded-lg hover:bg-gray-300"
               >
-                {saving ? 'Saving...' : 'Save'}
+                {loadingAI ? 'Thinking...' : '✍️ Generate with AI'}
               </button>
-
-              {showAIGenerator && (
-                <button
-                  onClick={handleAIGenerate}
-                  disabled={loadingAI}
-                  className="px-3 py-2 bg-gray-200 text-sm rounded-lg hover:bg-gray-300"
-                >
-                  {loadingAI ? 'Thinking...' : '✍️ Generate with AI'}
-                </button>
-              )}
-            </div>
-          </>
-        ) : (
-          <div
-            onClick={() => setEditing(true)}
-            className="cursor-pointer"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => e.key === 'Enter' && setEditing(true)}
-            aria-label="Click to edit bio"
-          >
-            <p className="text-gray-700 text-lg font-calsans">
-              {bio || 'Connect your wallet to customize your profile page'}
-            </p>
-            {lookingForWork && (
-              <p className="text-green-600 text-xs font-semibold mt-1">✅ Open to Work</p>
             )}
           </div>
-        )}
-      </div>
-    </>
+        </>
+      ) : (
+        <div
+          onClick={() => setEditing(true)}
+          className="cursor-pointer"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && setEditing(true)}
+          aria-label="Click to edit bio"
+        >
+          <p className="text-gray-700 text-lg font-calsans">
+            {bio || 'Connect your wallet to customize your profile page'}
+          </p>
+          {lookingForWork && (
+            <p className="text-green-600 text-xs font-semibold mt-1">✅ Open to Work</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
