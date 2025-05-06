@@ -184,12 +184,15 @@ export default function ENSProfile({ ensName }) {
                   initialBio={ensData.bio}
                   initialLooking={ensData.lookingForWork === 'true'}
                   showAIGenerator={true}
+                  experience={workExperience}
+                  setExperience={setWorkExperience}
+                  lastSaved={lastSaved}
+                  setLastSaved={setLastSaved}
                 />
 
                 <input type="text" value={customTitle} onChange={(e) => { setCustomTitle(e.target.value); handleInputSave('custom_title', e.target.value); }} placeholder="Custom Title" />
                 <input type="text" value={customAvatar} onChange={(e) => { setCustomAvatar(e.target.value); handleInputSave('custom_avatar', e.target.value); }} placeholder="Avatar URL" />
                 <input type="text" value={farcaster} onChange={(e) => { setFarcaster(e.target.value); handleInputSave('farcaster', e.target.value); }} placeholder="Farcaster" />
-                <textarea value={workExperience} onChange={(e) => { setWorkExperience(e.target.value); handleInputSave('experience', e.target.value); }} placeholder="Work experience" />
               </div>
             )}
 
