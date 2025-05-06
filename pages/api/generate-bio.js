@@ -22,26 +22,21 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that writes concise and engaging Web3 bios for onchain resumes.'
+            content: 'You are a helpful assistant that writes concise and engaging Web3 bios for crypto users.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: 120,
+        max_tokens: 150,
         temperature: 0.7
       })
     });
 
     const data = await response.json();
-
-    if (data?.error) {
-      console.error('OpenAI API error:', data.error);
-      return res.status(500).json({ error: 'OpenAI error: ' + data.error.message });
-    }
-
     const text = data?.choices?.[0]?.message?.content?.trim();
+
     return res.status(200).json({ bio: text });
   } catch (err) {
     console.error('AI generation error:', err);
