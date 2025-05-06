@@ -6,38 +6,42 @@ export default async function handler(req, res) {
 
   const { prompt } = req.body;
 
-  if (!prompt || typeof prompt !== 'string') {
-    return res.status(400).json({ error: 'Missing or invalid prompt' });
+  if (!prompt) {
+    return res.status(400).json({ error: 'Missing prompt' });
   }
 
   try {
-    const openaiRes = await fetch('https://api.openai.com/v1/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'text-davinci-003',
-        prompt,
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that writes concise and engaging Web3 bios for onchain resumes.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
         max_tokens: 120,
         temperature: 0.7
       })
     });
 
-    const data = await openaiRes.json();
+    const data = await response.json();
 
-    if (!data.choices || !data.choices.length) {
-      console.error('Invalid OpenAI response:', data);
-      return res.status(500).json({ error: 'OpenAI did not return a valid response' });
+    if (data?.error) {
+      console.error('OpenAI API error:', data.error);
+      return res.status(500).json({ error: 'OpenAI error: ' + data.error.message });
     }
 
-    const text = data.choices[0].text?.trim();
-
-    if (!text) {
-      return res.status(500).json({ error: 'Empty AI response' });
-    }
-
+    const text = data?.choices?.[0]?.message?.content?.trim();
     return res.status(200).json({ bio: text });
   } catch (err) {
     console.error('AI generation error:', err);
