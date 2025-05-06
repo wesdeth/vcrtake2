@@ -184,7 +184,9 @@ export default function EditableBio({
           onKeyDown={(e) => e.key === 'Enter' && setEditing(true)}
           aria-label="Click to edit bio"
         >
-          <p className="text-gray-700">{bio || 'Connect your wallet to edit this bio.'}</p>
+          <p className="text-gray-700 text-lg font-semibold" style={{ fontFamily: 'Cal Sans, sans-serif' }}>
+            {bio || 'Connect your wallet to customize your profile page'}
+          </p>
           {lookingForWork && (
             <p className="text-green-600 text-xs font-semibold mt-1">✅ Open to Work</p>
           )}
