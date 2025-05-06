@@ -49,8 +49,14 @@ export default function ENSProfile({ ensName }) {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const ens = ensName ? await getEnsData(ensName) : { address: connected };
-    const poapList = ens.address ? await getPOAPs(ensName || ens.address) : [];
+    let ens;
+    if (ensName) {
+      ens = await getEnsData(ensName);
+    } else if (connected) {
+      ens = await getEnsData(connected); // Fetch ENS name if available
+    }
+    ens = ens || { address: connected };
+    const poapList = ens.address ? await getPOAPs(ens.name || ens.address) : [];
     setEnsData(ens);
     setPoaps(poapList);
 
@@ -103,15 +109,6 @@ export default function ENSProfile({ ensName }) {
           .map(getAddress)
           .includes(connectedNorm);
 
-        console.log('Ownership debug:', {
-          registryOwner,
-          wrapperOwner,
-          ethRecord,
-          manager,
-          connectedNorm,
-          owns
-        });
-
         setOwnsProfile(owns);
       } catch (err) {
         console.error('❌ Ownership check failed:', err);
@@ -152,7 +149,7 @@ export default function ENSProfile({ ensName }) {
             <div className="flex items-center gap-2 bg-white/90 border border-gray-300 px-3 py-2 rounded-full shadow-md">
               <img src={resolvedAvatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
               <span className="text-sm font-medium text-gray-800">
-                {ensName || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                {ensData.name || ensName || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
               </span>
               <button onClick={() => disconnect()} className="text-gray-500 hover:text-red-500">
                 <LogOut size={16} />
@@ -181,7 +178,7 @@ export default function ENSProfile({ ensName }) {
             >
               <ProfileCard
                 data={{
-                  name: ensName || address,
+                  name: ensData.name || ensName || address,
                   address: ensData.address || address,
                   avatar: resolvedAvatar,
                   bio: '',
@@ -236,17 +233,29 @@ export default function ENSProfile({ ensName }) {
 
             <POAPDisplay poaps={poaps} address={ensData.address} />
 
-            {ensData.address && (
-              <p className="mt-6 text-center text-sm">
-                <a
-                  href={openSeaLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  View NFTs on OpenSea ↗
-                </a>
-              </p>
+            {ownsProfile && (
+              <div className="mt-6 text-center space-y-3">
+                <p className="text-sm">
+                  <a
+                    href={openSeaLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    View NFTs on OpenSea ↗
+                  </a>
+                </p>
+                <p>
+                  <a
+                    href={`/api/download-resume?ensName=${profileKey}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block px-4 py-2 text-white bg-black rounded-lg hover:bg-gray-900 text-sm"
+                  >
+                    Download Resume ↗
+                  </a>
+                </p>
+              </div>
             )}
           </>
         )}
