@@ -1,52 +1,104 @@
-// components/WorkExperienceDisplay.js
-export default function WorkExperienceDisplay({ experience = '', title = '', company = '', startDate = '', location = '', logo = '', showDownload = false }) {
-  if (!title && !company && !startDate && !location && !experience) return null;
+// components/EditableWorkExperience.js
+import { useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import toast from 'react-hot-toast';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
+export default function EditableWorkExperience({ ensName, initialExperience = [], setExperience }) {
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [entries, setEntries] = useState(initialExperience);
+
+  const handleChange = (index, field, value) => {
+    const updated = [...entries];
+    updated[index][field] = value;
+    setEntries(updated);
+  };
+
+  const handleSave = async () => {
+    const { error } = await supabase.from('VCR').upsert({
+      ens_name: ensName,
+      experience: entries,
+    });
+    if (error) {
+      toast.error('Failed to save experience');
+    } else {
+      toast.success('Experience saved');
+      setExperience(entries);
+      setEditingIndex(null);
+    }
+  };
+
+  const addEntry = () => {
+    setEntries([...entries, { title: '', company: '', startDate: '', location: '', description: '', logo: '' }]);
+    setEditingIndex(entries.length);
+  };
+
+  const removeEntry = (index) => {
+    const updated = entries.filter((_, i) => i !== index);
+    setEntries(updated);
+    setExperience(updated);
+  };
 
   return (
-    <section className="mt-8 px-6 py-5 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl shadow max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-semibold text-gray-800">Work Experience</h3>
-        {showDownload && (
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              alert('Downloading resume...'); // Replace with actual download logic
-            }}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Download Résumé ↗
-          </a>
-        )}
-      </div>
+    <div className="mt-6 bg-white border border-gray-300 rounded-lg p-4 space-y-4">
+      <h3 className="text-lg font-semibold">Work Experience</h3>
 
-      <div className="flex items-start gap-4">
-        {logo && (
-          <img
-            src={logo}
-            alt="Company Logo"
-            className="w-14 h-14 rounded-md border border-gray-300 object-cover"
+      {entries.map((exp, i) => (
+        <div key={i} className="border rounded p-3">
+          <input
+            className="w-full mb-2 p-2 border rounded"
+            placeholder="Title"
+            value={exp.title}
+            onChange={(e) => handleChange(i, 'title', e.target.value)}
           />
-        )}
-
-        <div className="flex flex-col">
-          <h4 className="text-lg font-bold text-gray-800 leading-tight">{title}</h4>
-          <span className="text-sm text-gray-700 font-medium">{company}</span>
-          <div className="text-sm text-gray-500">
-            <span>{startDate}</span>
-            {startDate && location && <span className="mx-2">•</span>}
-            <span>{location}</span>
-          </div>
+          <input
+            className="w-full mb-2 p-2 border rounded"
+            placeholder="Company"
+            value={exp.company}
+            onChange={(e) => handleChange(i, 'company', e.target.value)}
+          />
+          <input
+            className="w-full mb-2 p-2 border rounded"
+            placeholder="Start Date"
+            value={exp.startDate}
+            onChange={(e) => handleChange(i, 'startDate', e.target.value)}
+          />
+          <input
+            className="w-full mb-2 p-2 border rounded"
+            placeholder="Location"
+            value={exp.location}
+            onChange={(e) => handleChange(i, 'location', e.target.value)}
+          />
+          <textarea
+            className="w-full mb-2 p-2 border rounded"
+            placeholder="Description"
+            value={exp.description}
+            onChange={(e) => handleChange(i, 'description', e.target.value)}
+          />
+          <input
+            className="w-full mb-2 p-2 border rounded"
+            placeholder="Logo URL"
+            value={exp.logo}
+            onChange={(e) => handleChange(i, 'logo', e.target.value)}
+          />
+          <button onClick={() => removeEntry(i)} className="text-red-600 text-sm mt-2">
+            Remove
+          </button>
         </div>
+      ))}
+
+      <div className="flex gap-2">
+        <button onClick={addEntry} className="bg-blue-500 text-white px-4 py-2 rounded">
+          Add Role
+        </button>
+        <button onClick={handleSave} className="bg-green-600 text-white px-4 py-2 rounded">
+          Save All
+        </button>
       </div>
-
-      {experience && (
-        <div className="mt-4 border-l-4 border-blue-200 pl-4 text-sm text-gray-700 whitespace-pre-line">
-          {experience}
-        </div>
-      )}
-
-      <p className="mt-4 text-xs text-gray-500 italic">Connect your wallet to edit this section.</p>
-    </section>
+    </div>
   );
 }
