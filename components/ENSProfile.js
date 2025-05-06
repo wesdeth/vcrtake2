@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import EditableBio from './EditableBio';
 import ProfileCard from './ProfileCard';
 import POAPDisplay from './POAPDisplay';
+import WorkExperienceDisplay from './WorkExperienceDisplay';
 import { ClipboardCopyButton } from './ClipboardCopyButton';
 import { LogOut, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -36,6 +37,13 @@ export default function ENSProfile({ ensName }) {
   const [customAvatar, setCustomAvatar] = useState('');
   const [farcaster, setFarcaster] = useState('');
   const [loading, setLoading] = useState(true);
+  const [workMeta, setWorkMeta] = useState({
+    work_title: '',
+    work_company: '',
+    work_start: '',
+    work_location: '',
+    work_logo: ''
+  });
 
   const { address, isConnected } = useAccount();
   const { connect } = useConnect({ connector: new InjectedConnector() });
@@ -58,6 +66,13 @@ export default function ENSProfile({ ensName }) {
       if (data.custom_title) setCustomTitle(data.custom_title);
       if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
       if (data.farcaster) setFarcaster(data.farcaster);
+      setWorkMeta({
+        work_title: data.work_title || '',
+        work_company: data.work_company || '',
+        work_start: data.work_start || '',
+        work_location: data.work_location || '',
+        work_logo: data.work_logo || ''
+      });
       setLastSaved(data.updated_at);
     }
     setLoading(false);
@@ -187,12 +202,14 @@ export default function ENSProfile({ ensName }) {
                   setLastSaved={setLastSaved}
                 />
               ) : (
-                workExperience && (
-                  <section className="mt-8 px-4 py-4 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200 shadow max-w-2xl">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Work Experience</h3>
-                    <p className="text-gray-700 whitespace-pre-line text-sm">{workExperience}</p>
-                  </section>
-                )
+                <WorkExperienceDisplay
+                  experience={workExperience}
+                  title={workMeta.work_title}
+                  company={workMeta.work_company}
+                  startDate={workMeta.work_start}
+                  location={workMeta.work_location}
+                  logo={workMeta.work_logo}
+                />
               )}
             </div>
 
