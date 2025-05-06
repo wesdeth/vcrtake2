@@ -37,13 +37,6 @@ export default function ENSProfile({ ensName }) {
   const [customAvatar, setCustomAvatar] = useState('');
   const [farcaster, setFarcaster] = useState('');
   const [loading, setLoading] = useState(true);
-  const [workMeta, setWorkMeta] = useState({
-    work_title: '',
-    work_company: '',
-    work_start: '',
-    work_location: '',
-    work_logo: ''
-  });
 
   const { address, isConnected } = useAccount();
   const { connect } = useConnect({ connector: new InjectedConnector() });
@@ -66,13 +59,6 @@ export default function ENSProfile({ ensName }) {
       if (data.custom_title) setCustomTitle(data.custom_title);
       if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
       if (data.farcaster) setFarcaster(data.farcaster);
-      setWorkMeta({
-        work_title: data.work_title || '',
-        work_company: data.work_company || '',
-        work_start: data.work_start || '',
-        work_location: data.work_location || '',
-        work_logo: data.work_logo || ''
-      });
       setLastSaved(data.updated_at);
     }
     setLoading(false);
@@ -204,11 +190,12 @@ export default function ENSProfile({ ensName }) {
               ) : (
                 <WorkExperienceDisplay
                   experience={workExperience}
-                  title={workMeta.work_title}
-                  company={workMeta.work_company}
-                  startDate={workMeta.work_start}
-                  location={workMeta.work_location}
-                  logo={workMeta.work_logo}
+                  title={customTitle}
+                  company="ENS Labs"
+                  startDate="Jul 2024 - Present"
+                  location="Remote"
+                  logo="/enslabs.png"
+                  showDownload={true}
                 />
               )}
             </div>
@@ -233,4 +220,3 @@ export default function ENSProfile({ ensName }) {
     </>
   );
 }
- 
