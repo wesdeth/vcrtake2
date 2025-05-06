@@ -25,6 +25,11 @@ export default function EditableBio({
   const [lookingForWork, setLookingForWork] = useState(initialLooking);
   const [loadingAI, setLoadingAI] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [title, setTitle] = useState('');
+  const [company, setCompany] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [location, setLocation] = useState('');
+  const [logo, setLogo] = useState(null);
 
   useEffect(() => {
     setBio(initialBio);
@@ -63,6 +68,11 @@ export default function EditableBio({
         lookingForWork,
         experience,
         updated_at: now,
+        work_title: title,
+        work_company: company,
+        work_start: startDate,
+        work_location: location,
+        work_logo: logo
       });
 
       if (error) throw error;
@@ -75,6 +85,17 @@ export default function EditableBio({
       toast.error('Failed to save bio.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogo(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -115,8 +136,43 @@ export default function EditableBio({
           />
 
           <label className="block mt-3 text-sm font-medium text-gray-700">Work Experience</label>
-          <textarea
+          <input
+            type="text"
             className="w-full p-2 border border-gray-300 rounded-lg"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Job Title"
+          />
+          <input
+            type="text"
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            placeholder="Company"
+          />
+          <input
+            type="text"
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            placeholder="Start Date (e.g. Jan 2023 - Present)"
+          />
+          <input
+            type="text"
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="Location"
+          />
+          <input
+            type="file"
+            className="w-full text-sm"
+            accept="image/*"
+            onChange={handleLogoUpload}
+          />
+
+          <textarea
+            className="w-full p-2 border border-gray-300 rounded-lg mt-2"
             rows={4}
             value={experience}
             onChange={(e) => setExperience(e.target.value)}
