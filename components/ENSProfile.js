@@ -98,7 +98,19 @@ export default function ENSProfile({ ensName }) {
         } catch {}
 
         const connectedNorm = getAddress(connected);
-        const owns = [registryOwner, wrapperOwner, ethRecord, manager].filter(Boolean).map(getAddress).includes(connectedNorm);
+        const owns = [registryOwner, wrapperOwner, ethRecord, manager]
+          .filter(Boolean)
+          .map(getAddress)
+          .includes(connectedNorm);
+
+        console.log('Ownership debug:', {
+          registryOwner,
+          wrapperOwner,
+          ethRecord,
+          manager,
+          connectedNorm,
+          owns
+        });
 
         setOwnsProfile(owns);
       } catch (err) {
@@ -117,6 +129,7 @@ export default function ENSProfile({ ensName }) {
     <>
       <Head>
         <link href="https://fonts.googleapis.com/css2?family=Comic+Relief&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap" rel="stylesheet" />
         <style>{`body { font-family: 'Comic Relief', cursive; }`}</style>
       </Head>
       <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f3e8ff] to-[#ffe4e6] p-4">
@@ -196,7 +209,9 @@ export default function ENSProfile({ ensName }) {
                 />
               ) : (
                 <div className="px-4 py-4 bg-white/80 border border-gray-200 rounded-xl text-sm text-gray-600 text-center">
-                  Connect your wallet to edit this bio.
+                  <p className="text-lg" style={{ fontFamily: 'Cal Sans, sans-serif' }}>
+                    Connect your wallet to customize your profile page
+                  </p>
                 </div>
               )}
 
