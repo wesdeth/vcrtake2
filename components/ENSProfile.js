@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import EditableBio from './EditableBio';
 import ProfileCard from './ProfileCard';
 import POAPDisplay from './POAPDisplay';
+import { ClipboardCopyButton } from './ClipboardCopyButton';
 import { LogOut, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 
