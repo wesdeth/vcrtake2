@@ -1,4 +1,4 @@
-// EditableBio.js
+// components/EditableBio.js
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
@@ -25,11 +25,8 @@ export default function EditableBio({
   const [lookingForWork, setLookingForWork] = useState(initialLooking);
   const [loadingAI, setLoadingAI] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [title, setTitle] = useState('');
-  const [company, setCompany] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [location, setLocation] = useState('');
-  const [logo, setLogo] = useState(null);
+  const [twitter, setTwitter] = useState('');
+  const [website, setWebsite] = useState('');
 
   useEffect(() => {
     setBio(initialBio);
@@ -59,6 +56,8 @@ export default function EditableBio({
         const connectedResolver = resolver.connect(signer);
         await connectedResolver.setText('description', bio);
         await connectedResolver.setText('lookingForWork', lookingForWork ? 'true' : 'false');
+        if (twitter) await connectedResolver.setText('com.twitter', twitter);
+        if (website) await connectedResolver.setText('url', website);
       }
 
       const now = new Date().toISOString();
@@ -68,11 +67,8 @@ export default function EditableBio({
         lookingForWork,
         experience,
         updated_at: now,
-        work_title: title,
-        work_company: company,
-        work_start: startDate,
-        work_location: location,
-        work_logo: logo
+        twitter,
+        website
       });
 
       if (error) throw error;
@@ -85,17 +81,6 @@ export default function EditableBio({
       toast.error('Failed to save bio.');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleLogoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogo(reader.result);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -135,40 +120,20 @@ export default function EditableBio({
             placeholder="Enter a short bio about yourself"
           />
 
-          <label className="block mt-3 text-sm font-medium text-gray-700">Work Experience</label>
           <input
             type="text"
             className="w-full p-2 border border-gray-300 rounded-lg"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Job Title"
+            value={twitter}
+            onChange={(e) => setTwitter(e.target.value)}
+            placeholder="Twitter handle (e.g., @yourhandle)"
           />
+
           <input
             type="text"
             className="w-full p-2 border border-gray-300 rounded-lg"
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            placeholder="Company"
-          />
-          <input
-            type="text"
-            className="w-full p-2 border border-gray-300 rounded-lg"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            placeholder="Start Date (e.g. Jan 2023 - Present)"
-          />
-          <input
-            type="text"
-            className="w-full p-2 border border-gray-300 rounded-lg"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="Location"
-          />
-          <input
-            type="file"
-            className="w-full text-sm"
-            accept="image/*"
-            onChange={handleLogoUpload}
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            placeholder="Website URL"
           />
 
           <textarea
@@ -219,7 +184,7 @@ export default function EditableBio({
           onKeyDown={(e) => e.key === 'Enter' && setEditing(true)}
           aria-label="Click to edit bio"
         >
-          <p className="text-gray-700">{bio || 'Click to add a short bio about yourself'}</p>
+          <p className="text-gray-700">{bio || 'Connect your wallet to edit this bio.'}</p>
           {lookingForWork && (
             <p className="text-green-600 text-xs font-semibold mt-1">✅ Open to Work</p>
           )}
