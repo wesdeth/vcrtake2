@@ -8,97 +8,92 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-export default function EditableWorkExperience({ ensName, initialExperience = [], setExperience }) {
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [entries, setEntries] = useState(initialExperience);
-
-  const handleChange = (index, field, value) => {
-    const updated = [...entries];
-    updated[index][field] = value;
-    setEntries(updated);
-  };
+export default function EditableWorkExperience({ ensName, address }) {
+  const [title, setTitle] = useState('');
+  const [company, setCompany] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [location, setLocation] = useState('');
+  const [experience, setExperience] = useState('');
+  const [logo, setLogo] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    setSaving(true);
     const { error } = await supabase.from('VCR').upsert({
       ens_name: ensName,
-      experience: entries,
+      address,
+      custom_title: title,
+      company,
+      start_date: startDate,
+      location,
+      experience,
+      logo
     });
+
     if (error) {
-      toast.error('Failed to save experience');
+      toast.error('Failed to save work experience.');
     } else {
-      toast.success('Experience saved');
-      setExperience(entries);
-      setEditingIndex(null);
+      toast.success('Work experience saved!');
     }
-  };
-
-  const addEntry = () => {
-    setEntries([...entries, { title: '', company: '', startDate: '', location: '', description: '', logo: '' }]);
-    setEditingIndex(entries.length);
-  };
-
-  const removeEntry = (index) => {
-    const updated = entries.filter((_, i) => i !== index);
-    setEntries(updated);
-    setExperience(updated);
+    setSaving(false);
   };
 
   return (
-    <div className="mt-6 bg-white border border-gray-300 rounded-lg p-4 space-y-4">
-      <h3 className="text-lg font-semibold">Work Experience</h3>
+    <section className="mt-8 px-6 py-5 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl shadow max-w-3xl mx-auto">
+      <h3 className="text-xl font-semibold text-gray-800 mb-4">Edit Work Experience</h3>
 
-      {entries.map((exp, i) => (
-        <div key={i} className="border rounded p-3">
-          <input
-            className="w-full mb-2 p-2 border rounded"
-            placeholder="Title"
-            value={exp.title}
-            onChange={(e) => handleChange(i, 'title', e.target.value)}
-          />
-          <input
-            className="w-full mb-2 p-2 border rounded"
-            placeholder="Company"
-            value={exp.company}
-            onChange={(e) => handleChange(i, 'company', e.target.value)}
-          />
-          <input
-            className="w-full mb-2 p-2 border rounded"
-            placeholder="Start Date"
-            value={exp.startDate}
-            onChange={(e) => handleChange(i, 'startDate', e.target.value)}
-          />
-          <input
-            className="w-full mb-2 p-2 border rounded"
-            placeholder="Location"
-            value={exp.location}
-            onChange={(e) => handleChange(i, 'location', e.target.value)}
-          />
-          <textarea
-            className="w-full mb-2 p-2 border rounded"
-            placeholder="Description"
-            value={exp.description}
-            onChange={(e) => handleChange(i, 'description', e.target.value)}
-          />
-          <input
-            className="w-full mb-2 p-2 border rounded"
-            placeholder="Logo URL"
-            value={exp.logo}
-            onChange={(e) => handleChange(i, 'logo', e.target.value)}
-          />
-          <button onClick={() => removeEntry(i)} className="text-red-600 text-sm mt-2">
-            Remove
-          </button>
-        </div>
-      ))}
-
-      <div className="flex gap-2">
-        <button onClick={addEntry} className="bg-blue-500 text-white px-4 py-2 rounded">
-          Add Role
-        </button>
-        <button onClick={handleSave} className="bg-green-600 text-white px-4 py-2 rounded">
-          Save All
-        </button>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <input
+          type="text"
+          placeholder="Job Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="border rounded px-3 py-2"
+        />
+        <input
+          type="text"
+          placeholder="Company"
+          value={company}
+          onChange={(e) => setCompany(e.target.value)}
+          className="border rounded px-3 py-2"
+        />
+        <input
+          type="text"
+          placeholder="Start Date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="border rounded px-3 py-2"
+        />
+        <input
+          type="text"
+          placeholder="Location"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          className="border rounded px-3 py-2"
+        />
+        <input
+          type="text"
+          placeholder="Logo URL"
+          value={logo}
+          onChange={(e) => setLogo(e.target.value)}
+          className="border rounded px-3 py-2"
+        />
       </div>
-    </div>
+
+      <textarea
+        placeholder="Work Experience Description"
+        value={experience}
+        onChange={(e) => setExperience(e.target.value)}
+        className="border rounded px-3 py-2 mt-4 w-full h-24"
+      />
+
+      <button
+        onClick={handleSave}
+        className={`mt-4 px-4 py-2 rounded text-white ${saving ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+        disabled={saving}
+      >
+        {saving ? 'Saving...' : 'Save Work Experience'}
+      </button>
+    </section>
   );
 }
