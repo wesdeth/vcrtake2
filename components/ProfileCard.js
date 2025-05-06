@@ -69,6 +69,7 @@ export default function ProfileCard({ data }) {
   const [editTag, setEditTag] = useState('');
   const [editWork, setEditWork] = useState('');
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -87,12 +88,20 @@ export default function ProfileCard({ data }) {
       } else {
         setEditTwitter(ensTwitter || '');
         setEditWebsite(ensWebsite || '');
+        setEditWork('');
       }
       setLoading(false);
     };
 
     if (address) fetchProfile();
   }, [address, ensTwitter, ensWebsite]);
+
+  useEffect(() => {
+    if (isOwner && !editWork) {
+      handleGenerateAI();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOwner]);
 
   const isAdmin = name?.toLowerCase() === 'wesd.eth';
   const seed = generateColorSeed(name || address);
@@ -119,6 +128,7 @@ export default function ProfileCard({ data }) {
     const poapName = poaps.length > 0 ? poaps[0].event?.name : '';
     const prompt = `Write a 2-3 sentence bio for a Web3 user named ${name}. They attended ${poapName}, are interested in ${editTag}, and work on interesting crypto projects.`;
     try {
+      setGenerating(true);
       const res = await fetch('/api/generate-bio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,6 +138,8 @@ export default function ProfileCard({ data }) {
       setEditWork(json.bio);
     } catch (err) {
       alert('Failed to generate bio.');
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -243,9 +255,10 @@ export default function ProfileCard({ data }) {
               />
               <button
                 onClick={handleGenerateAI}
-                className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-indigo-600 text-white rounded-full hover:bg-indigo-700"
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50"
+                disabled={generating}
               >
-                <Sparkles size={16} /> Generate with AI
+                <Sparkles size={16} /> {generating ? 'Generating...' : 'Generate with AI'}
               </button>
             </>
           ) : (
