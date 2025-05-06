@@ -189,7 +189,7 @@ export default function ENSProfile({ ensName }) {
               ) : (
                 workExperience && (
                   <section className="mt-8 px-4 py-4 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200 shadow max-w-2xl">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Work Experience</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Work Experience</h3>
                     <p className="text-gray-700 whitespace-pre-line text-sm">{workExperience}</p>
                   </section>
                 )
@@ -216,4 +216,3 @@ export default function ENSProfile({ ensName }) {
     </>
   );
 }
- 
