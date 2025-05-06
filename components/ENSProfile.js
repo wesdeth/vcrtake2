@@ -151,7 +151,33 @@ export default function ENSProfile({ ensName }) {
         <style>{`body { font-family: 'Comic Relief', cursive; }`}</style>
       </Head>
       <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f3e8ff] to-[#ffe4e6] p-4">
-        {/* ... wallet controls and header ... */}
+        <div className="flex justify-between mb-4">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-sm bg-white/90 backdrop-blur border border-gray-300 px-4 py-2 rounded-full shadow-md hover:bg-white hover:border-gray-400 transition-all"
+          >
+            <ArrowLeft size={16} /> Back to Home
+          </Link>
+
+          {!isConnected ? (
+            <button
+              onClick={() => connect()}
+              className="text-sm bg-white/90 backdrop-blur border border-gray-300 px-4 py-2 rounded-full shadow-md hover:bg-white hover:border-gray-400 transition-all"
+            >
+              Connect Wallet
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 bg-white/90 border border-gray-300 px-3 py-2 rounded-full shadow-md">
+              <img src={resolvedAvatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+              <span className="text-sm font-medium text-gray-800">
+                {ensName || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
+              </span>
+              <button onClick={() => disconnect()} className="text-gray-500 hover:text-red-500">
+                <LogOut size={16} />
+              </button>
+            </div>
+          )}
+        </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-20">
