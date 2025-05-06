@@ -32,13 +32,13 @@ function getGradientFromSeed(seed) {
 }
 
 const TAG_OPTIONS = [
-  'ai', 'analyst', 'backend', 'bitcoin', 'blockchain', 'community manager', 'crypto', 'cryptography',
-  'cto', 'customer support', 'dao', 'data science', 'defi', 'design', 'developer relations', 'devops',
-  'discord', 'economy designer', 'entry level', 'erc', 'erc 20', 'evm', 'front end', 'full stack',
-  'gaming', 'ganache', 'golang', 'hardhat', 'intern', 'java', 'javascript', 'layer 2', 'marketing',
-  'mobile', 'moderator', 'nft', 'node', 'non tech', 'open source', 'openzeppelin', 'pay in crypto',
-  'product manager', 'project manager', 'react', 'refi', 'research', 'ruby', 'rust', 'sales',
-  'smart contract', 'solana', 'solidity', 'truffle', 'web3 py', 'web3js', 'zero knowledge'
+  'Ai', 'Analyst', 'Backend', 'Bitcoin', 'Blockchain', 'Community Manager', 'Crypto', 'Cryptography',
+  'Cto', 'Customer Support', 'Dao', 'Data Science', 'Defi', 'Design', 'Developer Relations', 'Devops',
+  'Discord', 'Economy Designer', 'Entry Level', 'Erc', 'Erc 20', 'Evm', 'Front End', 'Full Stack',
+  'Gaming', 'Ganache', 'Golang', 'Hardhat', 'Intern', 'Java', 'Javascript', 'Layer 2', 'Marketing',
+  'Mobile', 'Moderator', 'Nft', 'Node', 'Non Tech', 'Open Source', 'Openzeppelin', 'Pay In Crypto',
+  'Product Manager', 'Project Manager', 'React', 'Refi', 'Research', 'Ruby', 'Rust', 'Sales',
+  'Smart Contract', 'Solana', 'Solidity', 'Truffle', 'Web3 Py', 'Web3js', 'Zero Knowledge', 'Founder'
 ];
 
 export default function ProfileCard({ data }) {
