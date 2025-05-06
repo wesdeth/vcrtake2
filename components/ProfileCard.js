@@ -1,9 +1,15 @@
 // components/ProfileCard.js
 import { useState } from 'react';
-import { Copy, ShieldCheck, Twitter, Link as LinkIcon, UserPlus2, MessageSquare } from 'lucide-react';
+import { Copy, ShieldCheck, Twitter, Link as LinkIcon, UserPlus2, MessageSquare, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { utils } from 'ethers';
 import { useAccount } from 'wagmi';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 function generateColorSeed(str = '') {
   let hash = 0;
@@ -48,13 +54,29 @@ export default function ProfileCard({ data }) {
     navigator.clipboard.writeText(address);
   };
 
-  const [editTwitter, setEditTwitter] = useState(twitter);
-  const [editWebsite, setEditWebsite] = useState(website);
-  const [editTag, setEditTag] = useState(tag);
+  const [editTwitter, setEditTwitter] = useState(twitter || '');
+  const [editWebsite, setEditWebsite] = useState(website || '');
+  const [editTag, setEditTag] = useState(tag || '');
 
   const isAdmin = name?.toLowerCase() === 'wesd.eth';
   const seed = generateColorSeed(name || address);
   const bgGradient = getGradientFromSeed(seed);
+
+  const handleSave = async () => {
+    if (!connected) return;
+    const { error } = await supabase.from('ProfileCard').upsert({
+      address: connected,
+      twitter: editTwitter,
+      website: editWebsite,
+      tag: editTag,
+      updated_at: new Date().toISOString()
+    });
+    if (error) {
+      alert('Error saving: ' + error.message);
+    } else {
+      alert('Changes saved to Supabase.');
+    }
+  };
 
   return (
     <motion.div
@@ -111,48 +133,50 @@ export default function ProfileCard({ data }) {
           <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 italic max-w-sm leading-relaxed">{bio}</p>
         )}
 
-        <div className="flex gap-4 mt-5 justify-center text-sm">
-          {isOwner ? (
-            <input
-              type="text"
-              placeholder="Twitter username"
-              value={editTwitter}
-              onChange={(e) => setEditTwitter(e.target.value)}
-              className="text-blue-500 bg-transparent border-b border-blue-300 px-2"
-            />
-          ) : (
-            twitter && (
-              <a
-                href={`https://twitter.com/${twitter}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:underline flex items-center gap-1"
-              >
-                <Twitter size={16} /> X / Twitter
-              </a>
-            )
-          )}
+        <div className="flex flex-col gap-3 mt-5 justify-center text-sm items-center">
+          <div className="flex gap-4">
+            {isOwner ? (
+              <input
+                type="text"
+                placeholder="Twitter username"
+                value={editTwitter}
+                onChange={(e) => setEditTwitter(e.target.value)}
+                className="text-blue-500 bg-transparent border-b border-blue-300 px-2"
+              />
+            ) : (
+              twitter && (
+                <a
+                  href={`https://twitter.com/${twitter}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline flex items-center gap-1"
+                >
+                  <Twitter size={16} /> X / Twitter
+                </a>
+              )
+            )}
 
-          {isOwner ? (
-            <input
-              type="text"
-              placeholder="Website URL"
-              value={editWebsite}
-              onChange={(e) => setEditWebsite(e.target.value)}
-              className="text-green-500 bg-transparent border-b border-green-300 px-2"
-            />
-          ) : (
-            website && (
-              <a
-                href={website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-green-500 hover:underline flex items-center gap-1"
-              >
-                <LinkIcon size={16} /> Website
-              </a>
-            )
-          )}
+            {isOwner ? (
+              <input
+                type="text"
+                placeholder="Website URL"
+                value={editWebsite}
+                onChange={(e) => setEditWebsite(e.target.value)}
+                className="text-green-500 bg-transparent border-b border-green-300 px-2"
+              />
+            ) : (
+              website && (
+                <a
+                  href={website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-green-500 hover:underline flex items-center gap-1"
+                >
+                  <LinkIcon size={16} /> Website
+                </a>
+              )
+            )}
+          </div>
 
           {efpLink && (
             <a
@@ -174,6 +198,15 @@ export default function ProfileCard({ data }) {
             >
               <MessageSquare size={16} /> Farcaster
             </a>
+          )}
+
+          {isOwner && (
+            <button
+              onClick={handleSave}
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
+            >
+              <Save size={16} /> Save Changes
+            </button>
           )}
         </div>
       </div>
