@@ -15,7 +15,7 @@ import ProfileCard from './ProfileCard';
 import POAPDisplay from './POAPDisplay';
 import WorkExperienceDisplay from './WorkExperienceDisplay';
 import { ClipboardCopyButton } from './ClipboardCopyButton';
-import { LogOut, ArrowLeft } from 'lucide-react';
+import { LogOut, ArrowLeft, Eye, Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
@@ -147,6 +147,12 @@ export default function ENSProfile({ ensName }) {
           )}
         </div>
 
+        <div className="flex justify-center mb-6">
+          <span className={`flex items-center gap-2 text-xs px-3 py-1 rounded-full font-medium ${ownsProfile ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>
+            {ownsProfile ? <><Pencil size={12} /> Editing Enabled</> : <><Eye size={12} /> View Only</>}
+          </span>
+        </div>
+
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <p className="text-gray-500">Loading...</p>
@@ -220,4 +226,3 @@ export default function ENSProfile({ ensName }) {
     </>
   );
 }
- 
