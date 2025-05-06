@@ -43,4 +43,26 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to generate bio' });
   }
 }
- 
+
+// Frontend example to call this API (place in your React component)
+// async function handleGenerateBio(name) {
+//   setLoading(true);
+//   setBio("Generating bio...");
+//   try {
+//     const response = await fetch('/api/generate-bio', {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify({
+//         prompt: `Write a short Web3 bio for ${name}. Include their role, ENS, and community impact.`,
+//         auto: false
+//       })
+//     });
+//     const data = await response.json();
+//     if (response.ok && data.bio) setBio(data.bio);
+//     else setBio("Failed to generate bio.");
+//   } catch (err) {
+//     console.error("Error generating bio:", err);
+//     setBio("Something went wrong.");
+//   }
+//   setLoading(false);
+// }
