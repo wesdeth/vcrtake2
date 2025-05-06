@@ -1,5 +1,5 @@
 // components/ProfileCard.js
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Copy, ShieldCheck, Twitter, Link as LinkIcon, UserPlus2, MessageSquare, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { utils } from 'ethers';
@@ -37,9 +37,6 @@ export default function ProfileCard({ data }) {
     address,
     avatar,
     bio,
-    twitter,
-    website,
-    tag,
     efpLink,
     farcaster
   } = data;
@@ -54,9 +51,30 @@ export default function ProfileCard({ data }) {
     navigator.clipboard.writeText(address);
   };
 
-  const [editTwitter, setEditTwitter] = useState(twitter || '');
-  const [editWebsite, setEditWebsite] = useState(website || '');
-  const [editTag, setEditTag] = useState(tag || '');
+  const [editTwitter, setEditTwitter] = useState('');
+  const [editWebsite, setEditWebsite] = useState('');
+  const [editTag, setEditTag] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('ProfileCard')
+        .select('*')
+        .eq('address', address)
+        .single();
+
+      if (data) {
+        setEditTwitter(data.twitter || '');
+        setEditWebsite(data.website || '');
+        setEditTag(data.tag || '');
+      }
+      setLoading(false);
+    };
+
+    if (address) fetchProfile();
+  }, [address]);
 
   const isAdmin = name?.toLowerCase() === 'wesd.eth';
   const seed = generateColorSeed(name || address);
@@ -115,9 +133,9 @@ export default function ProfileCard({ data }) {
               className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full"
             />
           ) : (
-            tag && (
+            editTag && (
               <span className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full">
-                {tag}
+                {editTag}
               </span>
             )
           )}
@@ -144,9 +162,9 @@ export default function ProfileCard({ data }) {
                 className="text-blue-500 bg-transparent border-b border-blue-300 px-2"
               />
             ) : (
-              twitter && (
+              editTwitter && (
                 <a
-                  href={`https://twitter.com/${twitter}`}
+                  href={`https://twitter.com/${editTwitter}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-500 hover:underline flex items-center gap-1"
@@ -165,9 +183,9 @@ export default function ProfileCard({ data }) {
                 className="text-green-500 bg-transparent border-b border-green-300 px-2"
               />
             ) : (
-              website && (
+              editWebsite && (
                 <a
-                  href={website}
+                  href={editWebsite}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-green-500 hover:underline flex items-center gap-1"
