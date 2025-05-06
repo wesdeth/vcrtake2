@@ -37,6 +37,11 @@ export default async function handler(req, res) {
     const data = await response.json();
     const text = data?.choices?.[0]?.message?.content?.trim();
 
+    if (!response.ok) {
+      console.error('OpenAI API error:', data);
+      return res.status(response.status).json({ error: data.error?.message || 'OpenAI error' });
+    }
+
     return res.status(200).json({ bio: text });
   } catch (err) {
     console.error('AI generation error:', err);
