@@ -5,14 +5,14 @@ export default function POAPDisplay({ poaps = [] }) {
   const displayedPoaps = poaps.slice(0, 5);
 
   return (
-    <div className="mt-8">
-      <h2 className="text-center text-lg font-semibold text-gray-800 mb-4">Recent POAPs</h2>
+    <section className="mt-12 bg-white/70 backdrop-blur-sm border border-gray-200 rounded-3xl p-6 shadow-lg max-w-4xl mx-auto">
+      <h2 className="text-center text-xl font-semibold text-gray-800 mb-6">Recent POAPs</h2>
       <div className="overflow-x-auto">
         <div className="flex gap-4 px-2 pb-2">
           {displayedPoaps.map((poap) => (
             <div
               key={poap.id}
-              className="flex-shrink-0 bg-white rounded-2xl shadow-md border border-gray-200 p-3 w-28 h-36 flex flex-col items-center justify-between text-center transition-transform hover:scale-105 hover:shadow-lg"
+              className="flex-shrink-0 bg-white rounded-2xl shadow border border-gray-100 p-3 w-28 h-36 flex flex-col items-center justify-between text-center transition-transform hover:scale-105 hover:shadow-md"
             >
               <img
                 src={poap.image_url}
@@ -36,6 +36,6 @@ export default function POAPDisplay({ poaps = [] }) {
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
