@@ -1,33 +1,23 @@
-// ENSProfile.js
+// components/ENSProfile.js
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { getAddress, ethers } from 'ethers';
 import { namehash } from 'viem';
 import { getEnsData } from '../lib/ensUtils';
 import { getPOAPs } from '../lib/poapUtils';
-import { fetchAlchemyNFTs } from '../lib/nftUtils';
-import ResumeModal from './ResumeModal';
-import ResumeDownloadModal from './ResumeDownloadModal';
-import EditableBio from './EditableBio';
-import ProfileCard from './ProfileCard';
-import POAPDisplay from './POAPDisplay';
-import { FileText, Loader2, AlertCircle, LogOut, ArrowLeft } from 'lucide-react';
-import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
 import { createClient } from '@supabase/supabase-js';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { InjectedConnector } from 'wagmi/connectors/injected';
 import Head from 'next/head';
+import toast from 'react-hot-toast';
+import EditableBio from './EditableBio';
+import ProfileCard from './ProfileCard';
+import POAPDisplay from './POAPDisplay';
+import { LogOut, ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
-const ENS_REGISTRY_ABI = [
-  'function owner(bytes32 node) external view returns (address)',
-  'function getApproved(bytes32 node) external view returns (address)',
-  'function resolver(bytes32 node) external view returns (address)',
-  'function setOwner(bytes32 node, address owner) external'
-];
-const NAME_WRAPPER_ABI = ['function ownerOf(uint256 id) external view returns (address)'];
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -37,14 +27,10 @@ const supabase = createClient(
 export default function ENSProfile({ ensName }) {
   const [ensData, setEnsData] = useState({});
   const [poaps, setPoaps] = useState([]);
-  const [nfts, setNfts] = useState([]);
   const [connected, setConnected] = useState(null);
   const [ownsProfile, setOwnsProfile] = useState(false);
   const [workExperience, setWorkExperience] = useState('');
-  const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [customTitle, setCustomTitle] = useState('');
   const [customAvatar, setCustomAvatar] = useState('');
   const [farcaster, setFarcaster] = useState('');
@@ -62,10 +48,8 @@ export default function ENSProfile({ ensName }) {
     setLoading(true);
     const ens = ensName ? await getEnsData(ensName) : { address: connected };
     const poapList = ens.address ? await getPOAPs(ensName || ens.address) : [];
-    const nftList = ens.address ? await fetchAlchemyNFTs(ens.address) : [];
     setEnsData(ens);
     setPoaps(poapList);
-    setNfts(nftList);
 
     const { data } = await supabase.from('VCR').select('*').eq('ens_name', profileKey).single();
     if (data) {
@@ -93,12 +77,12 @@ export default function ENSProfile({ ensName }) {
 
       try {
         const hashedName = namehash(ensName);
-        const registry = new ethers.Contract(ENS_REGISTRY, ENS_REGISTRY_ABI, provider);
-        const wrapper = new ethers.Contract(NAME_WRAPPER, NAME_WRAPPER_ABI, provider);
+        const registry = new ethers.Contract(ENS_REGISTRY, ['function owner(bytes32 node) view returns (address)', 'function getApproved(bytes32 node) view returns (address)'], provider);
+        const wrapper = new ethers.Contract(NAME_WRAPPER, ['function ownerOf(uint256 id) view returns (address)'], provider);
 
         const [registryOwner, manager] = await Promise.all([
           registry.owner(hashedName),
-          registry.getApproved(hashedName),
+          registry.getApproved(hashedName)
         ]);
 
         let wrapperOwner = null;
@@ -111,10 +95,7 @@ export default function ENSProfile({ ensName }) {
         } catch {}
 
         const connectedNorm = getAddress(connected);
-        const owns = [registryOwner, wrapperOwner, ethRecord, manager]
-          .filter(Boolean)
-          .map(getAddress)
-          .includes(connectedNorm);
+        const owns = [registryOwner, wrapperOwner, ethRecord, manager].filter(Boolean).map(getAddress).includes(connectedNorm);
 
         setOwnsProfile(owns);
       } catch (err) {
@@ -125,24 +106,9 @@ export default function ENSProfile({ ensName }) {
     checkOwnership();
   }, [connected, ensName, isWalletOnly, provider]);
 
-  const handleInputSave = async (field, value) => {
-    const updates = {
-      ens_name: profileKey,
-      updated_at: new Date().toISOString(),
-    };
-    updates[field] = value;
-
-    const { error } = await supabase.from('VCR').upsert(updates);
-    if (error) {
-      toast.error(`❌ Failed to save ${field}`);
-    } else {
-      toast.success(`✅ ${field.charAt(0).toUpperCase() + field.slice(1)} saved!`);
-    }
-  };
-
   const resolvedAvatar = customAvatar || (ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg');
   const efpLink = ensData.address ? `https://efp.social/profile/${ensData.address}` : '';
-  const openSeaLink = nfts.length > 0 ? `https://opensea.io/${ensData.address}` : null;
+  const openSeaLink = ensData.address ? `https://opensea.io/${ensData.address}` : '';
 
   return (
     <>
@@ -181,11 +147,16 @@ export default function ENSProfile({ ensName }) {
 
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <Loader2 size={36} className="animate-spin text-purple-600" />
+            <p className="text-gray-500">Loading...</p>
           </div>
         ) : (
           <>
-            <motion.div className="flex justify-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              className="flex justify-center"
+            >
               <ProfileCard
                 data={{
                   name: ensName || address,
@@ -201,8 +172,8 @@ export default function ENSProfile({ ensName }) {
               />
             </motion.div>
 
-            {ownsProfile && (
-              <div className="max-w-2xl mx-auto mt-6 space-y-4">
+            <div className="max-w-2xl mx-auto mt-8">
+              {ownsProfile ? (
                 <EditableBio
                   ensName={profileKey}
                   connectedAddress={address}
@@ -214,23 +185,30 @@ export default function ENSProfile({ ensName }) {
                   lastSaved={lastSaved}
                   setLastSaved={setLastSaved}
                 />
-
-                <input type="text" value={customTitle} onChange={(e) => { setCustomTitle(e.target.value); handleInputSave('custom_title', e.target.value); }} placeholder="Custom Title" />
-                <input type="text" value={customAvatar} onChange={(e) => { setCustomAvatar(e.target.value); handleInputSave('custom_avatar', e.target.value); }} placeholder="Avatar URL" />
-                <input type="text" value={farcaster} onChange={(e) => { setFarcaster(e.target.value); handleInputSave('farcaster', e.target.value); }} placeholder="Farcaster" />
-              </div>
-            )}
-
-            <div className="max-w-4xl mx-auto mt-10">
-              <POAPDisplay poaps={poaps} />
-              {openSeaLink && (
-                <div className="text-center mt-4">
-                  <a href={openSeaLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                    View NFTs on OpenSea ↗
-                  </a>
-                </div>
+              ) : (
+                workExperience && (
+                  <section className="mt-8 px-4 py-4 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200 shadow max-w-2xl">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Work Experience</h3>
+                    <p className="text-gray-700 whitespace-pre-line text-sm">{workExperience}</p>
+                  </section>
+                )
               )}
             </div>
+
+            <POAPDisplay poaps={poaps} address={ensData.address} />
+
+            {ensData.address && (
+              <p className="mt-6 text-center text-sm">
+                <a
+                  href={openSeaLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  View NFTs on OpenSea ↗
+                </a>
+              </p>
+            )}
           </>
         )}
       </div>
