@@ -11,6 +11,7 @@ import { InjectedConnector } from 'wagmi/connectors/injected';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
 import EditableBio from './EditableBio';
+import EditableWorkExperience from './EditableWorkExperience';
 import ProfileCard from './ProfileCard';
 import POAPDisplay from './POAPDisplay';
 import WorkExperienceDisplay from './WorkExperienceDisplay';
@@ -181,17 +182,22 @@ export default function ENSProfile({ ensName }) {
             </motion.div>
 
             <div className="max-w-2xl mx-auto mt-8">
+              <EditableBio
+                ensName={profileKey}
+                connectedAddress={address}
+                initialBio={ensData.bio}
+                initialLooking={ensData.lookingForWork === 'true'}
+                showAIGenerator={true}
+                experience={workExperience}
+                setExperience={setWorkExperience}
+                lastSaved={lastSaved}
+                setLastSaved={setLastSaved}
+              />
+
               {ownsProfile ? (
-                <EditableBio
+                <EditableWorkExperience
                   ensName={profileKey}
-                  connectedAddress={address}
-                  initialBio={ensData.bio}
-                  initialLooking={ensData.lookingForWork === 'true'}
-                  showAIGenerator={true}
-                  experience={workExperience}
-                  setExperience={setWorkExperience}
-                  lastSaved={lastSaved}
-                  setLastSaved={setLastSaved}
+                  address={address}
                 />
               ) : (
                 <WorkExperienceDisplay
