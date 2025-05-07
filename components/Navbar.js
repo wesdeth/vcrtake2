@@ -20,7 +20,7 @@ export default function Navbar() {
         {navItems.map(({ label, href }) => (
           <Link key={href} href={href}>
             <span
-              className={`cursor-pointer hover:text-[#FFC542] transition ${
+              className={`cursor-pointer transition-all duration-200 ease-in-out transform hover:scale-105 hover:text-[#FFC542] ${
                 router.pathname === href ? 'text-[#FFC542]' : ''
               }`}
             >
