@@ -53,7 +53,7 @@ export default function ENSProfile({ ensName }) {
     if (ensName) {
       ens = await getEnsData(ensName);
     } else if (connected) {
-      ens = await getEnsData(connected); // Fetch ENS name if available
+      ens = await getEnsData(connected);
     }
     ens = ens || { address: connected };
     const poapList = ens.address ? await getPOAPs(ens.name || ens.address) : [];
@@ -233,18 +233,18 @@ export default function ENSProfile({ ensName }) {
 
             <POAPDisplay poaps={poaps} address={ensData.address} />
 
-            {ownsProfile && (
-              <div className="mt-6 text-center space-y-3">
-                <p className="text-sm">
-                  <a
-                    href={openSeaLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    View NFTs on OpenSea ↗
-                  </a>
-                </p>
+            <div className="mt-6 text-center space-y-3">
+              <p className="text-sm">
+                <a
+                  href={openSeaLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  View NFTs on OpenSea ↗
+                </a>
+              </p>
+              {ownsProfile && (
                 <p>
                   <a
                     href={`/api/download-resume?ensName=${profileKey}`}
@@ -255,8 +255,8 @@ export default function ENSProfile({ ensName }) {
                     Download Resume ↗
                   </a>
                 </p>
-              </div>
-            )}
+              )}
+            </div>
           </>
         )}
       </div>
