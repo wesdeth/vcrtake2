@@ -15,7 +15,6 @@ import EditableWorkExperience from './EditableWorkExperience';
 import ProfileCard from './ProfileCard';
 import POAPDisplay from './POAPDisplay';
 import WorkExperienceDisplay from './WorkExperienceDisplay';
-import { ClipboardCopyButton } from './ClipboardCopyButton';
 import { LogOut, ArrowLeft, Eye, Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -81,7 +80,21 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
 
   useEffect(() => {
     const checkOwnership = async () => {
-      if (!connected) return;
+      if (!connected) {
+        if (forceOwnerView) {
+          toast.error('Connect your wallet to view or edit your profile.', {
+            icon: '🔒',
+            style: {
+              borderRadius: '10px',
+              background: '#1f2937',
+              color: '#fff',
+              fontFamily: 'Cal Sans, sans-serif'
+            },
+            duration: 5000
+          });
+        }
+        return;
+      }
       if (isWalletOnly) return setOwnsProfile(true);
 
       try {
@@ -110,6 +123,16 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
           .includes(connectedNorm);
 
         if (forceOwnerView && !owns) {
+          toast.error('You must be the ENS owner or manager to view this profile.', {
+            icon: '🚫',
+            style: {
+              borderRadius: '10px',
+              background: '#1f2937',
+              color: '#fff',
+              fontFamily: 'Cal Sans, sans-serif'
+            },
+            duration: 5000
+          });
           setOwnsProfile(false);
         } else {
           setOwnsProfile(owns);
