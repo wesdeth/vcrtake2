@@ -7,6 +7,7 @@ import { publicProvider } from 'wagmi/providers/public';
 import { InjectedConnector } from 'wagmi/connectors/injected';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Head from 'next/head';
+import Navbar from '@/components/Navbar';
 
 const { chains, publicClient } = configureChains([mainnet], [publicProvider()]);
 
@@ -29,6 +30,7 @@ export default function App({ Component, pageProps }) {
       </Head>
       <WagmiConfig config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
+          <Navbar />
           <Component {...pageProps} />
           <Toaster position="top-right" />
         </QueryClientProvider>
