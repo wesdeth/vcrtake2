@@ -10,6 +10,7 @@ import Head from 'next/head';
 import Navbar from '../components/Navbar';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useEffect, useState } from 'react';
+import { Moon } from 'lucide-react';
 
 const { chains, publicClient } = configureChains([mainnet], [publicProvider()]);
 
@@ -33,24 +34,17 @@ function WalletConnectButton() {
       try {
         const res = await fetch(`/api/reverse-ens?address=${address}`);
         const data = await res.json();
-        if (data.ensName) {
-          setEnsName(data.ensName);
-        }
-        if (data.avatar) {
-          setAvatar(data.avatar);
-        }
+        if (data.ensName) setEnsName(data.ensName);
+        if (data.avatar) setAvatar(data.avatar);
       } catch (err) {
         console.error('Failed to resolve ENS name:', err);
       }
     };
-
-    if (isConnected && address) {
-      resolveENS();
-    }
+    if (isConnected && address) resolveENS();
   }, [isConnected, address]);
 
   return (
-    <div className="ml-auto">
+    <div className="flex items-center gap-4">
       {!isConnected ? (
         <button
           onClick={() => connect()}
@@ -61,21 +55,37 @@ function WalletConnectButton() {
       ) : (
         <div className="flex items-center gap-2 bg-white/90 border border-gray-300 px-3 py-2 rounded-full shadow-md">
           {avatar && (
-            <img
-              src={avatar}
-              alt="avatar"
-              className="w-6 h-6 rounded-full object-cover"
-            />
+            <img src={avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
           )}
           <span className="text-sm font-medium text-gray-800">
             {ensName || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
           </span>
-          <button onClick={() => disconnect()} className="text-gray-500 hover:text-red-500">
+          <button
+            onClick={() => disconnect()}
+            className="text-gray-500 hover:text-red-500 text-xs ml-2"
+          >
             Disconnect
           </button>
         </div>
       )}
     </div>
+  );
+}
+
+function DarkModeToggle() {
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark);
+  }, [dark]);
+
+  return (
+    <button
+      onClick={() => setDark(!dark)}
+      className="flex items-center gap-2 bg-white/90 border border-gray-300 px-3 py-2 rounded-full shadow-md text-sm hover:bg-gray-100"
+    >
+      <Moon size={16} /> {dark ? 'Light Mode' : 'Dark Mode'}
+    </button>
   );
 }
 
@@ -93,7 +103,10 @@ export default function App({ Component, pageProps }) {
           <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-calsans">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shadow-sm sticky top-0 z-50 bg-white dark:bg-gray-900">
               <Navbar />
-              <WalletConnectButton />
+              <div className="flex items-center gap-4">
+                <DarkModeToggle />
+                <WalletConnectButton />
+              </div>
             </div>
             <main className="pt-10 px-4">
               <Component {...pageProps} />
