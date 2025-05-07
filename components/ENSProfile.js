@@ -209,23 +209,18 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
                 </div>
               )}
 
-              {ownsProfile ? (
-                <EditableWorkExperience
-                  ensName={profileKey}
-                  address={address}
-                />
-              ) : (
-                <WorkExperienceDisplay
-                  experience={workExperience}
-                  title={customTitle}
-                  company="ENS Labs"
-                  startDate="Jul 2024 - Present"
-                  location="Remote"
-                  logo="/enslabs.png"
-                  showDownload={true}
-                  ownsProfile={false}
-                />
-              )}
+              <WorkExperienceDisplay
+                experience={workExperience}
+                title={customTitle}
+                company="ENS Labs"
+                startDate="Jul 2024 - Present"
+                location="Remote"
+                logo="/enslabs.png"
+                showDownload={true}
+                ownsProfile={ownsProfile}
+                address={address}
+                ensName={ensName}
+              />
             </div>
 
             <POAPDisplay poaps={poaps} address={ensData.address} />
