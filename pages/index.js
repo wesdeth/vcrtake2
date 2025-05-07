@@ -101,7 +101,7 @@ export default function Home() {
       </Head>
 
       <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white relative overflow-hidden font-calsans pt-20">
-        <div className="absolute top-8 left-6 animate-pulse bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md z-10">
+        <div className="absolute top-8 left-6 animate-pulse bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md z-10">
           12,380 onchain resumes created
         </div>
 
