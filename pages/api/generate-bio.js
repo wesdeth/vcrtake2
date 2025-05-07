@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { prompt, auto = false } = req.body;
+  const { prompt } = req.body;
 
   if (!prompt) {
     return res.status(400).json({ error: 'Missing prompt' });
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
             content: prompt,
           },
         ],
-        max_tokens: auto ? 100 : 150,
+        max_tokens: 150,
         temperature: 0.7,
       }),
     });
