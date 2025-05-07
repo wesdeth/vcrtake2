@@ -28,6 +28,7 @@ export default function EditableBio({
   const [saving, setSaving] = useState(false);
   const [twitter, setTwitter] = useState('');
   const [website, setWebsite] = useState('');
+  const [farcaster, setFarcaster] = useState('');
 
   useEffect(() => {
     setBio(initialBio);
@@ -59,17 +60,18 @@ export default function EditableBio({
         await connectedResolver.setText('lookingForWork', lookingForWork ? 'true' : 'false');
         if (twitter) await connectedResolver.setText('com.twitter', twitter);
         if (website) await connectedResolver.setText('url', website);
+        if (farcaster) await connectedResolver.setText('com.farcaster', farcaster);
       }
 
       const now = new Date().toISOString();
-      const { error } = await supabase.from('VCR').upsert({
-        ens_name: ensName,
+      const { error } = await supabase.from('ProfileCard').upsert({
+        address: connectedAddress,
         bio,
-        lookingForWork,
-        experience,
-        updated_at: now,
         twitter,
-        website
+        website,
+        farcaster,
+        tag: lookingForWork ? 'open' : null,
+        updated_at: now
       });
 
       if (error) throw error;
@@ -91,7 +93,7 @@ export default function EditableBio({
       const response = await fetch('/api/generate-bio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ensName, previousBio: bio })
+        body: JSON.stringify({ prompt: `Write a short, professional Web3 bio for someone using the ENS name: ${ensName}.`, auto: false })
       });
 
       const data = await response.json();
@@ -131,6 +133,14 @@ export default function EditableBio({
               value={twitter}
               onChange={(e) => setTwitter(e.target.value)}
               placeholder="Twitter handle (e.g., @yourhandle)"
+            />
+
+            <input
+              type="text"
+              className="w-full p-2 border border-gray-300 rounded-lg"
+              value={farcaster}
+              onChange={(e) => setFarcaster(e.target.value)}
+              placeholder="Farcaster username"
             />
 
             <input
