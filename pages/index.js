@@ -30,15 +30,15 @@ export default function Home() {
               return {
                 ...profile,
                 tag: hasPoaps ? 'POAP Verified' : profile.tag || 'Active Builder',
-                color: hasPoaps ? 'text-purple-500' : 'text-blue-500',
-                border: hasPoaps ? 'border-purple-300' : 'border-blue-300',
+                color: hasPoaps ? 'text-[#A259FF]' : 'text-[#635BFF]',
+                border: hasPoaps ? 'border-[#D8B4FE]' : 'border-[#A5B4FC]',
               };
             } catch {
               return {
                 ...profile,
                 tag: profile.tag || 'Active Builder',
-                color: 'text-blue-500',
-                border: 'border-blue-300',
+                color: 'text-[#635BFF]',
+                border: 'border-[#A5B4FC]',
               };
             }
           })
@@ -48,8 +48,8 @@ export default function Home() {
         if (enrichedData.length > 0 && noneTagged) {
           const index = Math.floor(Math.random() * enrichedData.length);
           enrichedData[index].tag = 'Looking for Work';
-          enrichedData[index].color = 'text-orange-500';
-          enrichedData[index].border = 'border-orange-300';
+          enrichedData[index].color = 'text-[#FFC542]';
+          enrichedData[index].border = 'border-[#FDE68A]';
         }
 
         setFloatingProfiles(enrichedData);
@@ -100,8 +100,8 @@ export default function Home() {
         <link href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap" rel="stylesheet" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-white via-purple-100 to-yellow-100 text-gray-900 relative overflow-hidden font-calsans pt-20">
-        <div className="absolute top-8 left-6 animate-pulse bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md z-10">
+      <div className="min-h-screen bg-gradient-to-br from-[#F9FAFB] via-[#F9FAFB] to-[#74E0FF] text-[#1F2937] relative overflow-hidden font-calsans pt-20">
+        <div className="absolute top-8 left-6 animate-pulse bg-gradient-to-r from-[#A259FF] via-[#635BFF] to-[#FFC542] text-white text-xs font-bold px-4 py-2 rounded-full shadow-md z-10">
           12,380 onchain resumes created
         </div>
 
@@ -128,17 +128,17 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col items-center justify-center px-4 sm:px-6 py-16 z-10 relative">
-          <div className="max-w-2xl w-full bg-white backdrop-blur-md border border-gray-200 shadow-2xl rounded-3xl p-6 sm:p-10 text-center animate-fadeIn text-gray-900">
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 mb-4">
+          <div className="max-w-2xl w-full bg-white backdrop-blur-md border border-[#E5E7EB] shadow-2xl rounded-3xl p-6 sm:p-10 text-center animate-fadeIn text-[#1F2937]">
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#A259FF] via-[#635BFF] to-[#FFC542] mb-4">
               Verified Chain Resume
             </h1>
-            <p className="text-md sm:text-lg text-gray-700 mb-3 font-medium">
+            <p className="text-md sm:text-lg text-[#4B5563] mb-3 font-medium">
               Your Web3 identity, beautifully packaged.
             </p>
-            <p className="text-sm sm:text-md text-gray-600 mb-4">
+            <p className="text-sm sm:text-md text-[#6B7280] mb-4">
               Discover a new kind of resume — one that's fully onchain. Powered by ENS, POAPs, Gitcoin Grants, and DAOs.
             </p>
-            <p className="text-xs sm:text-sm text-gray-500 italic mb-6">
+            <p className="text-xs sm:text-sm text-[#9CA3AF] italic mb-6">
               Enter your ENS or wallet to preview a Web3 resume.
             </p>
 
@@ -148,23 +148,23 @@ export default function Home() {
                 placeholder="Enter ENS or wallet (e.g. yourname.eth)"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="w-full sm:w-80 px-5 py-3 border border-gray-300 rounded-lg shadow-inner focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900"
+                className="w-full sm:w-80 px-5 py-3 border border-[#D1D5DB] rounded-lg shadow-inner focus:ring-2 focus:ring-[#A259FF] focus:outline-none bg-white text-[#1F2937]"
               />
               <button
                 type="submit"
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg shadow hover:scale-105 transition"
+                className="px-6 py-3 bg-gradient-to-r from-[#A259FF] to-[#635BFF] text-white font-semibold rounded-lg shadow hover:scale-105 transition"
               >
                 View Resume
               </button>
             </form>
 
-            <div className="mt-10 text-xs text-gray-400">
+            <div className="mt-10 text-xs text-[#9CA3AF]">
               ⚡ Powered by Ethereum. Loved by builders.
             </div>
           </div>
         </div>
 
-        <footer className="text-center text-xs text-gray-500 py-6 z-10 relative">
+        <footer className="text-center text-xs text-[#9CA3AF] py-6 z-10 relative">
           © {new Date().getFullYear()} Verified Chain Resume — Built with ❤️ for the Web3 community.
         </footer>
       </div>
