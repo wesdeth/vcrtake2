@@ -16,11 +16,13 @@ export default function Navbar() {
 
   return (
     <div className="w-full flex justify-center py-4">
-      <nav className="flex items-center gap-8 bg-gradient-to-r from-blue-100 via-purple-100 to-yellow-100 text-gray-800 px-8 py-3 rounded-full border border-white shadow-lg text-sm font-semibold">
+      <nav className="flex items-center gap-8 bg-blue-600 text-white px-8 py-3 rounded-full border border-white shadow-lg text-sm font-semibold">
         {navItems.map(({ label, href }) => (
           <Link key={href} href={href}>
             <span
-              className={`cursor-pointer hover:text-purple-600 transition ${router.pathname === href ? 'text-purple-600' : ''}`}
+              className={`cursor-pointer hover:text-yellow-300 transition ${
+                router.pathname === href ? 'text-yellow-300' : ''
+              }`}
             >
               {label}
             </span>
