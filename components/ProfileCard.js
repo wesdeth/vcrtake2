@@ -112,7 +112,6 @@ export default function ProfileCard({ data }) {
       handleGenerateAI(true);
       didRun = true;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isAdmin = name?.toLowerCase() === 'wesd.eth';
@@ -191,7 +190,7 @@ export default function ProfileCard({ data }) {
             <select
               value={editTag}
               onChange={(e) => setEditTag(e.target.value)}
-              className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full"
+              className="text-xs font-semibold text-white bg-gradient-to-r from-[#A259FF] to-[#635BFF] px-4 py-1 rounded-full"
             >
               <option value="">Select a tag</option>
               {TAG_OPTIONS.map(tag => (
@@ -200,14 +199,14 @@ export default function ProfileCard({ data }) {
             </select>
           ) : (
             editTag && (
-              <span className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full">
+              <span className="text-xs font-semibold text-white bg-gradient-to-r from-[#A259FF] to-[#635BFF] px-4 py-1 rounded-full">
                 {editTag}
               </span>
             )
           )}
 
           {isAdmin && (
-            <span className="text-xs font-semibold text-white bg-gradient-to-r from-yellow-400 to-pink-500 px-4 py-1 rounded-full flex items-center gap-1 shadow-md">
+            <span className="text-xs font-semibold text-white bg-gradient-to-r from-[#FFC542] to-[#F472B6] px-4 py-1 rounded-full flex items-center gap-1 shadow-md">
               <ShieldCheck size={14} /> Admin
             </span>
           )}
@@ -221,7 +220,7 @@ export default function ProfileCard({ data }) {
                 placeholder="Twitter username"
                 value={editTwitter}
                 onChange={(e) => setEditTwitter(e.target.value)}
-                className="text-blue-500 bg-transparent border-b border-blue-300 px-2"
+                className="text-[#635BFF] bg-transparent border-b border-[#A5B4FC] px-2"
               />
             ) : (
               editTwitter && (
@@ -229,7 +228,7 @@ export default function ProfileCard({ data }) {
                   href={`https://twitter.com/${editTwitter}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline flex items-center gap-1"
+                  className="text-[#635BFF] hover:underline flex items-center gap-1"
                 >
                   <Twitter size={16} /> X / Twitter
                 </a>
@@ -242,7 +241,7 @@ export default function ProfileCard({ data }) {
                 placeholder="Website URL"
                 value={editWebsite}
                 onChange={(e) => setEditWebsite(e.target.value)}
-                className="text-green-500 bg-transparent border-b border-green-300 px-2"
+                className="text-[#10B981] bg-transparent border-b border-[#6EE7B7] px-2"
               />
             ) : (
               editWebsite && (
@@ -250,7 +249,7 @@ export default function ProfileCard({ data }) {
                   href={editWebsite}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-green-500 hover:underline flex items-center gap-1"
+                  className="text-[#10B981] hover:underline flex items-center gap-1"
                 >
                   <LinkIcon size={16} /> Website
                 </a>
@@ -264,12 +263,12 @@ export default function ProfileCard({ data }) {
                 placeholder="Add a short bio about yourself or generate one via AI"
                 value={editWork}
                 onChange={(e) => setEditWork(e.target.value)}
-                className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full px-3 py-2 text-sm text-[#1F2937] bg-white border border-[#E5E7EB] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]"
                 rows={4}
               />
               <button
                 onClick={() => handleGenerateAI(false)}
-                className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-[#635BFF] text-white rounded-full hover:bg-[#5146cc] disabled:opacity-50"
                 disabled={generating}
               >
                 <Sparkles size={16} /> {generating ? 'Generating...' : 'Generate with AI'}
@@ -277,7 +276,7 @@ export default function ProfileCard({ data }) {
             </>
           ) : (
             editWork && (
-              <div className="text-sm text-gray-700 dark:text-gray-300 text-left max-w-md mt-2">
+              <div className="text-sm text-[#1F2937] dark:text-gray-300 text-left max-w-md mt-2">
                 <strong>Bio:</strong>
                 <p className="mt-1 whitespace-pre-line">{editWork}</p>
               </div>
@@ -289,7 +288,7 @@ export default function ProfileCard({ data }) {
               href={efpLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-purple-500 hover:underline flex items-center gap-1 bg-purple-100 px-3 py-1 rounded-full font-semibold"
+              className="text-[#A259FF] hover:underline flex items-center gap-1 bg-[#F3E8FF] px-3 py-1 rounded-full font-semibold"
             >
               <UserPlus2 size={16} /> Follow on EFP
             </a>
@@ -309,7 +308,7 @@ export default function ProfileCard({ data }) {
           {isOwner && (
             <button
               onClick={handleSave}
-              className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-[#635BFF] text-white rounded-full hover:bg-[#5146cc] transition"
             >
               <Save size={16} /> Save Changes
             </button>
