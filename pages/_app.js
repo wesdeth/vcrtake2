@@ -48,7 +48,7 @@ function WalletConnectButton() {
       {!isConnected ? (
         <button
           onClick={() => connect()}
-          className="text-sm bg-blue-600 text-white px-5 py-2 rounded-full shadow hover:bg-blue-700 transition font-semibold"
+          className="text-sm bg-[#635BFF] text-white px-5 py-2 rounded-full shadow hover:bg-[#5146cc] transition font-semibold"
         >
           Connect Wallet
         </button>
@@ -82,7 +82,7 @@ function DarkModeToggle() {
   return (
     <button
       onClick={() => setDark(!dark)}
-      className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-full shadow hover:bg-blue-700 transition text-sm font-semibold"
+      className="flex items-center gap-2 bg-[#635BFF] text-white px-5 py-2 rounded-full shadow hover:bg-[#5146cc] transition text-sm font-semibold"
     >
       <Moon size={16} /> {dark ? 'Light Mode' : 'Dark Mode'}
     </button>
@@ -100,8 +100,8 @@ export default function App({ Component, pageProps }) {
       </Head>
       <WagmiConfig config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
-          <div className="min-h-screen bg-gradient-to-br from-white via-purple-50 to-yellow-50 text-gray-900 font-calsans">
-            <div className="flex items-center justify-between px-8 py-6 sticky top-0 z-50 backdrop-blur-lg bg-white/80 border-b border-gray-200 shadow-md">
+          <div className="min-h-screen bg-gradient-to-br from-[#F9FAFB] via-[#F9FAFB] to-[#74E0FF] text-[#1F2937] font-calsans">
+            <div className="flex items-center justify-between px-8 py-6 sticky top-0 z-50 backdrop-blur-lg bg-white/80 border-b border-[#E5E7EB] shadow-md">
               <Navbar />
               <div className="flex items-center gap-4">
                 <DarkModeToggle />
