@@ -11,17 +11,19 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing prompt' });
   }
 
-  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-  if (!OPENAI_API_KEY) {
-    return res.status(500).json({ error: 'Missing OpenAI API Key' });
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    console.error('OPENAI_API_KEY is missing from environment variables.');
+    return res.status(500).json({ error: 'Server configuration error' });
   }
 
   try {
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
@@ -36,35 +38,38 @@ export default async function handler(req, res) {
           }
         ],
         max_tokens: auto ? 100 : 150,
-        temperature: 0.7
-      })
+        temperature: 0.7,
+      }),
     });
 
     const data = await openaiRes.json();
 
     if (!openaiRes.ok) {
-      if (openaiRes.status === 429) {
-        console.warn('Rate limit hit:', data);
+      const status = openaiRes.status;
+
+      if (status === 429) {
+        console.warn('OpenAI API rate limit hit.');
         return res.status(429).json({
-          error: 'Rate limit reached. Please wait and try again.'
+          error: 'Rate limited by OpenAI. Please wait and try again.'
         });
       }
 
-      console.error('OpenAI error:', data);
-      return res.status(openaiRes.status).json({
-        error: data?.error?.message || 'Unknown error from OpenAI'
+      console.error('OpenAI API error:', data);
+      return res.status(status).json({
+        error: data?.error?.message || 'Unexpected OpenAI error'
       });
     }
 
     const text = data?.choices?.[0]?.message?.content?.trim();
 
     if (!text) {
-      return res.status(500).json({ error: 'No response text from OpenAI' });
+      console.warn('No valid bio content returned from OpenAI:', data);
+      return res.status(500).json({ error: 'No bio generated from OpenAI' });
     }
 
     return res.status(200).json({ bio: text });
   } catch (err) {
-    console.error('Server error in /api/generate-bio:', err);
+    console.error('Internal server error:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
