@@ -121,6 +121,15 @@ export default function Home() {
           12,380 onchain resumes created
         </div>
 
+        <div className="flex justify-center mb-10 z-10">
+          <nav className="flex items-center gap-10 bg-black text-white px-8 py-3 rounded-full border border-gray-700 shadow-lg text-sm font-semibold">
+            <button onClick={() => router.push('/')} className="hover:text-purple-400 transition">Home</button>
+            <button onClick={() => router.push('/jobs')} className="hover:text-purple-400 transition">Jobs</button>
+            <button onClick={() => router.push('/messages')} className="hover:text-purple-400 transition">Messaging</button>
+            <button onClick={() => router.push('/profile')} className="hover:text-purple-400 transition">Profile</button>
+          </nav>
+        </div>
+
         <div className="absolute top-28 right-4 space-y-4 max-h-[calc(100vh-7rem)] overflow-hidden hidden sm:block z-10"
           onMouseEnter={() => clearInterval(timerRef.current)}
           onMouseLeave={() => timerRef.current = setInterval(() => {
