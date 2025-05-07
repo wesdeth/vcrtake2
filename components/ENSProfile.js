@@ -1,13 +1,11 @@
 // components/ENSProfile.js
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import Link from 'next/link';
 import { getAddress, ethers } from 'ethers';
 import { namehash } from 'viem';
 import { getEnsData } from '../lib/ensUtils';
 import { getPOAPs } from '../lib/poapUtils';
 import { createClient } from '@supabase/supabase-js';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { InjectedConnector } from 'wagmi/connectors/injected';
+import { useAccount } from 'wagmi';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
 import EditableBio from './EditableBio';
@@ -15,7 +13,7 @@ import EditableWorkExperience from './EditableWorkExperience';
 import ProfileCard from './ProfileCard';
 import POAPDisplay from './POAPDisplay';
 import WorkExperienceDisplay from './WorkExperienceDisplay';
-import { LogOut, ArrowLeft, Eye, Pencil } from 'lucide-react';
+import { Eye, Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
@@ -39,8 +37,6 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
   const [loading, setLoading] = useState(true);
 
   const { address, isConnected } = useAccount();
-  const { connect } = useConnect({ connector: new InjectedConnector() });
-  const { disconnect } = useDisconnect();
   const provider = useMemo(() => new ethers.BrowserProvider(window.ethereum), []);
 
   const isWalletOnly = !ensName && !!connected;
@@ -157,34 +153,6 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
         <style>{`body { font-family: 'Comic Relief', cursive; }`}</style>
       </Head>
       <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f3e8ff] to-[#ffe4e6] p-4">
-        <div className="flex justify-between mb-4">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-sm bg-white/90 backdrop-blur border border-gray-300 px-4 py-2 rounded-full shadow-md hover:bg-white hover:border-gray-400 transition-all"
-          >
-            <ArrowLeft size={16} /> Back to Home
-          </Link>
-
-          {!isConnected ? (
-            <button
-              onClick={() => connect()}
-              className="text-sm bg-white/90 backdrop-blur border border-gray-300 px-4 py-2 rounded-full shadow-md hover:bg-white hover:border-gray-400 transition-all"
-            >
-              Connect Wallet
-            </button>
-          ) : (
-            <div className="flex items-center gap-2 bg-white/90 border border-gray-300 px-3 py-2 rounded-full shadow-md">
-              <img src={resolvedAvatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
-              <span className="text-sm font-medium text-gray-800">
-                {ensData.name || ensName || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
-              </span>
-              <button onClick={() => disconnect()} className="text-gray-500 hover:text-red-500">
-                <LogOut size={16} />
-              </button>
-            </div>
-          )}
-        </div>
-
         <div className="flex justify-center mb-6">
           <span className={`flex items-center gap-2 text-xs px-3 py-1 rounded-full font-medium ${ownsProfile ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>
             {ownsProfile ? <><Pencil size={12} /> Edit Mode</> : <><Eye size={12} /> View Only</>}
