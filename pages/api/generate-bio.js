@@ -11,11 +11,18 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing prompt' });
   }
 
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    console.error('Missing OpenAI API key');
+    return res.status(500).json({ error: 'Server misconfiguration: missing OpenAI API key' });
+  }
+
   try {
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -37,7 +44,6 @@ export default async function handler(req, res) {
 
     const data = await openaiRes.json();
 
-    // Handle rate limit or other OpenAI-specific errors
     if (!openaiRes.ok) {
       const status = openaiRes.status;
 
