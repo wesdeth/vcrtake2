@@ -11,18 +11,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing prompt' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    console.error('Missing OpenAI API key');
-    return res.status(500).json({ error: 'Server misconfiguration: missing OpenAI API key' });
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'Missing OpenAI API Key' });
   }
 
   try {
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -45,32 +43,28 @@ export default async function handler(req, res) {
     const data = await openaiRes.json();
 
     if (!openaiRes.ok) {
-      const status = openaiRes.status;
-
-      if (status === 429) {
-        console.warn('OpenAI API rate limit hit.');
+      if (openaiRes.status === 429) {
+        console.warn('Rate limit hit:', data);
         return res.status(429).json({
-          error: 'You are being rate-limited by OpenAI. Please try again later.'
+          error: 'Rate limit reached. Please wait and try again.'
         });
       }
 
       console.error('OpenAI error:', data);
-      return res.status(status).json({
-        error: data?.error?.message || 'OpenAI API error'
+      return res.status(openaiRes.status).json({
+        error: data?.error?.message || 'Unknown error from OpenAI'
       });
     }
 
     const text = data?.choices?.[0]?.message?.content?.trim();
 
     if (!text) {
-      console.warn('No content returned from OpenAI:', data);
       return res.status(500).json({ error: 'No response text from OpenAI' });
     }
 
     return res.status(200).json({ bio: text });
   } catch (err) {
-    console.error('Server error in generate-bio API:', err);
+    console.error('Server error in /api/generate-bio:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
- 
