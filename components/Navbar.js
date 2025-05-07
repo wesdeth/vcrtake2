@@ -1,28 +1,32 @@
 // components/Navbar.js
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useAccount } from 'wagmi';
 
 export default function Navbar() {
   const { isConnected } = useAccount();
+  const router = useRouter();
+
+  const navItems = [
+    { label: 'Home', href: '/' },
+    { label: 'Jobs', href: '/jobs' },
+    { label: 'Messaging', href: '/messages' },
+    { label: 'Profile', href: '/profile' },
+  ];
 
   return (
-    <nav className="w-full bg-white shadow-sm dark:bg-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-center space-x-10 py-4">
-          <Link href="/">
-            <span className="cursor-pointer hover:text-blue-600 transition">Home</span>
+    <div className="w-full flex justify-center py-6">
+      <nav className="flex items-center gap-8 bg-black text-white px-8 py-3 rounded-full border border-gray-700 shadow-lg text-sm font-semibold">
+        {navItems.map(({ label, href }) => (
+          <Link key={href} href={href}>
+            <span
+              className={`cursor-pointer hover:text-purple-400 transition ${router.pathname === href ? 'text-purple-400' : ''}`}
+            >
+              {label}
+            </span>
           </Link>
-          <Link href="/jobs">
-            <span className="cursor-pointer hover:text-blue-600 transition">Jobs</span>
-          </Link>
-          <Link href="/messages">
-            <span className="cursor-pointer hover:text-blue-600 transition">Messaging</span>
-          </Link>
-          <Link href="/profile">
-            <span className="cursor-pointer hover:text-blue-600 transition">Profile</span>
-          </Link>
-        </div>
-      </div>
-    </nav>
+        ))}
+      </nav>
+    </div>
   );
 }
