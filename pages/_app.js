@@ -48,21 +48,21 @@ function WalletConnectButton() {
       {!isConnected ? (
         <button
           onClick={() => connect()}
-          className="text-sm bg-white/90 backdrop-blur border border-gray-300 px-4 py-2 rounded-full shadow-md hover:bg-white hover:border-gray-400 transition-all"
+          className="text-sm bg-gradient-to-r from-gray-800 to-gray-700 text-white px-4 py-2 rounded-full shadow-lg hover:scale-105 transition"
         >
           Connect Wallet
         </button>
       ) : (
-        <div className="flex items-center gap-2 bg-white/90 border border-gray-300 px-3 py-2 rounded-full shadow-md">
+        <div className="flex items-center gap-2 bg-gradient-to-r from-gray-800 to-gray-700 text-white px-3 py-2 rounded-full shadow-lg">
           {avatar && (
             <img src={avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
           )}
-          <span className="text-sm font-medium text-gray-800">
+          <span className="text-sm font-medium">
             {ensName || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
           </span>
           <button
             onClick={() => disconnect()}
-            className="text-gray-500 hover:text-red-500 text-xs ml-2"
+            className="text-red-300 hover:text-red-500 text-xs ml-2"
           >
             Disconnect
           </button>
@@ -82,7 +82,7 @@ function DarkModeToggle() {
   return (
     <button
       onClick={() => setDark(!dark)}
-      className="flex items-center gap-2 bg-white/90 border border-gray-300 px-3 py-2 rounded-full shadow-md text-sm hover:bg-gray-100"
+      className="flex items-center gap-2 bg-gradient-to-r from-gray-700 to-gray-800 text-white px-3 py-2 rounded-full shadow-lg text-sm hover:scale-105 transition"
     >
       <Moon size={16} /> {dark ? 'Light Mode' : 'Dark Mode'}
     </button>
