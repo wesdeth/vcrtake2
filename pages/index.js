@@ -100,7 +100,7 @@ export default function Home() {
         <link href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap" rel="stylesheet" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white relative overflow-hidden font-calsans pt-20">
+      <div className="min-h-screen bg-gradient-to-br from-white via-purple-100 to-yellow-100 text-gray-900 relative overflow-hidden font-calsans pt-20">
         <div className="absolute top-8 left-6 animate-pulse bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md z-10">
           12,380 onchain resumes created
         </div>
@@ -128,17 +128,17 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col items-center justify-center px-4 sm:px-6 py-16 z-10 relative">
-          <div className="max-w-2xl w-full bg-[#1a1830]/90 backdrop-blur-md border border-white/20 shadow-2xl rounded-3xl p-6 sm:p-10 text-center animate-fadeIn text-white">
+          <div className="max-w-2xl w-full bg-white backdrop-blur-md border border-gray-200 shadow-2xl rounded-3xl p-6 sm:p-10 text-center animate-fadeIn text-gray-900">
             <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 mb-4">
               Verified Chain Resume
             </h1>
-            <p className="text-md sm:text-lg text-white/90 mb-3 font-medium">
+            <p className="text-md sm:text-lg text-gray-700 mb-3 font-medium">
               Your Web3 identity, beautifully packaged.
             </p>
-            <p className="text-sm sm:text-md text-white/80 mb-4">
+            <p className="text-sm sm:text-md text-gray-600 mb-4">
               Discover a new kind of resume — one that's fully onchain. Powered by ENS, POAPs, Gitcoin Grants, and DAOs.
             </p>
-            <p className="text-xs sm:text-sm text-white/60 italic mb-6">
+            <p className="text-xs sm:text-sm text-gray-500 italic mb-6">
               Enter your ENS or wallet to preview a Web3 resume.
             </p>
 
@@ -148,7 +148,7 @@ export default function Home() {
                 placeholder="Enter ENS or wallet (e.g. yourname.eth)"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="w-full sm:w-80 px-5 py-3 border border-white/30 rounded-lg shadow-inner focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900"
+                className="w-full sm:w-80 px-5 py-3 border border-gray-300 rounded-lg shadow-inner focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900"
               />
               <button
                 type="submit"
@@ -158,13 +158,13 @@ export default function Home() {
               </button>
             </form>
 
-            <div className="mt-10 text-xs text-white/50">
+            <div className="mt-10 text-xs text-gray-400">
               ⚡ Powered by Ethereum. Loved by builders.
             </div>
           </div>
         </div>
 
-        <footer className="text-center text-xs text-white/60 py-6 z-10 relative">
+        <footer className="text-center text-xs text-gray-500 py-6 z-10 relative">
           © {new Date().getFullYear()} Verified Chain Resume — Built with ❤️ for the Web3 community.
         </footer>
       </div>
