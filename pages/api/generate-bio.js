@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { prompt, auto = false } = req.body;
+  const { prompt } = req.body;
 
   if (!prompt) {
     return res.status(400).json({ error: 'Missing prompt' });
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4.1-mini',
         messages: [
           {
             role: 'system',
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
             content: prompt,
           },
         ],
-        max_tokens: auto ? 100 : 150,
+        max_tokens: 150,
         temperature: 0.7,
       }),
     });
