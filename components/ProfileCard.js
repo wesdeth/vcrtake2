@@ -8,11 +8,13 @@ import {
   UserPlus2,
   MessageSquare,
   Save,
-  Sparkles
+  Sparkles,
+  Pencil
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import { createClient } from '@supabase/supabase-js';
+import toast from 'react-hot-toast';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -39,121 +41,88 @@ function getGradientFromSeed(seed) {
   return gradients[seed % gradients.length];
 }
 
-const TAG_OPTIONS = [
-  'Ai', 'Analyst', 'Backend', 'Bitcoin', 'Blockchain', 'Community Manager', 'Crypto', 'Cryptography',
-  'Cto', 'Customer Support', 'Dao', 'Data Science', 'Defi', 'Design', 'Developer Relations', 'Devops',
-  'Discord', 'Economy Designer', 'Entry Level', 'Erc', 'Erc 20', 'Evm', 'Front End', 'Full Stack',
-  'Gaming', 'Ganache', 'Golang', 'Hardhat', 'Intern', 'Java', 'Javascript', 'Layer 2', 'Marketing',
-  'Mobile', 'Moderator', 'Nft', 'Node', 'Non Tech', 'Open Source', 'Openzeppelin', 'Pay In Crypto',
-  'Product Manager', 'Project Manager', 'React', 'Refi', 'Research', 'Ruby', 'Rust', 'Sales',
-  'Smart Contract', 'Solana', 'Solidity', 'Truffle', 'Web3 Py', 'Web3js', 'Zero Knowledge', 'Founder'
-];
-
 export default function ProfileCard({ data }) {
   const {
     name,
     address,
     avatar,
-    bio,
-    efpLink,
-    farcaster,
+    bio = '',
     twitter: ensTwitter,
     website: ensWebsite,
+    tag = '',
+    efpLink,
+    farcaster,
     poaps = []
   } = data;
 
   const { address: connected } = useAccount();
   const isOwner = connected?.toLowerCase() === address?.toLowerCase();
-
-  const shortenAddress = (addr) =>
-    addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
-
-  const handleCopy = () => {
-    if (address) {
-      navigator.clipboard.writeText(address);
-    }
-  };
-
-  const [editTwitter, setEditTwitter] = useState('');
-  const [editWebsite, setEditWebsite] = useState('');
-  const [editTag, setEditTag] = useState('');
+  const shortenAddress = (addr) => addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
+  const [editMode, setEditMode] = useState(false);
+  const [editTwitter, setEditTwitter] = useState(ensTwitter || '');
+  const [editWebsite, setEditWebsite] = useState(ensWebsite || '');
   const [editWork, setEditWork] = useState('');
+  const [editTag, setEditTag] = useState(tag || '');
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+
+  const TAG_OPTIONS = ['Frontend', 'Smart Contract', 'DAO', 'Defi', 'NFTs', 'Full Stack', 'Founder'];
+  const seed = generateColorSeed(name || address);
+  const bgGradient = getGradientFromSeed(seed);
+  const openSeaLink = address ? `https://opensea.io/${address}` : '';
 
   useEffect(() => {
     const fetchProfile = async () => {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('ProfileCard')
         .select('*')
         .eq('address', address)
         .single();
-
       if (data) {
         setEditTwitter(data.twitter || ensTwitter || '');
         setEditWebsite(data.website || ensWebsite || '');
-        setEditTag(data.tag || '');
         setEditWork(data.work || '');
-      } else {
-        setEditTwitter(ensTwitter || '');
-        setEditWebsite(ensWebsite || '');
-        setEditWork('');
+        setEditTag(data.tag || tag);
       }
       setLoading(false);
     };
-
     if (address) fetchProfile();
-  }, [address, ensTwitter, ensWebsite]);
+  }, [address]);
 
-  useEffect(() => {
-    let didRun = false;
-    if (!didRun && isOwner && !editWork && !generating) {
-      handleGenerateAI(true);
-      didRun = true;
-    }
-  }, []);
+  const handleCopy = () => navigator.clipboard.writeText(address);
 
-  const isAdmin = name?.toLowerCase() === 'wesd.eth';
-  const seed = generateColorSeed(name || address);
-  const bgGradient = getGradientFromSeed(seed);
-
-  const handleSave = async () => {
-    if (!connected) return;
-    const { error } = await supabase.from('ProfileCard').upsert({
-      address: connected,
-      twitter: editTwitter,
-      website: editWebsite,
-      tag: editTag,
-      work: editWork,
-      updated_at: new Date().toISOString()
-    });
-    if (error) {
-      alert('Error saving: ' + error.message);
-    } else {
-      alert('Changes saved to Supabase.');
-    }
-  };
-
-  const handleGenerateAI = async (auto = false) => {
-    const poapName = poaps.length > 0 ? poaps[0].event?.name : '';
-    const prompt = `Write a 2-3 sentence Web3 bio for ${name}. They attended ${poapName}, are interested in ${editTag}, and work on interesting crypto projects.`;
+  const handleGenerateAI = async () => {
+    const prompt = `Write a 2-3 sentence Web3 bio for ${name}. They are interested in ${editTag}.`;
     try {
       setGenerating(true);
       const res = await fetch('/api/generate-bio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, auto })
+        body: JSON.stringify({ prompt })
       });
       const json = await res.json();
-      if (res.ok && json.bio) setEditWork(json.bio);
-      else setEditWork('Could not generate bio.');
+      setEditWork(json.bio || 'Could not generate bio.');
     } catch (err) {
       console.error(err);
       setEditWork('Something went wrong.');
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleSave = async () => {
+    const { error } = await supabase.from('ProfileCard').upsert({
+      address,
+      twitter: editTwitter,
+      website: editWebsite,
+      tag: editTag,
+      work: editWork,
+      updated_at: new Date().toISOString()
+    });
+    if (error) toast.error('Error saving profile');
+    else toast.success('Profile saved!');
+    setEditMode(false);
   };
 
   return (
@@ -167,108 +136,89 @@ export default function ProfileCard({ data }) {
 
       <div className="relative z-10 p-6 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
         <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-white shadow-md">
-          <img
-            src={avatar || `/default-avatar.png`}
-            alt="avatar"
-            className="object-cover w-full h-full"
-          />
+          <img src={avatar || '/default-avatar.png'} alt="avatar" className="object-cover w-full h-full" />
         </div>
 
         <h2 className="text-2xl font-black text-gray-800 dark:text-white truncate">{name || shortenAddress(address)}</h2>
-
-        <p
-          onClick={handleCopy}
-          className="text-xs text-gray-500 dark:text-gray-400 mt-1 cursor-pointer flex items-center gap-1"
-          title="Click to copy address"
-        >
-          {shortenAddress(address)}
-          <Copy size={12} />
+        <p onClick={handleCopy} className="text-xs text-gray-500 dark:text-gray-400 mt-1 cursor-pointer flex items-center gap-1" title="Click to copy address">
+          {shortenAddress(address)} <Copy size={12} />
         </p>
 
+        {isOwner && (
+          <button
+            onClick={() => setEditMode(!editMode)}
+            className="mt-2 inline-flex items-center gap-1 text-sm text-[#635BFF] hover:underline"
+          >
+            <Pencil size={14} /> {editMode ? 'Cancel' : 'Edit Profile'}
+          </button>
+        )}
+
         <div className="flex flex-wrap justify-center gap-2 mt-3">
-          {isOwner ? (
+          {editMode ? (
             <select
               value={editTag}
               onChange={(e) => setEditTag(e.target.value)}
-              className="text-xs font-semibold text-white bg-gradient-to-r from-[#A259FF] to-[#635BFF] px-4 py-1 rounded-full"
+              className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full"
             >
               <option value="">Select a tag</option>
-              {TAG_OPTIONS.map(tag => (
-                <option key={tag} value={tag}>{tag}</option>
-              ))}
+              {TAG_OPTIONS.map(tag => <option key={tag} value={tag}>{tag}</option>)}
             </select>
           ) : (
             editTag && (
-              <span className="text-xs font-semibold text-white bg-gradient-to-r from-[#A259FF] to-[#635BFF] px-4 py-1 rounded-full">
+              <span className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full">
                 {editTag}
               </span>
             )
-          )}
-
-          {isAdmin && (
-            <span className="text-xs font-semibold text-white bg-gradient-to-r from-[#FFC542] to-[#F472B6] px-4 py-1 rounded-full flex items-center gap-1 shadow-md">
-              <ShieldCheck size={14} /> Admin
-            </span>
           )}
         </div>
 
         <div className="flex flex-col gap-3 mt-5 justify-center text-sm items-center">
           <div className="flex gap-4">
-            {isOwner ? (
+            {editMode ? (
               <input
                 type="text"
                 placeholder="Twitter username"
                 value={editTwitter}
                 onChange={(e) => setEditTwitter(e.target.value)}
-                className="text-[#635BFF] bg-transparent border-b border-[#A5B4FC] px-2"
+                className="text-blue-500 bg-transparent border-b border-blue-300 px-2"
               />
             ) : (
               editTwitter && (
-                <a
-                  href={`https://twitter.com/${editTwitter}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#635BFF] hover:underline flex items-center gap-1"
-                >
-                  <Twitter size={16} /> X / Twitter
+                <a href={`https://twitter.com/${editTwitter}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center gap-1">
+                  <Twitter size={16} /> Twitter
                 </a>
               )
             )}
 
-            {isOwner ? (
+            {editMode ? (
               <input
                 type="text"
                 placeholder="Website URL"
                 value={editWebsite}
                 onChange={(e) => setEditWebsite(e.target.value)}
-                className="text-[#10B981] bg-transparent border-b border-[#6EE7B7] px-2"
+                className="text-green-500 bg-transparent border-b border-green-300 px-2"
               />
             ) : (
               editWebsite && (
-                <a
-                  href={editWebsite}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#10B981] hover:underline flex items-center gap-1"
-                >
+                <a href={editWebsite} target="_blank" rel="noopener noreferrer" className="text-green-500 hover:underline flex items-center gap-1">
                   <LinkIcon size={16} /> Website
                 </a>
               )
             )}
           </div>
 
-          {isOwner ? (
+          {editMode ? (
             <>
               <textarea
-                placeholder="Add a short bio about yourself or generate one via AI"
+                placeholder="Add a short bio or generate with AI"
                 value={editWork}
                 onChange={(e) => setEditWork(e.target.value)}
-                className="w-full px-3 py-2 text-sm text-[#1F2937] bg-white border border-[#E5E7EB] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]"
+                className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                 rows={4}
               />
               <button
-                onClick={() => handleGenerateAI(false)}
-                className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-[#635BFF] text-white rounded-full hover:bg-[#5146cc] disabled:opacity-50"
+                onClick={handleGenerateAI}
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50"
                 disabled={generating}
               >
                 <Sparkles size={16} /> {generating ? 'Generating...' : 'Generate with AI'}
@@ -276,7 +226,7 @@ export default function ProfileCard({ data }) {
             </>
           ) : (
             editWork && (
-              <div className="text-sm text-[#1F2937] dark:text-gray-300 text-left max-w-md mt-2">
+              <div className="text-sm text-gray-700 dark:text-gray-300 text-left max-w-md mt-2">
                 <strong>Bio:</strong>
                 <p className="mt-1 whitespace-pre-line">{editWork}</p>
               </div>
@@ -284,35 +234,41 @@ export default function ProfileCard({ data }) {
           )}
 
           {efpLink && (
-            <a
-              href={efpLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#A259FF] hover:underline flex items-center gap-1 bg-[#F3E8FF] px-3 py-1 rounded-full font-semibold"
-            >
+            <a href={efpLink} target="_blank" rel="noopener noreferrer" className="text-purple-500 hover:underline flex items-center gap-1 bg-purple-100 px-3 py-1 rounded-full font-semibold">
               <UserPlus2 size={16} /> Follow on EFP
             </a>
           )}
 
           {farcaster && (
-            <a
-              href={farcaster}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-fuchsia-600 hover:underline flex items-center gap-1"
-            >
+            <a href={farcaster} target="_blank" rel="noopener noreferrer" className="text-fuchsia-600 hover:underline flex items-center gap-1">
               <MessageSquare size={16} /> Farcaster
             </a>
           )}
 
-          {isOwner && (
-            <button
-              onClick={handleSave}
-              className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-[#635BFF] text-white rounded-full hover:bg-[#5146cc] transition"
-            >
+          {editMode && (
+            <button onClick={handleSave} className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition">
               <Save size={16} /> Save Changes
             </button>
           )}
+
+          {poaps.length > 0 && (
+            <div className="mt-6 text-left w-full">
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">POAPs</h4>
+              <ul className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                {poaps.slice(0, 6).map((poap, idx) => (
+                  <li key={idx} className="bg-white p-2 rounded-md shadow-sm border border-gray-200 truncate">
+                    {poap.event?.name || 'POAP Event'}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="mt-4">
+            <a href={openSeaLink} target="_blank" rel="noopener noreferrer" className="text-[#635BFF] hover:underline text-xs">
+              View NFTs on OpenSea ↗
+            </a>
+          </div>
         </div>
       </div>
     </motion.div>
