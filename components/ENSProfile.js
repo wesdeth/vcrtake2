@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { getAddress, ethers } from 'ethers';
 import { namehash } from 'viem';
 import { getEnsData } from '../lib/ensUtils';
-import { getPOAPs } from '../lib/poapUtils';
 import { createClient } from '@supabase/supabase-js';
 import { useAccount } from 'wagmi';
 import Head from 'next/head';
@@ -182,7 +181,8 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
                 tag: ensData.tag || 'Active Builder',
                 efpLink,
                 farcaster,
-                poaps
+                poaps,
+                ownsProfile
               }}
             />
           </motion.div>
