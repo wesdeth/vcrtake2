@@ -15,7 +15,7 @@ export default function Navbar() {
   ];
 
   return (
-    <div className="w-full flex justify-center py-6">
+    <div className="w-full flex justify-center py-4 sticky top-0 z-50 bg-white dark:bg-gray-900">
       <nav className="flex items-center gap-8 bg-black text-white px-8 py-3 rounded-full border border-gray-700 shadow-lg text-sm font-semibold">
         {navItems.map(({ label, href }) => (
           <Link key={href} href={href}>
