@@ -82,7 +82,7 @@ function DarkModeToggle() {
   return (
     <button
       onClick={() => setDark(!dark)}
-      className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-full shadow hover:bg-gray-700 transition text-sm font-semibold"
+      className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-full shadow hover:bg-blue-700 transition text-sm font-semibold"
     >
       <Moon size={16} /> {dark ? 'Light Mode' : 'Dark Mode'}
     </button>
