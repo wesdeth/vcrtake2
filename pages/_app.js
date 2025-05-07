@@ -48,12 +48,12 @@ function WalletConnectButton() {
       {!isConnected ? (
         <button
           onClick={() => connect()}
-          className="text-sm bg-gradient-to-r from-gray-800 to-gray-700 text-white px-4 py-2 rounded-full shadow-lg hover:scale-105 transition"
+          className="text-sm bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white px-4 py-2 rounded-full shadow-lg hover:scale-105 transition"
         >
           Connect Wallet
         </button>
       ) : (
-        <div className="flex items-center gap-2 bg-gradient-to-r from-gray-800 to-gray-700 text-white px-3 py-2 rounded-full shadow-lg">
+        <div className="flex items-center gap-2 bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white px-3 py-2 rounded-full shadow-lg">
           {avatar && (
             <img src={avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
           )}
@@ -62,7 +62,7 @@ function WalletConnectButton() {
           </span>
           <button
             onClick={() => disconnect()}
-            className="text-red-300 hover:text-red-500 text-xs ml-2"
+            className="text-white/80 hover:text-red-300 text-xs ml-2"
           >
             Disconnect
           </button>
@@ -82,7 +82,7 @@ function DarkModeToggle() {
   return (
     <button
       onClick={() => setDark(!dark)}
-      className="flex items-center gap-2 bg-gradient-to-r from-gray-700 to-gray-800 text-white px-3 py-2 rounded-full shadow-lg text-sm hover:scale-105 transition"
+      className="flex items-center gap-2 bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white px-3 py-2 rounded-full shadow-lg text-sm hover:scale-105 transition"
     >
       <Moon size={16} /> {dark ? 'Light Mode' : 'Dark Mode'}
     </button>
@@ -101,7 +101,7 @@ export default function App({ Component, pageProps }) {
       <WagmiConfig config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
           <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white font-calsans">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 shadow-sm sticky top-0 z-50">
+            <div className="flex items-center justify-between px-6 py-4 sticky top-0 z-50">
               <Navbar />
               <div className="flex items-center gap-4">
                 <DarkModeToggle />
