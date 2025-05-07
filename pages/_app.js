@@ -25,6 +25,29 @@ function WalletConnectButton() {
   const { address, isConnected } = useAccount();
   const { connect } = useConnect({ connector: new InjectedConnector() });
   const { disconnect } = useDisconnect();
+  const [ensName, setEnsName] = useState('');
+  const [avatar, setAvatar] = useState('');
+
+  useEffect(() => {
+    const resolveENS = async () => {
+      try {
+        const res = await fetch(`/api/reverse-ens?address=${address}`);
+        const data = await res.json();
+        if (data.ensName) {
+          setEnsName(data.ensName);
+        }
+        if (data.avatar) {
+          setAvatar(data.avatar);
+        }
+      } catch (err) {
+        console.error('Failed to resolve ENS name:', err);
+      }
+    };
+
+    if (isConnected && address) {
+      resolveENS();
+    }
+  }, [isConnected, address]);
 
   return (
     <div className="ml-auto">
@@ -37,8 +60,15 @@ function WalletConnectButton() {
         </button>
       ) : (
         <div className="flex items-center gap-2 bg-white/90 border border-gray-300 px-3 py-2 rounded-full shadow-md">
+          {avatar && (
+            <img
+              src={avatar}
+              alt="avatar"
+              className="w-6 h-6 rounded-full object-cover"
+            />
+          )}
           <span className="text-sm font-medium text-gray-800">
-            {address?.slice(0, 6)}...{address?.slice(-4)}
+            {ensName || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
           </span>
           <button onClick={() => disconnect()} className="text-gray-500 hover:text-red-500">
             Disconnect
