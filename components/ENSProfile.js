@@ -82,9 +82,10 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
             icon: '🔒',
             style: {
               borderRadius: '10px',
-              background: '#1f2937',
-              color: '#fff',
-              fontFamily: 'Cal Sans, sans-serif'
+              background: '#1F2937',
+              color: '#FFC542',
+              fontFamily: 'Cal Sans, sans-serif',
+              border: '1px solid #FFC542'
             },
             duration: 5000
           });
@@ -123,9 +124,10 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
             icon: '🚫',
             style: {
               borderRadius: '10px',
-              background: '#1f2937',
-              color: '#fff',
-              fontFamily: 'Cal Sans, sans-serif'
+              background: '#1F2937',
+              color: '#FFC542',
+              fontFamily: 'Cal Sans, sans-serif',
+              border: '1px solid #FFC542'
             },
             duration: 5000
           });
@@ -152,16 +154,16 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
         <link href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap" rel="stylesheet" />
         <style>{`body { font-family: 'Comic Relief', cursive; }`}</style>
       </Head>
-      <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f3e8ff] to-[#ffe4e6] p-4">
+      <div className="min-h-screen bg-gradient-to-br from-[#F9FAFB] via-[#F3E8FF] to-[#74E0FF] p-4">
         <div className="flex justify-center mb-6">
-          <span className={`flex items-center gap-2 text-xs px-3 py-1 rounded-full font-medium ${ownsProfile ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>
+          <span className={`flex items-center gap-2 text-xs px-3 py-1 rounded-full font-medium ${ownsProfile ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#E5E7EB] text-[#4B5563]'}`}>
             {ownsProfile ? <><Pencil size={12} /> Edit Mode</> : <><Eye size={12} /> View Only</>}
           </span>
         </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <p className="text-gray-500">Loading...</p>
+            <p className="text-[#6B7280]">Loading...</p>
           </div>
         ) : (
           <>
@@ -200,7 +202,7 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
                   setLastSaved={setLastSaved}
                 />
               ) : (
-                <div className="px-4 py-4 bg-white/80 border border-gray-200 rounded-xl text-sm text-gray-600 text-center">
+                <div className="px-4 py-4 bg-white/80 border border-[#E5E7EB] rounded-xl text-sm text-[#6B7280] text-center">
                   <p className="text-lg" style={{ fontFamily: 'Cal Sans, sans-serif' }}>
                     Connect your wallet to customize your profile page
                   </p>
@@ -234,7 +236,7 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
                   href={openSeaLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
+                  className="text-[#635BFF] hover:underline"
                 >
                   View NFTs on OpenSea ↗
                 </a>
@@ -245,7 +247,7 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
                     href={`/api/download-resume?ensName=${profileKey}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block px-4 py-2 text-white bg-black rounded-lg hover:bg-gray-900 text-sm"
+                    className="inline-block px-4 py-2 text-white bg-[#635BFF] rounded-lg hover:bg-[#5146cc] text-sm"
                   >
                     Download Resume ↗
                   </a>
