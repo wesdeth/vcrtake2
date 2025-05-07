@@ -48,12 +48,12 @@ function WalletConnectButton() {
       {!isConnected ? (
         <button
           onClick={() => connect()}
-          className="text-sm bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white px-4 py-2 rounded-full shadow-xl hover:scale-105 transition-all font-semibold"
+          className="text-sm bg-blue-600 text-white px-5 py-2 rounded-full shadow hover:bg-blue-700 transition font-semibold"
         >
           Connect Wallet
         </button>
       ) : (
-        <div className="flex items-center gap-2 bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white px-4 py-2 rounded-full shadow-xl">
+        <div className="flex items-center gap-2 bg-gray-100 text-gray-900 px-4 py-2 rounded-full shadow">
           {avatar && (
             <img src={avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
           )}
@@ -62,7 +62,7 @@ function WalletConnectButton() {
           </span>
           <button
             onClick={() => disconnect()}
-            className="text-white/80 hover:text-red-300 text-xs ml-2"
+            className="text-gray-500 hover:text-red-400 text-xs ml-2"
           >
             Disconnect
           </button>
@@ -82,7 +82,7 @@ function DarkModeToggle() {
   return (
     <button
       onClick={() => setDark(!dark)}
-      className="flex items-center gap-2 bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white px-4 py-2 rounded-full shadow-xl text-sm hover:scale-105 transition-all font-semibold"
+      className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-full shadow hover:bg-gray-700 transition text-sm font-semibold"
     >
       <Moon size={16} /> {dark ? 'Light Mode' : 'Dark Mode'}
     </button>
@@ -100,8 +100,8 @@ export default function App({ Component, pageProps }) {
       </Head>
       <WagmiConfig config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
-          <div className="min-h-screen bg-gradient-to-br from-white via-purple-100 to-yellow-100 text-gray-900 font-calsans">
-            <div className="flex items-center justify-between px-8 py-6 sticky top-0 z-50 backdrop-blur-lg bg-gradient-to-br from-white/90 via-purple-100/90 to-yellow-100/90 rounded-b-2xl shadow-lg">
+          <div className="min-h-screen bg-gradient-to-br from-white via-purple-50 to-yellow-50 text-gray-900 font-calsans">
+            <div className="flex items-center justify-between px-8 py-6 sticky top-0 z-50 backdrop-blur-lg bg-white/80 border-b border-gray-200 shadow-md">
               <Navbar />
               <div className="flex items-center gap-4">
                 <DarkModeToggle />
