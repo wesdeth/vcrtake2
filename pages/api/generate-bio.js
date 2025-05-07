@@ -1,3 +1,5 @@
+// pages/api/generate-bio.js
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -10,7 +12,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -33,18 +35,25 @@ export default async function handler(req, res) {
       })
     });
 
-    const data = await response.json();
+    const data = await openaiRes.json();
 
-    if (!response.ok) {
-      console.error('OpenAI API error:', data);
-      return res.status(response.status).json({ error: data.error?.message || 'OpenAI error' });
+    if (!openaiRes.ok) {
+      console.error('OpenAI error:', data);
+      return res.status(openaiRes.status).json({
+        error: data.error?.message || 'Unknown error from OpenAI'
+      });
     }
 
     const text = data?.choices?.[0]?.message?.content?.trim();
 
+    if (!text) {
+      console.warn('No content returned from OpenAI:', data);
+      return res.status(500).json({ error: 'No response text from OpenAI' });
+    }
+
     return res.status(200).json({ bio: text });
   } catch (err) {
-    console.error('AI generation error (server):', err);
-    return res.status(500).json({ error: 'Failed to generate bio' });
+    console.error('API route error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
