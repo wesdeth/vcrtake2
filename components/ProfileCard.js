@@ -97,11 +97,13 @@ export default function ProfileCard({ data }) {
   }, [address, ensTwitter, ensWebsite]);
 
   useEffect(() => {
-    if (isOwner && !editWork) {
+    let didRun = false;
+    if (!didRun && isOwner && !editWork && !generating) {
       handleGenerateAI(true);
+      didRun = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOwner]);
+  }, []);
 
   const isAdmin = name?.toLowerCase() === 'wesd.eth';
   const seed = generateColorSeed(name || address);
