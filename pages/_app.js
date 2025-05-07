@@ -100,8 +100,8 @@ export default function App({ Component, pageProps }) {
       </Head>
       <WagmiConfig config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
-          <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white font-calsans">
-            <div className="flex items-center justify-between px-8 py-6 sticky top-0 z-50 backdrop-blur-lg bg-gradient-to-br from-[#0f0c29]/90 via-[#302b63]/90 to-[#24243e]/90 rounded-b-2xl shadow-lg">
+          <div className="min-h-screen bg-gradient-to-br from-white via-purple-100 to-yellow-100 text-gray-900 font-calsans">
+            <div className="flex items-center justify-between px-8 py-6 sticky top-0 z-50 backdrop-blur-lg bg-gradient-to-br from-white/90 via-purple-100/90 to-yellow-100/90 rounded-b-2xl shadow-lg">
               <Navbar />
               <div className="flex items-center gap-4">
                 <DarkModeToggle />
