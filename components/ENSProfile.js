@@ -27,7 +27,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-export default function ENSProfile({ ensName }) {
+export default function ENSProfile({ ensName, forceOwnerView = false }) {
   const [ensData, setEnsData] = useState({});
   const [poaps, setPoaps] = useState([]);
   const [connected, setConnected] = useState(null);
@@ -109,14 +109,18 @@ export default function ENSProfile({ ensName }) {
           .map(getAddress)
           .includes(connectedNorm);
 
-        setOwnsProfile(owns);
+        if (forceOwnerView && !owns) {
+          setOwnsProfile(false);
+        } else {
+          setOwnsProfile(owns);
+        }
       } catch (err) {
         console.error('❌ Ownership check failed:', err);
         setOwnsProfile(false);
       }
     };
     checkOwnership();
-  }, [connected, ensName, isWalletOnly, provider, ensData.address]);
+  }, [connected, ensName, isWalletOnly, provider, ensData.address, forceOwnerView]);
 
   const resolvedAvatar = customAvatar || (ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg');
   const efpLink = ensData.address ? `https://efp.social/profile/${ensData.address}` : '';
