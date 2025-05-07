@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useAccount } from 'wagmi';
-import ENSProfile from '@/components/ENSProfile';
+import ENSProfile from '../components/ENSProfile'; // fixed the import path
 
 export default function ProfilePage() {
   const { address, isConnected } = useAccount();
@@ -43,11 +43,10 @@ export default function ProfilePage() {
           ) : !isConnected ? (
             <p className="text-lg text-gray-500 dark:text-gray-400">Connect your wallet to view your profile.</p>
           ) : (
-            <ENSProfile ensName={ensName} />
+            <ENSProfile ensName={ensName} forceOwnerView={true} />
           )}
         </div>
       </div>
     </>
   );
 }
- 
