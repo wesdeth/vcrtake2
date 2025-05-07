@@ -98,7 +98,7 @@ export default function ProfileCard({ data }) {
 
   useEffect(() => {
     if (isOwner && !editWork) {
-      handleGenerateAI();
+      handleGenerateAI(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOwner]);
@@ -124,20 +124,22 @@ export default function ProfileCard({ data }) {
     }
   };
 
-  const handleGenerateAI = async () => {
+  const handleGenerateAI = async (auto = false) => {
     const poapName = poaps.length > 0 ? poaps[0].event?.name : '';
-    const prompt = `Write a 2-3 sentence bio for a Web3 user named ${name}. They attended ${poapName}, are interested in ${editTag}, and work on interesting crypto projects.`;
+    const prompt = `Write a 2-3 sentence Web3 bio for ${name}. They attended ${poapName}, are interested in ${editTag}, and work on interesting crypto projects.`;
     try {
       setGenerating(true);
       const res = await fetch('/api/generate-bio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({ prompt, auto })
       });
       const json = await res.json();
-      setEditWork(json.bio);
+      if (res.ok && json.bio) setEditWork(json.bio);
+      else setEditWork('Could not generate bio.');
     } catch (err) {
-      alert('Failed to generate bio.');
+      console.error(err);
+      setEditWork('Something went wrong.');
     } finally {
       setGenerating(false);
     }
@@ -254,7 +256,7 @@ export default function ProfileCard({ data }) {
                 rows={4}
               />
               <button
-                onClick={handleGenerateAI}
+                onClick={() => handleGenerateAI(false)}
                 className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50"
                 disabled={generating}
               >
