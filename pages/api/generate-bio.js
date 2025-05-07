@@ -11,18 +11,17 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing prompt' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-  if (!apiKey) {
-    console.error('OPENAI_API_KEY is missing from environment variables.');
-    return res.status(500).json({ error: 'Server configuration error' });
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OpenAI API key not found in environment variables' });
   }
 
   try {
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -30,12 +29,12 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that writes concise and engaging Web3 bios for crypto users.'
+            content: 'You are a helpful assistant that writes concise and engaging Web3 bios for crypto users.',
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         max_tokens: auto ? 100 : 150,
         temperature: 0.7,
@@ -44,32 +43,28 @@ export default async function handler(req, res) {
 
     const data = await openaiRes.json();
 
+    if (openaiRes.status === 429) {
+      console.warn('Rate limit hit from OpenAI:', data);
+      return res.status(429).json({ error: 'Rate limited. Please try again shortly.' });
+    }
+
     if (!openaiRes.ok) {
-      const status = openaiRes.status;
-
-      if (status === 429) {
-        console.warn('OpenAI API rate limit hit.');
-        return res.status(429).json({
-          error: 'Rate limited by OpenAI. Please wait and try again.'
-        });
-      }
-
-      console.error('OpenAI API error:', data);
-      return res.status(status).json({
-        error: data?.error?.message || 'Unexpected OpenAI error'
+      console.error('OpenAI error:', data);
+      return res.status(openaiRes.status).json({
+        error: data?.error?.message || 'OpenAI API request failed',
       });
     }
 
     const text = data?.choices?.[0]?.message?.content?.trim();
 
     if (!text) {
-      console.warn('No valid bio content returned from OpenAI:', data);
-      return res.status(500).json({ error: 'No bio generated from OpenAI' });
+      console.warn('No content returned from OpenAI response.');
+      return res.status(500).json({ error: 'No content returned from OpenAI.' });
     }
 
     return res.status(200).json({ bio: text });
   } catch (err) {
-    console.error('Internal server error:', err);
+    console.error('Server error in generate-bio:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
