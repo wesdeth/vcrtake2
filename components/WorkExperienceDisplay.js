@@ -2,6 +2,13 @@
 import { useAccount } from 'wagmi';
 import { Pencil, Save } from 'lucide-react';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export default function WorkExperienceDisplay({
   experience = '',
@@ -12,14 +19,25 @@ export default function WorkExperienceDisplay({
   logo = '',
   showDownload = false,
   ownsProfile = false,
-  onSave = () => {}
+  address = '',
+  ensName = ''
 }) {
   const [editing, setEditing] = useState(false);
   const [localExp, setLocalExp] = useState(experience);
 
-  const handleSave = () => {
-    onSave(localExp);
-    setEditing(false);
+  const handleSave = async () => {
+    const profileKey = ensName || address;
+    const { error } = await supabase.from('VCR').upsert({
+      ens_name: profileKey,
+      experience: localExp,
+      updated_at: new Date().toISOString()
+    });
+    if (error) {
+      toast.error('Failed to save experience.');
+    } else {
+      toast.success('Experience saved!');
+      setEditing(false);
+    }
   };
 
   if (!title && !company && !startDate && !location && !experience && !editing) return null;
