@@ -5,10 +5,10 @@ import {
   ShieldCheck,
   Twitter,
   Link as LinkIcon,
+  UserPlus2,
   MessageSquare,
   Save,
-  Sparkles,
-  UserPlus2
+  Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
@@ -39,25 +39,43 @@ function getGradientFromSeed(seed) {
   return gradients[seed % gradients.length];
 }
 
+const TAG_OPTIONS = [
+  'Ai', 'Analyst', 'Backend', 'Bitcoin', 'Blockchain', 'Community Manager', 'Crypto', 'Cryptography',
+  'Cto', 'Customer Support', 'Dao', 'Data Science', 'Defi', 'Design', 'Developer Relations', 'Devops',
+  'Discord', 'Economy Designer', 'Entry Level', 'Erc', 'Erc 20', 'Evm', 'Front End', 'Full Stack',
+  'Gaming', 'Ganache', 'Golang', 'Hardhat', 'Intern', 'Java', 'Javascript', 'Layer 2', 'Marketing',
+  'Mobile', 'Moderator', 'Nft', 'Node', 'Non Tech', 'Open Source', 'Openzeppelin', 'Pay In Crypto',
+  'Product Manager', 'Project Manager', 'React', 'Refi', 'Research', 'Ruby', 'Rust', 'Sales',
+  'Smart Contract', 'Solana', 'Solidity', 'Truffle', 'Web3 Py', 'Web3js', 'Zero Knowledge', 'Founder'
+];
+
 export default function ProfileCard({ data }) {
   const {
     name,
     address,
     avatar,
+    bio,
     efpLink,
+    farcaster,
+    twitter: ensTwitter,
+    website: ensWebsite,
     poaps = []
   } = data;
 
   const { address: connected } = useAccount();
   const isOwner = connected?.toLowerCase() === address?.toLowerCase();
-  const isAdmin = name?.toLowerCase() === 'wesd.eth';
 
   const shortenAddress = (addr) =>
     addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
 
+  const handleCopy = () => {
+    if (address) {
+      navigator.clipboard.writeText(address);
+    }
+  };
+
   const [editTwitter, setEditTwitter] = useState('');
   const [editWebsite, setEditWebsite] = useState('');
-  const [editFarcaster, setEditFarcaster] = useState('');
   const [editTag, setEditTag] = useState('');
   const [editWork, setEditWork] = useState('');
   const [loading, setLoading] = useState(true);
@@ -73,18 +91,31 @@ export default function ProfileCard({ data }) {
         .single();
 
       if (data) {
-        setEditTwitter(data.twitter || '');
-        setEditWebsite(data.website || '');
-        setEditFarcaster(data.farcaster || '');
+        setEditTwitter(data.twitter || ensTwitter || '');
+        setEditWebsite(data.website || ensWebsite || '');
         setEditTag(data.tag || '');
         setEditWork(data.work || '');
+      } else {
+        setEditTwitter(ensTwitter || '');
+        setEditWebsite(ensWebsite || '');
+        setEditWork('');
       }
       setLoading(false);
     };
 
     if (address) fetchProfile();
-  }, [address]);
+  }, [address, ensTwitter, ensWebsite]);
 
+  useEffect(() => {
+    let didRun = false;
+    if (!didRun && isOwner && !editWork && !generating) {
+      handleGenerateAI(true);
+      didRun = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isAdmin = name?.toLowerCase() === 'wesd.eth';
   const seed = generateColorSeed(name || address);
   const bgGradient = getGradientFromSeed(seed);
 
@@ -94,7 +125,6 @@ export default function ProfileCard({ data }) {
       address: connected,
       twitter: editTwitter,
       website: editWebsite,
-      farcaster: editFarcaster,
       tag: editTag,
       work: editWork,
       updated_at: new Date().toISOString()
@@ -157,10 +187,23 @@ export default function ProfileCard({ data }) {
         </p>
 
         <div className="flex flex-wrap justify-center gap-2 mt-3">
-          {editTag && (
-            <span className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full">
-              {editTag}
-            </span>
+          {isOwner ? (
+            <select
+              value={editTag}
+              onChange={(e) => setEditTag(e.target.value)}
+              className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full"
+            >
+              <option value="">Select a tag</option>
+              {TAG_OPTIONS.map(tag => (
+                <option key={tag} value={tag}>{tag}</option>
+              ))}
+            </select>
+          ) : (
+            editTag && (
+              <span className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-1 rounded-full">
+                {editTag}
+              </span>
+            )
           )}
 
           {isAdmin && (
@@ -172,45 +215,73 @@ export default function ProfileCard({ data }) {
 
         <div className="flex flex-col gap-3 mt-5 justify-center text-sm items-center">
           <div className="flex gap-4">
-            {editTwitter && (
-              <a
-                href={`https://twitter.com/${editTwitter}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:underline flex items-center gap-1"
-              >
-                <Twitter size={16} /> X / Twitter
-              </a>
+            {isOwner ? (
+              <input
+                type="text"
+                placeholder="Twitter username"
+                value={editTwitter}
+                onChange={(e) => setEditTwitter(e.target.value)}
+                className="text-blue-500 bg-transparent border-b border-blue-300 px-2"
+              />
+            ) : (
+              editTwitter && (
+                <a
+                  href={`https://twitter.com/${editTwitter}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline flex items-center gap-1"
+                >
+                  <Twitter size={16} /> X / Twitter
+                </a>
+              )
             )}
 
-            {editWebsite && (
-              <a
-                href={editWebsite}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-green-500 hover:underline flex items-center gap-1"
-              >
-                <LinkIcon size={16} /> Website
-              </a>
+            {isOwner ? (
+              <input
+                type="text"
+                placeholder="Website URL"
+                value={editWebsite}
+                onChange={(e) => setEditWebsite(e.target.value)}
+                className="text-green-500 bg-transparent border-b border-green-300 px-2"
+              />
+            ) : (
+              editWebsite && (
+                <a
+                  href={editWebsite}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-green-500 hover:underline flex items-center gap-1"
+                >
+                  <LinkIcon size={16} /> Website
+                </a>
+              )
             )}
           </div>
 
-          {editFarcaster && (
-            <a
-              href={editFarcaster}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-fuchsia-600 hover:underline flex items-center gap-1"
-            >
-              <MessageSquare size={16} /> Farcaster
-            </a>
-          )}
-
-          {editWork && (
-            <div className="text-sm text-gray-700 dark:text-gray-300 text-left max-w-md mt-2">
-              <strong>Bio:</strong>
-              <p className="mt-1 whitespace-pre-line">{editWork}</p>
-            </div>
+          {isOwner ? (
+            <>
+              <textarea
+                placeholder="Add a short bio about yourself or generate one via AI"
+                value={editWork}
+                onChange={(e) => setEditWork(e.target.value)}
+                className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                rows={4}
+              />
+              <button
+                onClick={() => handleGenerateAI(false)}
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50"
+                disabled={generating}
+              >
+                <Sparkles size={16} /> {generating ? 'Generating...' : 'Generate with AI'}
+              </button>
+            </>
+          ) : (
+            editWork && (
+              <div className="text-sm text-gray-700 dark:text-gray-300 text-left max-w-md mt-2">
+                <strong>Bio:</strong>
+                <p className="mt-1 whitespace-pre-line">{editWork}</p>
+              </div>
+            )
           )}
 
           {efpLink && (
@@ -224,22 +295,24 @@ export default function ProfileCard({ data }) {
             </a>
           )}
 
+          {farcaster && (
+            <a
+              href={farcaster}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-fuchsia-600 hover:underline flex items-center gap-1"
+            >
+              <MessageSquare size={16} /> Farcaster
+            </a>
+          )}
+
           {isOwner && (
-            <>
-              <button
-                onClick={() => handleGenerateAI(false)}
-                className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50"
-                disabled={generating}
-              >
-                <Sparkles size={16} /> {generating ? 'Generating...' : 'Generate with AI'}
-              </button>
-              <button
-                onClick={handleSave}
-                className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
-              >
-                <Save size={16} /> Save Changes
-              </button>
-            </>
+            <button
+              onClick={handleSave}
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
+            >
+              <Save size={16} /> Save Changes
+            </button>
           )}
         </div>
       </div>
