@@ -10,7 +10,23 @@ export default function Home() {
   const [floatingProfiles, setFloatingProfiles] = useState([]);
   const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2]);
   const [fade, setFade] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const timerRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    setIsDarkMode(document.documentElement.classList.contains('dark'));
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const fetchRecentUpdates = async () => {
@@ -100,7 +116,7 @@ export default function Home() {
         <link href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap" rel="stylesheet" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-[#fef6fb] via-[#eef4ff] to-[#fffce6] text-gray-900 relative overflow-hidden font-calsans pt-20">
+      <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-[#fef6fb] via-[#eef4ff] to-[#fffce6] text-gray-900'} relative overflow-hidden font-calsans pt-20`}>
         <div className="absolute top-8 left-6 animate-pulse bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md z-10">
           12,380 onchain resumes created
         </div>
