@@ -30,9 +30,36 @@ export default function App({ Component, pageProps }) {
       </Head>
       <WagmiConfig config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
-          <Navbar />
-          <Component {...pageProps} />
-          <Toaster position="top-right" />
+          <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-calsans">
+            <Navbar />
+            <main className="pt-20 px-4">
+              <Component {...pageProps} />
+            </main>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: '#fff',
+                  color: '#1a1a1a',
+                  borderRadius: '12px',
+                  fontSize: '0.95rem',
+                  padding: '16px'
+                },
+                success: {
+                  iconTheme: {
+                    primary: '#4ade80',
+                    secondary: '#fff'
+                  }
+                },
+                error: {
+                  iconTheme: {
+                    primary: '#f87171',
+                    secondary: '#fff'
+                  }
+                }
+              }}
+            />
+          </div>
         </QueryClientProvider>
       </WagmiConfig>
     </>
