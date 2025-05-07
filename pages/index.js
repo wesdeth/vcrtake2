@@ -116,9 +116,7 @@ export default function Home() {
         <link href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap" rel="stylesheet" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-[#fef6fb] via-[#eef4ff] to-[#fffce6] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white relative overflow-hidden font-calsans">
-        <div className="absolute inset-0 z-0 bg-[radial-gradient(#ddd_1px,transparent_1px)] dark:bg-[radial-gradient(#444_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
-
+      <div className="min-h-screen bg-gradient-to-br from-[#fef6fb] via-[#eef4ff] to-[#fffce6] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white relative overflow-hidden font-calsans pt-20">
         <button
           onClick={toggleDarkMode}
           className="fixed top-4 right-4 z-50 bg-gray-200 dark:bg-gray-700 text-sm px-3 py-1 rounded-full shadow hover:scale-105 transition"
