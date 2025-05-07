@@ -10,23 +10,7 @@ export default function Home() {
   const [floatingProfiles, setFloatingProfiles] = useState([]);
   const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2]);
   const [fade, setFade] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const timerRef = useRef(null);
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsDarkMode(document.documentElement.classList.contains('dark'));
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-
-    setIsDarkMode(document.documentElement.classList.contains('dark'));
-
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     const fetchRecentUpdates = async () => {
@@ -116,18 +100,9 @@ export default function Home() {
         <link href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap" rel="stylesheet" />
       </Head>
 
-      <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-[#fef6fb] via-[#eef4ff] to-[#fffce6] text-gray-900'} relative overflow-hidden font-calsans pt-20`}>
+      <div className="min-h-screen bg-gradient-to-br from-[#fef6fb] via-[#eef4ff] to-[#fffce6] text-gray-900 dark:text-white relative overflow-hidden font-calsans pt-20">
         <div className="absolute top-8 left-6 animate-pulse bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md z-10">
           12,380 onchain resumes created
-        </div>
-
-        <div className="flex justify-center mb-10 z-10">
-          <nav className="flex items-center gap-10 bg-black text-white px-8 py-3 rounded-full border border-gray-700 shadow-lg text-sm font-semibold">
-            <button onClick={() => router.push('/')} className="hover:text-purple-400 transition">Home</button>
-            <button onClick={() => router.push('/jobs')} className="hover:text-purple-400 transition">Jobs</button>
-            <button onClick={() => router.push('/messages')} className="hover:text-purple-400 transition">Messaging</button>
-            <button onClick={() => router.push('/profile')} className="hover:text-purple-400 transition">Profile</button>
-          </nav>
         </div>
 
         <div className="absolute top-28 right-4 space-y-4 max-h-[calc(100vh-7rem)] overflow-hidden hidden sm:block z-10"
@@ -153,17 +128,17 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col items-center justify-center px-4 sm:px-6 py-16 z-10 relative">
-          <div className="max-w-2xl w-full bg-white/80 backdrop-blur-md border border-gray-200 shadow-2xl rounded-3xl p-6 sm:p-10 text-center animate-fadeIn">
+          <div className="max-w-2xl w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-2xl rounded-3xl p-6 sm:p-10 text-center animate-fadeIn">
             <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 mb-4">
               Verified Chain Resume
             </h1>
-            <p className="text-md sm:text-lg text-gray-700 mb-3 font-medium">
+            <p className="text-md sm:text-lg text-gray-700 dark:text-gray-300 mb-3 font-medium">
               Your Web3 identity, beautifully packaged.
             </p>
-            <p className="text-sm sm:text-md text-gray-600 mb-4">
+            <p className="text-sm sm:text-md text-gray-600 dark:text-gray-400 mb-4">
               Discover a new kind of resume — one that's fully onchain. Powered by ENS, POAPs, Gitcoin Grants, and DAOs.
             </p>
-            <p className="text-xs sm:text-sm text-gray-500 italic mb-6">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 italic mb-6">
               Enter your ENS or wallet to preview a Web3 resume.
             </p>
 
@@ -173,7 +148,7 @@ export default function Home() {
                 placeholder="Enter ENS or wallet (e.g. yourname.eth)"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="w-full sm:w-80 px-5 py-3 border border-gray-300 rounded-lg shadow-inner focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white text-gray-900"
+                className="w-full sm:w-80 px-5 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-inner focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               />
               <button
                 type="submit"
@@ -183,13 +158,13 @@ export default function Home() {
               </button>
             </form>
 
-            <div className="mt-10 text-xs text-gray-400">
+            <div className="mt-10 text-xs text-gray-400 dark:text-gray-500">
               ⚡ Powered by Ethereum. Loved by builders.
             </div>
           </div>
         </div>
 
-        <footer className="text-center text-xs text-gray-400 py-6 z-10 relative">
+        <footer className="text-center text-xs text-gray-400 dark:text-gray-500 py-6 z-10 relative">
           © {new Date().getFullYear()} Verified Chain Resume — Built with ❤️ for the Web3 community.
         </footer>
       </div>
