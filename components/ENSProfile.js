@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import ProfileCard from './ProfileCard';
 import { Eye, Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
@@ -44,7 +45,17 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
       ens = await getEnsData(connected);
     }
     ens = ens || { address: connected };
-    const poapList = ens.address ? await getPOAPs(ens.name || ens.address) : [];
+
+    let poapList = [];
+    try {
+      const res = await axios.get(`https://api.poap.tech/actions/scan/${ens.address}`, {
+        headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' }
+      });
+      poapList = res.data || [];
+    } catch (err) {
+      console.error('Failed to fetch POAPs', err);
+    }
+
     setEnsData(ens);
     setPoaps(poapList);
 
