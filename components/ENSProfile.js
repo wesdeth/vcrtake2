@@ -8,11 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import { useAccount } from 'wagmi';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
-import EditableBio from './EditableBio';
-import EditableWorkExperience from './EditableWorkExperience';
 import ProfileCard from './ProfileCard';
-import POAPDisplay from './POAPDisplay';
-import WorkExperienceDisplay from './WorkExperienceDisplay';
 import { Eye, Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -29,9 +25,6 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
   const [poaps, setPoaps] = useState([]);
   const [connected, setConnected] = useState(null);
   const [ownsProfile, setOwnsProfile] = useState(false);
-  const [workExperience, setWorkExperience] = useState('');
-  const [lastSaved, setLastSaved] = useState(null);
-  const [customTitle, setCustomTitle] = useState('');
   const [customAvatar, setCustomAvatar] = useState('');
   const [farcaster, setFarcaster] = useState('');
   const [loading, setLoading] = useState(true);
@@ -57,11 +50,8 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
 
     const { data } = await supabase.from('VCR').select('*').eq('ens_name', profileKey).single();
     if (data) {
-      if (data.experience) setWorkExperience(data.experience);
-      if (data.custom_title) setCustomTitle(data.custom_title);
       if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
       if (data.farcaster) setFarcaster(data.farcaster);
-      setLastSaved(data.updated_at);
     }
     setLoading(false);
   }, [connected, ensName, profileKey]);
@@ -145,7 +135,6 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
 
   const resolvedAvatar = customAvatar || (ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg');
   const efpLink = ensData.address ? `https://efp.social/profile/${ensData.address}` : '';
-  const openSeaLink = ensData.address ? `https://opensea.io/${ensData.address}` : '';
 
   return (
     <>
@@ -166,90 +155,26 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
             <p className="text-[#6B7280]">Loading...</p>
           </div>
         ) : (
-          <>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="flex justify-center"
-            >
-              <ProfileCard
-                data={{
-                  name: ensData.name || ensName || address,
-                  address: ensData.address || address,
-                  avatar: resolvedAvatar,
-                  bio: '',
-                  twitter: ensData.twitter || '',
-                  website: ensData.website || '',
-                  tag: ensData.tag || 'Active Builder',
-                  efpLink,
-                  farcaster
-                }}
-              />
-            </motion.div>
-
-            <div className="max-w-2xl mx-auto mt-8">
-              {ownsProfile ? (
-                <EditableBio
-                  ensName={profileKey}
-                  connectedAddress={address}
-                  initialBio={ensData.bio}
-                  initialLooking={ensData.lookingForWork === 'true'}
-                  showAIGenerator={true}
-                  experience={workExperience}
-                  setExperience={setWorkExperience}
-                  lastSaved={lastSaved}
-                  setLastSaved={setLastSaved}
-                />
-              ) : (
-                <div className="px-4 py-4 bg-white/80 border border-[#E5E7EB] rounded-xl text-sm text-[#6B7280] text-center">
-                  <p className="text-lg" style={{ fontFamily: 'Cal Sans, sans-serif' }}>
-                    Connect your wallet to customize your profile page
-                  </p>
-                </div>
-              )}
-
-              <WorkExperienceDisplay
-                experience={workExperience}
-                title={customTitle}
-                company="ENS Labs"
-                startDate="Jul 2024 - Present"
-                location="Remote"
-                logo="/enslabs.png"
-                showDownload={true}
-                ownsProfile={ownsProfile}
-                address={address}
-                ensName={ensName}
-              />
-            </div>
-
-            <POAPDisplay poaps={poaps} address={ensData.address} />
-
-            <div className="mt-6 text-center space-y-3">
-              <p className="text-sm">
-                <a
-                  href={openSeaLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#635BFF] hover:underline"
-                >
-                  View NFTs on OpenSea ↗
-                </a>
-              </p>
-              {ownsProfile && (
-                <p>
-                  <a
-                    href={`/api/download-resume?ensName=${profileKey}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block px-4 py-2 text-white bg-[#635BFF] rounded-lg hover:bg-[#5146cc] text-sm"
-                  >
-                    Download Resume ↗
-                  </a>
-                </p>
-              )}
-            </div>
-          </>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="flex justify-center"
+          >
+            <ProfileCard
+              data={{
+                name: ensData.name || ensName || address,
+                address: ensData.address || address,
+                avatar: resolvedAvatar,
+                twitter: ensData.twitter || '',
+                website: ensData.website || '',
+                tag: ensData.tag || 'Active Builder',
+                efpLink,
+                farcaster,
+                poaps
+              }}
+            />
+          </motion.div>
         )}
       </div>
     </>
