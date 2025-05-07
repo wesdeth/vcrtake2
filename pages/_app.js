@@ -48,12 +48,12 @@ function WalletConnectButton() {
       {!isConnected ? (
         <button
           onClick={() => connect()}
-          className="text-sm bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white px-4 py-2 rounded-full shadow-lg hover:scale-105 transition"
+          className="text-sm bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white px-4 py-2 rounded-full shadow-xl hover:scale-105 transition-all font-semibold"
         >
           Connect Wallet
         </button>
       ) : (
-        <div className="flex items-center gap-2 bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white px-3 py-2 rounded-full shadow-lg">
+        <div className="flex items-center gap-2 bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white px-4 py-2 rounded-full shadow-xl">
           {avatar && (
             <img src={avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
           )}
@@ -82,7 +82,7 @@ function DarkModeToggle() {
   return (
     <button
       onClick={() => setDark(!dark)}
-      className="flex items-center gap-2 bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white px-3 py-2 rounded-full shadow-lg text-sm hover:scale-105 transition"
+      className="flex items-center gap-2 bg-gradient-to-r from-purple-700 via-blue-500 to-yellow-400 text-white px-4 py-2 rounded-full shadow-xl text-sm hover:scale-105 transition-all font-semibold"
     >
       <Moon size={16} /> {dark ? 'Light Mode' : 'Dark Mode'}
     </button>
@@ -101,7 +101,7 @@ export default function App({ Component, pageProps }) {
       <WagmiConfig config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
           <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white font-calsans">
-            <div className="flex items-center justify-between px-6 py-6 sticky top-0 z-50 backdrop-blur-md bg-gradient-to-br from-[#0f0c29]/80 via-[#302b63]/80 to-[#24243e]/80">
+            <div className="flex items-center justify-between px-8 py-6 sticky top-0 z-50 backdrop-blur-lg bg-gradient-to-br from-[#0f0c29]/90 via-[#302b63]/90 to-[#24243e]/90 rounded-b-2xl shadow-lg">
               <Navbar />
               <div className="flex items-center gap-4">
                 <DarkModeToggle />
