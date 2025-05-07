@@ -7,7 +7,7 @@ import { publicProvider } from 'wagmi/providers/public';
 import { InjectedConnector } from 'wagmi/connectors/injected';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Head from 'next/head';
-import Navbar from '@/components/Navbar';
+import Navbar from '../components/Navbar';
 
 const { chains, publicClient } = configureChains([mainnet], [publicProvider()]);
 
