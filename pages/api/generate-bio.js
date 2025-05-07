@@ -37,10 +37,20 @@ export default async function handler(req, res) {
 
     const data = await openaiRes.json();
 
+    // Handle rate limit or other OpenAI-specific errors
     if (!openaiRes.ok) {
+      const status = openaiRes.status;
+
+      if (status === 429) {
+        console.warn('OpenAI API rate limit hit.');
+        return res.status(429).json({
+          error: 'You are being rate-limited by OpenAI. Please try again later.'
+        });
+      }
+
       console.error('OpenAI error:', data);
-      return res.status(openaiRes.status).json({
-        error: data.error?.message || 'Unknown error from OpenAI'
+      return res.status(status).json({
+        error: data?.error?.message || 'OpenAI API error'
       });
     }
 
@@ -53,7 +63,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ bio: text });
   } catch (err) {
-    console.error('API route error:', err);
+    console.error('Server error in generate-bio API:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
