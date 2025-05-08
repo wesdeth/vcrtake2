@@ -24,7 +24,7 @@ import axios from 'axios';
 /* ============================================================
    Helper utilities
    ============================================================ */
-const shortenAddress = (addr) => (addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '');
+const shortenAddress = (addr = '') => (addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '');
 
 const parseDate = (d) => {
   if (!d) return null;
@@ -44,7 +44,7 @@ const formatRange = (s, e, current) => {
 /* ============================================================
    Component
    ============================================================ */
-export default function ProfileCard({ data }) {
+export default function ProfileCard({ data = {} }) {
   /* --------------------- props ---------------------------- */
   const {
     name,
@@ -55,8 +55,8 @@ export default function ProfileCard({ data }) {
     tag,
     efpLink,
     warpcast,
-    poaps = [],
-    nfts = [],
+    poaps = [], // pre‑fetched POAPs (optional)
+    nfts = [],  // pre‑fetched NFTs  (optional)
     ownsProfile = false,
     workExperience = [],
     bio = '',
@@ -65,22 +65,22 @@ export default function ProfileCard({ data }) {
 
   /* --------------------- state ---------------------------- */
   const [showAllPoaps, setShowAllPoaps] = useState(false);
-  const [poapData, setPoapData] = useState([]);
+  const [poapData, setPoapData] = useState(poaps);
   const [editing, setEditing] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 
   // editable fields
   const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '');
-  const [editTwitter, setEditTwitter] = useState(twitter);
-  const [editWebsite, setEditWebsite] = useState(website);
-  const [editWarpcast, setEditWarpcast] = useState(warpcast);
-  const [editTag, setEditTag] = useState(tag);
+  const [editTwitter, setEditTwitter] = useState(twitter || '');
+  const [editWebsite, setEditWebsite] = useState(website || '');
+  const [editWarpcast, setEditWarpcast] = useState(warpcast || '');
+  const [editTag, setEditTag] = useState(tag || '');
   const [editBio, setEditBio] = useState(bio || ensBio);
   const [editExp, setEditExp] = useState(workExperience);
 
   /* -------------------- derived --------------------------- */
   const { address: connected } = useAccount();
-  const isOwner = ownsProfile || connected?.toLowerCase() === address?.toLowerCase();
+  const isOwner = ownsProfile || (connected && connected.toLowerCase() === (address || '').toLowerCase());
 
   /* -------------------- effects --------------------------- */
   useEffect(() => {
@@ -92,8 +92,8 @@ export default function ProfileCard({ data }) {
           }
         });
         setPoapData(r.data || []);
-      } catch {
-        setPoapData([]);
+      } catch (err) {
+        console.error('POAP fetch error', err);
       }
     };
 
@@ -115,6 +115,7 @@ export default function ProfileCard({ data }) {
   }, [address, avatar]);
 
   const poapsToShow = showAllPoaps ? poapData : poapData.slice(0, 4);
+  const nftsToShow  = nfts.slice(0, 6);
 
   /* -------------------- handlers ------------------------- */
   const handleSave = async () => {
@@ -141,7 +142,7 @@ export default function ProfileCard({ data }) {
           }))
         })
       });
-      if (!res.ok) throw new Error((await res.json()).error);
+      if (!res.ok) throw new Error((await res.json()).error || 'Unknown error');
       setEditing(false);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2500);
@@ -151,7 +152,7 @@ export default function ProfileCard({ data }) {
   };
 
   const handleAvatarUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onloadend = () => setUploadedAvatar(reader.result);
@@ -212,7 +213,7 @@ export default function ProfileCard({ data }) {
           </div>
         )}
 
-        {/* ─── Avatar ──────────────────────────────────────── */
+        {/* ─── Avatar ──────────────────────────────────────── */}
         <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-6 relative">
           <img
             src={uploadedAvatar || '/default-avatar.png'}
@@ -238,21 +239,103 @@ export default function ProfileCard({ data }) {
         <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-800 dark:text-white">
           {name || shortenAddress(address)}
         </h2>
-        <p
-          className="inline-flex items-center gap-1 text-xs sm:text-sm mx-auto text-indigo-600 dark:text-indigo-300 mt-1 cursor-pointer justify-center"
-          title="Copy address"
-          onClick={() => navigator.clipboard.writeText(address)}
-        >
-          {shortenAddress(address)} <Copy size={12} />
-        </p>
-
-        {/* tag */}
+        {address && (
+          <p
+            className="inline-flex items-center gap-1 text-xs sm:text-sm mx-auto text-indigo-600 dark:text-indigo-300 mt-1 cursor-pointer justify-center"
+            title="Copy address"
+            onClick={() => navigator.clipboard.writeText(address)}
+          >
+            {shortenAddress(address)} <Copy size={12} />
+          </p>
+        )}
         {tag && <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{tag}</p>}
 
-        {/* --- Bio + Socials (editing / display) */}
+        {/* ===================== Bio & Socials ===================== */}
         {editing ? (
           <>
             {/* bio textarea */}
             <div className="my-3">
               <textarea
                 className="w-full p-2 border rounded text-sm"
+                rows={3}
+                value={editBio}
+                onChange={(e) => setEditBio(e.target.value)}
+                placeholder="Enter your bio"
+              />
+              <button
+                onClick={() => setEditBio(ensBio)}
+                className="flex items-center gap-1 text-sm text-blue-500 hover:underline mt-1"
+              >
+                <RefreshCw size={14} /> Reset to ENS Bio
+              </button>
+            </div>
+
+            {/* social inputs */}
+            <div className="flex flex-col gap-2 text-left text-sm">
+              <input
+                className="p-2 border rounded"
+                value={editTwitter}
+                onChange={(e) => setEditTwitter(e.target.value)}
+                placeholder="X handle (formerly Twitter)"
+              />
+              <input
+                className="p-2 border rounded"
+                value={editWarpcast}
+                onChange={(e) => setEditWarpcast(e.target.value)}
+                placeholder="Warpcast username"
+              />
+              <input
+                className="p-2 border rounded"
+                value={editWebsite}
+                onChange={(e) => setEditWebsite(e.target.value)}
+                placeholder="Website URL"
+              />
+              <input
+                className="p-2 border rounded"
+                value={editTag}
+                onChange={(e) => setEditTag(e.target.value)}
+                placeholder="Tag / Title"
+              />
+            </div>
+
+            {/* ---------------- Work Experience Editor ---------------- */}
+            <div className="mt-4 text-left">
+              <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-gray-800 dark:text-white mb-2">
+                Work Experience
+              </h3>
+              {editExp.map((exp, idx) => (
+                <div key={idx} className="mb-2 space-y-1">
+                  <input
+                    className="w-full p-2 border rounded text-sm"
+                    placeholder="Title"
+                    value={exp.title}
+                    onChange={(e) => updateExp(idx, 'title', e.target.value)}
+                  />
+                  <input
+                    className="w-full p-2 border rounded text-sm"
+                    placeholder="Company"
+                    value={exp.company}
+                    onChange={(e) => updateExp(idx, 'company', e.target.value)}
+                  />
+                  <input
+                    className="w-full p-2 border rounded text-sm"
+                    placeholder="Start Date"
+                    value={exp.startDate}
+                    onChange={(e) => updateExp(idx, 'startDate', e.target.value)}
+                  />
+                  {!exp.currentlyWorking && (
+                    <input
+                      className="w-full p-2 border rounded text-sm"
+                      placeholder="End Date"
+                      value={exp.endDate}
+                      onChange={(e) => updateExp(idx, 'endDate', e.target.value)}
+                    />
+                  )}
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={exp.currentlyWorking} onChange={() => toggleCurrent(idx)} /> Currently Working
+                  </label>
+                  <input
+                    className="w-full p-2 border rounded text-sm"
+                    placeholder="Location"
+                    value={exp.location}
+                    onChange
