@@ -159,6 +159,8 @@ export default function ProfileCard({ data = {} }) {
 
   const removeExp = (i) => setEditExp((prev) => prev.filter((_, idx) => idx !== i));
 
+  const poapsToShow = showAllPoaps ? poapData : poapData.slice(0, 4);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
