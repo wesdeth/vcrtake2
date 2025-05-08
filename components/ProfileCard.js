@@ -21,7 +21,7 @@ import { useAccount } from 'wagmi';
 import axios from 'axios';
 
 // ---------- helper utilities ----------------------------------------------
-const shortenAddress = (addr) => (addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : '');
+const shortenAddress = (addr) => (addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '');
 const parseDate = (d) => {
   const p = Date.parse(d.replace(/\//g, '-'));
   return Number.isNaN(p) ? null : new Date(p);
@@ -39,7 +39,7 @@ export default function ProfileCard({ data }) {
     name,
     address,
     avatar,
-    twitter, // stored as twitter in DB, rendered as X handle
+    twitter,
     website,
     tag,
     efpLink,
@@ -51,7 +51,7 @@ export default function ProfileCard({ data }) {
     ensBio = ''
   } = data;
 
-  // ------------- local state ---------------------------------------------
+  // ----------------------------- STATE ------------------------------------
   const [showAllPoaps, setShowAllPoaps] = useState(false);
   const [poapData, setPoapData] = useState([]);
   const [editing, setEditing] = useState(false);
@@ -68,14 +68,12 @@ export default function ProfileCard({ data }) {
   const { address: connected } = useAccount();
   const isOwner = ownsProfile || connected?.toLowerCase() === address?.toLowerCase();
 
-  // ------------- effects --------------------------------------------------
+  // ----------------------------- EFFECTS ----------------------------------
   useEffect(() => {
     const fetchPoaps = async () => {
       try {
         const r = await axios.get(`https://api.poap.tech/actions/scan/${address}`, {
-          headers: {
-            'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo'
-          }
+          headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' }
         });
         setPoapData(r.data || []);
       } catch {
@@ -102,7 +100,7 @@ export default function ProfileCard({ data }) {
 
   const poapsToShow = showAllPoaps ? poapData : poapData.slice(0, 4);
 
-  // ------------- handlers -------------------------------------------------
+  // ---------------------------- HANDLERS ----------------------------------
   const handleSave = async () => {
     try {
       const res = await fetch('/api/save-profile', {
@@ -144,39 +142,30 @@ export default function ProfileCard({ data }) {
     reader.readAsDataURL(file);
   };
 
-  // work exp helpers
+  // work exp helpers -------------------------------------------------------
   const updateExp = (i, field, val) => setEditExp((prev) => prev.map((e, idx) => (idx === i ? { ...e, [field]: val } : e)));
-  const toggleCurrent = (i) =>
-    setEditExp((prev) =>
-      prev.map((e, idx) =>
-        idx === i ? { ...e, currentlyWorking: !e.currentlyWorking, endDate: e.currentlyWorking ? '' : e.endDate } : e
-      )
-    );
+  const toggleCurrent = (i) => setEditExp((prev) => prev.map((e, idx) => (idx === i ? { ...e, currentlyWorking: !e.currentlyWorking, endDate: e.currentlyWorking ? '' : e.endDate } : e)));
   const addExp = () => setEditExp((prev) => [...prev, { title: '', company: '', startDate: '', endDate: '', location: '', description: '', currentlyWorking: false }]);
   const removeExp = (i) => setEditExp((prev) => prev.filter((_, idx) => idx !== i));
 
-  // ------------- JSX ------------------------------------------------------
+  // ------------------------------- JSX ------------------------------------
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="relative w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-xl border border-white/20"
+      className="relative w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-2xl ring-1 ring-indigo-200/60 border border-white/10"
     >
-      {/* background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white via-purple-100 to-yellow-100 opacity-30 animate-gradient-radial blur-2xl" />
+      {/* background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-purple-100 to-cyan-100 opacity-40 animate-gradient-radial blur-2xl" />
 
-      <div className="relative z-10 p-6 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+      <div className="relative z-10 p-8 sm:p-10 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
         {/* avatar */}
-        <div className="w-24 h-24 mx-auto mb-4 relative">
-          <img
-            src={uploadedAvatar || '/default-avatar.png'}
-            alt="avatar"
-            className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
-          />
+        <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-6 relative">
+          <img src={uploadedAvatar || '/default-avatar.png'} alt="avatar" className="w-full h-full rounded-full object-cover border-4 border-white shadow-lg" />
           {editing && (
             <label className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow cursor-pointer">
-              <Upload size={16} className="text-blue-500" />
+              <Upload size={18} className="text-indigo-500" />
               <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
             </label>
           )}
@@ -189,11 +178,11 @@ export default function ProfileCard({ data }) {
         )}
 
         {/* name & address */}
-        <h2 className="text-2xl font-black truncate text-gray-800 dark:text-white">
+        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-800 dark:text-white">
           {name || shortenAddress(address)}
         </h2>
         <p
-          className="inline-flex items-center gap-1 text-xs mx-auto text-gray-500 dark:text-gray-400 mt-1 cursor-pointer justify-center"
+          className="inline-flex items-center gap-1 text-xs sm:text-sm mx-auto text-indigo-600 dark:text-indigo-300 mt-1 cursor-pointer justify-center"
           title="Copy address"
           onClick={() => navigator.clipboard.writeText(address)}
         >
@@ -205,49 +194,18 @@ export default function ProfileCard({ data }) {
           <>
             {/* bio textarea */}
             <div className="my-3">
-              <textarea
-                className="w-full p-2 border rounded text-sm"
-                rows={3}
-                value={editBio}
-                onChange={(e) => setEditBio(e.target.value)}
-                placeholder="Enter your bio"
-              />
-              <button
-                onClick={() => setEditBio(ensBio)}
-                className="flex items-center gap-1 text-sm text-blue-500 hover:underline mt-1"
-              >
+              <textarea className="w-full p-2 border rounded text-sm" rows={3} value={editBio} onChange={(e) => setEditBio(e.target.value)} placeholder="Enter your bio" />
+              <button onClick={() => setEditBio(ensBio)} className="flex items-center gap-1 text-sm text-blue-500 hover:underline mt-1">
                 <RefreshCw size={14} /> Reset to ENS Bio
               </button>
             </div>
-
             {/* social inputs */}
             <div className="flex flex-col gap-2 text-left text-sm">
-              <input
-                className="p-2 border rounded"
-                value={editTwitter}
-                onChange={(e) => setEditTwitter(e.target.value)}
-                placeholder="X handle (formerly Twitter)"
-              />
-              <input
-                className="p-2 border rounded"
-                value={editWarpcast}
-                onChange={(e) => setEditWarpcast(e.target.value)}
-                placeholder="Warpcast username"
-              />
-              <input
-                className="p-2 border rounded"
-                value={editWebsite}
-                onChange={(e) => setEditWebsite(e.target.value)}
-                placeholder="Website URL"
-              />
-              <input
-                className="p-2 border rounded"
-                value={editTag}
-                onChange={(e) => setEditTag(e.target.value)}
-                placeholder="Tag / Title"
-              />
+              <input className="p-2 border rounded" value={editTwitter} onChange={(e) => setEditTwitter(e.target.value)} placeholder="X handle (formerly Twitter)" />
+              <input className="p-2 border rounded" value={editWarpcast} onChange={(e) => setEditWarpcast(e.target.value)} placeholder="Warpcast username" />
+              <input className="p-2 border rounded" value={editWebsite} onChange={(e) => setEditWebsite(e.target.value)} placeholder="Website URL" />
+              <input className="p-2 border rounded" value={editTag} onChange={(e) => setEditTag(e.target.value)} placeholder="Tag / Title" />
             </div>
-
             {/* work exp editor */}
             <div className="mt-4 text-left">
               <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-gray-800 dark:text-white mb-2">Work Experience</h3>
@@ -259,9 +217,7 @@ export default function ProfileCard({ data }) {
                   {!exp.currentlyWorking && (
                     <input className="w-full p-2 border rounded text-sm" placeholder="End Date" value={exp.endDate} onChange={(e) => updateExp(idx, 'endDate', e.target.value)} />
                   )}
-                  <label className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={exp.currentlyWorking} onChange={() => toggleCurrent(idx)} /> Currently Working
-                  </label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={exp.currentlyWorking} onChange={() => toggleCurrent(idx)} /> Currently Working</label>
                   <input className="w-full p-2 border rounded text-sm" placeholder="Location" value={exp.location} onChange={(e) => updateExp(idx, 'location', e.target.value)} />
                   <textarea className="w-full p-2 border rounded text-sm" placeholder="Description" value={exp.description} onChange={(e) => updateExp(idx, 'description', e.target.value)} />
                   <button onClick={() => removeExp(idx)} className="text-red-500 text-xs flex items-center gap-1"><Trash2 size={12} /> Remove</button>
@@ -279,24 +235,16 @@ export default function ProfileCard({ data }) {
             {(twitter || website || warpcast || efpLink) && (
               <div className="mt-4 flex justify-center gap-4 text-gray-600 dark:text-gray-300">
                 {twitter && (
-                  <a href={`https://x.com/${twitter.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" title="X" className="hover:text-blue-500">
-                    <Twitter size={20} />
-                  </a>
+                  <a href={`https://x.com/${twitter.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" title="X" className="hover:text-blue-500"><Twitter size={20} /></a>
                 )}
                 {warpcast && (
-                  <a href={`https://warpcast.com/${warpcast.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" title="Warpcast" className="hover:text-violet-500">
-                    <UserPlus2 size={20} />
-                  </a>
+                  <a href={`https://warpcast.com/${warpcast.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" title="Warpcast" className="hover:text-violet-500"><UserPlus2 size={20} /></a>
                 )}
                 {efpLink && (
-                  <a href={efpLink} target="_blank" rel="noopener noreferrer" title="Ethereum Follow Profile" className="hover:text-indigo-500">
-                    <UserPlus2 size={20} />
-                  </a>
+                  <a href={efpLink} target="_blank" rel="noopener noreferrer" title="Ethereum Follow Profile" className="hover:text-indigo-500"><UserPlus2 size={20} /></a>
                 )}
                 {website && (
-                  <a href={website.startsWith('http') ? website : `https://${website}`} target="_blank" rel="noopener noreferrer" title="Website" className="hover:text-emerald-600">
-                    <LinkIcon size={20} />
-                  </a>
+                  <a href={website.startsWith('http') ? website : `https://${website}`} target="_blank" rel="noopener noreferrer" title="Website" className="hover:text-emerald-600"><LinkIcon size={20} /></a>
                 )}
               </div>
             )}
@@ -308,12 +256,8 @@ export default function ProfileCard({ data }) {
                 <ul className="space-y-4">
                   {workExperience.map((exp, i) => (
                     <li key={i} className="text-sm">
-                      <div className="font-semibold text-gray-800 dark:text-white">
-                        {exp.title} at {exp.company}
-                      </div>
-                      <div className="text-gray-600 dark:text-gray-400">
-                        {formatRange(exp.startDate, exp.endDate, exp.currentlyWorking)} • {exp.location}
-                      </div>
+                      <div className="font-semibold text-gray-800 dark:text-white">{exp.title} at {exp.company}</div>
+                      <div className="text-gray-600 dark:text-gray-400">{formatRange(exp.startDate, exp.endDate, exp.currentlyWorking)} • {exp.location}</div>
                       {exp.description && <div className="text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">{exp.description}</div>}
                     </li>
                   ))}
@@ -348,9 +292,7 @@ export default function ProfileCard({ data }) {
         {/* Opensea link */}
         {address && (
           <div className="mt-4 text-center">
-            <a href={`https://opensea.io/${address}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline">
-              <ExternalLink size={14} /> View NFTs on OpenSea
-            </a>
+            <a href={`https://opensea.io/${address}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"><ExternalLink size={14} /> View NFTs on OpenSea</a>
           </div>
         )}
 
@@ -358,13 +300,9 @@ export default function ProfileCard({ data }) {
         {isOwner && (
           <div className="mt-6">
             {editing ? (
-              <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition flex items-center gap-2">
-                <Save size={16} /> Save Changes
-              </button>
+              <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition flex items-center gap-2"><Save size={16} /> Save Changes</button>
             ) : (
-              <button onClick={() => setEditing(true)} className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition flex items-center gap-2">
-                <Edit size={16} /> Edit Profile
-              </button>
+              <button onClick={() => setEditing(true)} className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition flex items-center gap-2"><Edit size={16} /> Edit Profile</button>
             )}
           </div>
         )}
