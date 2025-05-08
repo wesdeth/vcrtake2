@@ -3,38 +3,51 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useAccount } from 'wagmi';
 import ENSProfile from '../components/ENSProfile';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export default function ProfilePage() {
   const { address, isConnected } = useAccount();
-  const [ensOrAddress, setEnsOrAddress] = useState('');
+  const [ensName, setEnsName] = useState('');
   const [loading, setLoading] = useState(true);
+  const [ensRecord, setEnsRecord] = useState(null);
 
   useEffect(() => {
-    const fetchPrimaryName = async () => {
+    const resolveENS = async () => {
       if (!address) return;
-
       try {
-        const res = await fetch(`https://metadata.ens.domains/mainnet/address/${address}`);
-        const json = await res.json();
-        if (json.name) {
-          setEnsOrAddress(json.name);
+        const res = await fetch(`https://mainnet.ensideas.com/ens/resolve/${address}`);
+        const data = await res.json();
+        if (data?.name) {
+          setEnsName(data.name);
         } else {
-          setEnsOrAddress(address);
+          setEnsName(address);
         }
       } catch (err) {
-        console.error('❌ Failed to resolve ENS name from address:', err);
-        setEnsOrAddress(address);
-      } finally {
-        setLoading(false);
+        console.error('Failed to resolve ENS:', err);
+        setEnsName(address);
       }
     };
 
-    if (address) {
-      fetchPrimaryName();
-    } else {
-      setLoading(false);
-    }
+    resolveENS();
   }, [address]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!ensName) return;
+      const { data } = await supabase.from('VCR').select('*').eq('ens_name', ensName).single();
+      setEnsRecord(data);
+      setLoading(false);
+    };
+
+    if (ensName) {
+      fetchProfile();
+    }
+  }, [ensName]);
 
   return (
     <>
@@ -45,10 +58,14 @@ export default function ProfilePage() {
         <div className="max-w-3xl mx-auto text-center mt-16">
           {loading ? (
             <p className="text-lg text-gray-500 dark:text-gray-400">Loading your profile...</p>
-          ) : !ensOrAddress ? (
+          ) : !ensName ? (
             <p className="text-lg text-gray-500 dark:text-gray-400">Connect your wallet to view your profile.</p>
           ) : (
-            <ENSProfile ensName={ensOrAddress} forceOwnerView={true} />
+            <ENSProfile
+              ensName={ensName}
+              forceOwnerView={true}
+              overrideRecord={ensRecord}
+            />
           )}
         </div>
       </div>
