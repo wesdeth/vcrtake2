@@ -50,7 +50,10 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
       const res = await axios.get(`https://api.poap.tech/actions/scan/${ens.address}`, {
         headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' }
       });
-      poapList = res.data || [];
+      poapList = (res.data || []).map((poap) => ({
+        name: poap.event.name,
+        image: poap.event.image_url
+      }));
     } catch (err) {
       console.error('Failed to fetch POAPs', err);
     }
@@ -191,4 +194,3 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
     </>
   );
 }
- 
