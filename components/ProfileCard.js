@@ -1,4 +1,4 @@
-// components/ProfileCard.js – finalized complete file
+// components/ProfileCard.js – finalized with dropdown selector for "Active Builder" tag
 import { useState, useEffect } from 'react';
 import {
   Copy,
