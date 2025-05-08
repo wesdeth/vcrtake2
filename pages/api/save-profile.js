@@ -22,29 +22,38 @@ export default async function handler(req, res) {
     experience
   } = req.body;
 
+  console.log('[Incoming Request Body]', req.body);
+
   if (!ensName) {
     return res.status(400).json({ error: 'ENS name is required' });
   }
 
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('VCR')
-      .upsert({
-        ens_name: ensName,
-        twitter,
-        warpcast,
-        website,
-        tag,
-        bio,
-        custom_avatar,
-        experience
-      }, { onConflict: 'ens_name' });
+      .upsert(
+        {
+          ens_name: ensName,
+          twitter,
+          warpcast,
+          website,
+          tag,
+          bio,
+          custom_avatar,
+          experience
+        },
+        { onConflict: 'ens_name', returning: 'representation' }
+      );
 
-    if (error) throw error;
+    if (error) {
+      console.error('[Supabase Error]', error);
+      throw error;
+    }
 
-    return res.status(200).json({ message: 'Profile saved successfully' });
+    console.log('[Supabase Response]', data);
+    return res.status(200).json({ message: 'Profile saved successfully', data });
   } catch (err) {
-    console.error('[Supabase Error]', err);
+    console.error('[Handler Error]', err);
     return res.status(500).json({ error: 'Failed to save profile' });
   }
 }
