@@ -198,7 +198,6 @@ export default function ProfileCard({ data }) {
           onClick={() => navigator.clipboard.writeText(address)}
         >
           {shortenAddress(address)} <Copy size={12} />
-        </p
         </p>
 
         {/* bio & socials */}
