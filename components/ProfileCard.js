@@ -1,211 +1,226 @@
-// components/ENSProfile.js
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { getAddress, ethers } from 'ethers';
-import { namehash } from 'viem';
-import { getEnsData } from '../lib/ensUtils';
-import { createClient } from '@supabase/supabase-js';
-import { useAccount } from 'wagmi';
-import Head from 'next/head';
-import toast from 'react-hot-toast';
-import ProfileCard from './ProfileCard';
-import { Eye, Pencil } from 'lucide-react';
+// components/ProfileCard.js
+import { useEffect, useState } from 'react';
+import {
+  Copy,
+  ShieldCheck,
+  Twitter,
+  Link as LinkIcon,
+  UserPlus2,
+  MessageSquare,
+  Save,
+  Sparkles
+} from 'lucide-react';
 import { motion } from 'framer-motion';
-import axios from 'axios';
-
-const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
-const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
+import { useAccount } from 'wagmi';
+import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-export default function ENSProfile({ ensName, forceOwnerView = false }) {
-  const [ensData, setEnsData] = useState({});
-  const [poaps, setPoaps] = useState([]);
-  const [connected, setConnected] = useState(null);
-  const [ownsProfile, setOwnsProfile] = useState(false);
-  const [customAvatar, setCustomAvatar] = useState('');
-  const [farcaster, setFarcaster] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [showAllPoaps, setShowAllPoaps] = useState(false);
+function shortenAddress(addr) {
+  return addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
+}
 
-  const { address, isConnected } = useAccount();
-  const provider = useMemo(() => new ethers.BrowserProvider(window.ethereum), []);
+export default function ProfileCard({ data }) {
+  const {
+    name,
+    address,
+    avatar,
+    twitter,
+    website,
+    tag,
+    efpLink,
+    farcaster,
+    poaps = [],
+    ownsProfile
+  } = data;
 
-  const isWalletOnly = !ensName && !!connected;
-  const profileKey = ensName || connected;
+  const { address: connected } = useAccount();
+  const isOwner = connected?.toLowerCase() === address?.toLowerCase();
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    let ens;
-    if (ensName) {
-      ens = await getEnsData(ensName);
-    } else if (connected) {
-      ens = await getEnsData(connected);
-    }
-    ens = ens || { address: connected };
+  const [editTwitter, setEditTwitter] = useState(twitter);
+  const [editWebsite, setEditWebsite] = useState(website);
+  const [editTag, setEditTag] = useState(tag);
+  const [editFarcaster, setEditFarcaster] = useState(farcaster);
+  const [saving, setSaving] = useState(false);
 
-    let poapList = [];
-    try {
-      const res = await axios.get(`https://api.poap.tech/actions/scan/${ens.address}`, {
-        headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' }
-      });
-      poapList = (res.data || []).map((poap) => ({
-        name: poap.event.name,
-        image: poap.event.image_url
-      }));
-    } catch (err) {
-      console.error('Failed to fetch POAPs', err);
-    }
+  const handleCopy = () => {
+    if (address) navigator.clipboard.writeText(address);
+  };
 
-    setEnsData(ens);
-    setPoaps(poapList);
-
-    const { data } = await supabase.from('VCR').select('*').eq('ens_name', profileKey).single();
-    if (data) {
-      if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
-      if (data.farcaster) setFarcaster(data.farcaster);
-    }
-    setLoading(false);
-  }, [connected, ensName, profileKey]);
-
-  useEffect(() => {
-    if (profileKey) fetchData();
-  }, [fetchData, profileKey]);
-
-  useEffect(() => {
-    if (address) setConnected(address);
-  }, [address]);
-
-  useEffect(() => {
-    const checkOwnership = async () => {
-      if (!connected) {
-        if (forceOwnerView) {
-          toast.error('Connect your wallet to view or edit your profile.', {
-            icon: '🔒',
-            style: {
-              borderRadius: '10px',
-              background: '#1F2937',
-              color: '#FFC542',
-              fontFamily: 'Cal Sans, sans-serif',
-              border: '1px solid #FFC542'
-            },
-            duration: 5000
-          });
-        }
-        return;
-      }
-      if (isWalletOnly) return setOwnsProfile(true);
-
-      try {
-        const hashedName = namehash(ensName);
-        const registry = new ethers.Contract(ENS_REGISTRY, ['function owner(bytes32 node) view returns (address)', 'function getApproved(bytes32 node) view returns (address)'], provider);
-        const wrapper = new ethers.Contract(NAME_WRAPPER, ['function ownerOf(uint256 id) view returns (address)'], provider);
-
-        const [registryOwner, manager] = await Promise.all([
-          registry.owner(hashedName),
-          registry.getApproved(hashedName)
-        ]);
-
-        let wrapperOwner = null;
-        let ethRecord = null;
-
-        try { wrapperOwner = await wrapper.ownerOf(BigInt(hashedName)); } catch {}
-        try {
-          const resolver = await provider.getResolver(ensName);
-          ethRecord = resolver ? await resolver.getAddress() : null;
-        } catch {}
-
-        const connectedNorm = getAddress(connected);
-        const owns = [registryOwner, wrapperOwner, ethRecord, manager]
-          .filter(Boolean)
-          .map(getAddress)
-          .includes(connectedNorm);
-
-        if (forceOwnerView && !owns) {
-          toast.error('You must be the ENS owner or manager to view this profile.', {
-            icon: '🚫',
-            style: {
-              borderRadius: '10px',
-              background: '#1F2937',
-              color: '#FFC542',
-              fontFamily: 'Cal Sans, sans-serif',
-              border: '1px solid #FFC542'
-            },
-            duration: 5000
-          });
-          setOwnsProfile(false);
-        } else {
-          setOwnsProfile(owns);
-        }
-      } catch (err) {
-        console.error('❌ Ownership check failed:', err);
-        setOwnsProfile(false);
-      }
-    };
-    checkOwnership();
-  }, [connected, ensName, isWalletOnly, provider, ensData.address, forceOwnerView]);
-
-  const resolvedAvatar = customAvatar || (ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg');
-  const efpLink = ensData.address ? `https://efp.social/profile/${ensData.address}` : '';
-
-  const visiblePoaps = showAllPoaps ? poaps : poaps.slice(0, 4);
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase.from('ProfileCard').upsert({
+      address: connected,
+      twitter: editTwitter,
+      website: editWebsite,
+      tag: editTag,
+      farcaster: editFarcaster,
+      updated_at: new Date().toISOString()
+    });
+    setSaving(false);
+    if (error) alert('Error saving: ' + error.message);
+    else alert('Changes saved to Supabase.');
+  };
 
   return (
-    <>
-      <Head>
-        <link href="https://fonts.googleapis.com/css2?family=Comic+Relief&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap" rel="stylesheet" />
-        <style>{`body { font-family: 'Comic Relief', cursive; }`}</style>
-      </Head>
-      <div className="min-h-screen bg-gradient-to-br from-[#F9FAFB] via-[#F3E8FF] to-[#74E0FF] p-4">
-        <div className="flex justify-center mb-6">
-          <span className={`flex items-center gap-2 text-xs px-3 py-1 rounded-full font-medium ${ownsProfile ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#E5E7EB] text-[#4B5563]'}`}>            
-            {ownsProfile ? <><Pencil size={12} /> Edit Mode</> : <><Eye size={12} /> View Only</>}
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className="relative w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-xl border border-white/20"
+    >
+      <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#F9FAFB] via-[#F3E8FF] to-[#74E0FF] opacity-30 animate-gradient-radial blur-2xl" />
+
+      <div className="relative z-10 p-6 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+        <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-white shadow-md">
+          <img
+            src={avatar || '/default-avatar.png'}
+            alt="avatar"
+            className="object-cover w-full h-full"
+          />
+        </div>
+
+        <h2 className="text-2xl font-black text-gray-800 dark:text-white truncate">
+          {name || shortenAddress(address)}
+        </h2>
+
+        <p
+          onClick={handleCopy}
+          className="text-xs text-gray-500 dark:text-gray-400 mt-1 cursor-pointer flex items-center gap-1"
+          title="Click to copy address"
+        >
+          {shortenAddress(address)}
+          <Copy size={12} />
+        </p>
+
+        <div className="flex flex-wrap justify-center gap-2 mt-3">
+          <span className="text-xs font-semibold text-white bg-blue-600 px-4 py-1 rounded-full">
+            {editTag || 'Active Builder'}
           </span>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <p className="text-[#6B7280]">Loading...</p>
-          </div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="flex justify-center"
-          >
-            <ProfileCard
-              data={{
-                name: ensData.name || ensName || address,
-                address: ensData.address || address,
-                avatar: resolvedAvatar,
-                twitter: ensData.twitter || '',
-                website: ensData.website || '',
-                tag: ensData.tag || 'Active Builder',
-                efpLink,
-                farcaster,
-                poaps: visiblePoaps,
-                ownsProfile
-              }}
+        <div className="flex justify-center gap-6 mt-5 flex-wrap text-sm">
+          {isOwner ? (
+            <input
+              type="text"
+              placeholder="Twitter username"
+              value={editTwitter}
+              onChange={(e) => setEditTwitter(e.target.value)}
+              className="text-[#A259FF] bg-transparent border-b border-[#A259FF] px-2"
             />
-          </motion.div>
+          ) : (
+            twitter && (
+              <a
+                href={`https://twitter.com/${twitter}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#A259FF] hover:underline flex items-center gap-1"
+              >
+                <Twitter size={16} /> Twitter
+              </a>
+            )
+          )}
+
+          {isOwner ? (
+            <input
+              type="text"
+              placeholder="Website URL"
+              value={editWebsite}
+              onChange={(e) => setEditWebsite(e.target.value)}
+              className="text-green-500 bg-transparent border-b border-green-300 px-2"
+            />
+          ) : (
+            website && (
+              <a
+                href={website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-green-500 hover:underline flex items-center gap-1"
+              >
+                <LinkIcon size={16} /> Website
+              </a>
+            )
+          )}
+
+          {isOwner ? (
+            <input
+              type="text"
+              placeholder="Farcaster URL"
+              value={editFarcaster}
+              onChange={(e) => setEditFarcaster(e.target.value)}
+              className="text-[#A259FF] bg-transparent border-b border-[#A259FF] px-2"
+            />
+          ) : (
+            farcaster && (
+              <a
+                href={farcaster}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#A259FF] hover:underline flex items-center gap-1"
+              >
+                <MessageSquare size={16} /> Farcaster
+              </a>
+            )
+          )}
+
+          {efpLink && (
+            <a
+              href={efpLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#A259FF] hover:underline flex items-center gap-1"
+            >
+              <UserPlus2 size={16} /> Follow on EFP
+            </a>
+          )}
+        </div>
+
+        {isOwner && (
+          <button
+            onClick={handleSave}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-[#635BFF] text-white rounded-full hover:bg-[#5146cc] transition"
+          >
+            <Save size={16} /> {saving ? 'Saving...' : 'Save Changes'}
+          </button>
         )}
 
-        {poaps.length > 4 && (
-          <div className="mt-4 flex justify-center">
-            <button
-              onClick={() => setShowAllPoaps(!showAllPoaps)}
-              className="text-sm font-medium text-[#635BFF] hover:underline flex items-center gap-1"
-            >
-              {showAllPoaps ? 'Show Less' : 'Show More'}
-              <span className={`transform transition-transform ${showAllPoaps ? 'rotate-180' : 'rotate-0'}`}>▼</span>
-            </button>
+        {poaps.length > 0 && (
+          <div className="mt-8 text-left">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">POAPs</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {poaps.map((poap, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-3 bg-white border border-[#E5E7EB] rounded-lg px-3 py-2 shadow-sm"
+                >
+                  {poap.image && (
+                    <img
+                      src={poap.image}
+                      alt={poap.name}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  )}
+                  <span className="text-sm text-gray-700 truncate">{poap.name}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
+
+        <div className="mt-6 text-center">
+          <a
+            href={`https://opensea.io/${address}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#635BFF] hover:underline text-sm"
+          >
+            View NFTs on OpenSea ↗
+          </a>
+        </div>
       </div>
-    </>
+    </motion.div>
   );
 }
