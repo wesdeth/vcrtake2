@@ -90,17 +90,30 @@ export default function ProfileCard({ data }) {
 
   const poapsToShow = showAllPoaps ? displayedPoaps : displayedPoaps.slice(0, 4);
 
-  const handleSave = () => {
-    console.log('Saving profile...', {
-      avatar: uploadedAvatar,
-      twitter: editTwitter,
-      website: editWebsite,
-      warpcast: editWarpcast,
-      tag: editTag,
-      bio: editBio,
-      workExperience: editWorkExperience
-    });
-    setEditing(false);
+  const handleSave = async () => {
+    try {
+      const res = await fetch('/api/save-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ensName: name,
+          twitter: editTwitter,
+          warpcast: editWarpcast,
+          website: editWebsite,
+          tag: editTag,
+          bio: editBio,
+          custom_avatar: uploadedAvatar,
+          experience: editWorkExperience
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      console.log('Profile saved:', result);
+      setEditing(false);
+    } catch (err) {
+      console.error('Failed to save profile:', err.message);
+    }
   };
 
   const resetBio = () => {
