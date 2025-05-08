@@ -1,4 +1,4 @@
-// components/ProfileCard.js – finalized with dropdown selector for "Active Builder" tag
+// components/ProfileCard.js
 import { useState, useEffect } from 'react';
 import {
   Copy,
@@ -20,44 +20,163 @@ import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import axios from 'axios';
 
-/* ------------------------------------------------------------------
-   Utility helpers
--------------------------------------------------------------------*/
-const shortenAddress = (addr = '') => (addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '');
+/* -------------------------------------------------------------------------------------------------
+   ProfileCard Component
+   -----------------------------------------------------------------------------------------------
 
+   This component displays a user's profile information:
+     - Name, Address, Avatar, Bio
+     - Social Links (Twitter, Warpcast, Website)
+     - Custom Tag (now a dropdown for selection)
+     - Work Experience
+     - POAPs
+     - NFTs
+
+   It also allows editing if:
+     - The connected wallet address matches this user's profile address, OR
+     - The profile explicitly sets "ownsProfile" = true.
+
+   When editing, the user can:
+     - Upload/change their avatar
+     - Update social links
+     - Select a Tag from TAG_OPTIONS
+     - Add/Edit Work Experience
+     - View/hide POAPs
+     - See recent NFTs
+     - Save changes (POST to `/api/save-profile`)
+
+   This revised code specifically addresses the Tag input as a dropdown
+   from a predefined set of tags in TAG_OPTIONS. On saving, the selected
+   tag value is included in the request body to your Supabase logic.
+
+   Usage:
+     <ProfileCard data={profileData} />
+
+   Make sure you have the appropriate environment variables or mocks in place.
+-------------------------------------------------------------------------------------------------*/
+
+/* ------------------------------------------------------------------
+   Utility Helpers
+   ------------------------------------------------------------------*/
+
+/**
+ * Shorten an Ethereum address for display, e.g. "0x1234...ABCD".
+ * @param {string} addr
+ * @returns {string}
+ */
+const shortenAddress = (addr = '') => {
+  if (!addr) return '';
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+};
+
+/**
+ * Parse a date string and handle "MM/DD/YYYY" or "YYYY-MM-DD" formats.
+ * @param {string} d
+ * @returns {Date|null}
+ */
 const parseDate = (d) => {
   if (!d) return null;
+  // Replace "/" with "-" for uniform parsing
   const p = Date.parse(d.replace(/\//g, '-'));
   return Number.isNaN(p) ? null : new Date(p);
 };
 
+/**
+ * Format a date range given start, end, and a boolean indicating 'current' job.
+ * @param {string} s - Start date
+ * @param {string} e - End date
+ * @param {boolean} current - Whether the user is currently in this role
+ * @returns {string} e.g. "Sep 2023 – Present"
+ */
 const formatRange = (s, e, current) => {
   if (!s) return '';
-  const start = parseDate(s)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
+  const start = parseDate(s)?.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short'
+  });
   const end = current
     ? 'Present'
-    : parseDate(e)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) || '';
+    : parseDate(e)?.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short'
+      }) || '';
+
   return `${start} – ${end}`;
 };
 
 /* ------------------------------------------------------------------
    Tag options (capitalized)
+   ------------------------------------------------------------------
+   Used in the select dropdown for "Tag" when editing.
 -------------------------------------------------------------------*/
 const TAG_OPTIONS = [
-  'Ai', 'Analyst', 'Backend', 'Bitcoin', 'Blockchain', 'Community Manager', 'Crypto', 'Cryptography', 'Cto',
-  'Customer Support', 'Dao', 'Data Science', 'Defi', 'Design', 'Developer Relations', 'Devops', 'Discord',
-  'Economy Designer', 'Entry Level', 'Erc', 'Erc 20', 'Evm', 'Front End', 'Full Stack', 'Gaming', 'Ganache',
-  'Golang', 'Hardhat', 'Intern', 'Java', 'Javascript', 'Layer 2', 'Marketing', 'Mobile', 'Moderator', 'Nft',
-  'Node', 'Non Tech', 'Open Source', 'Openzeppelin', 'Pay In Crypto', 'Product Manager', 'Project Manager',
-  'React', 'Refi', 'Research', 'Ruby', 'Rust', 'Sales', 'Smart Contract', 'Solana', 'Solidity', 'Truffle',
-  'Web3 Py', 'Web3js', 'Zero Knowledge', 'Founder'
+  'Ai',
+  'Analyst',
+  'Backend',
+  'Bitcoin',
+  'Blockchain',
+  'Community Manager',
+  'Crypto',
+  'Cryptography',
+  'Cto',
+  'Customer Support',
+  'Dao',
+  'Data Science',
+  'Defi',
+  'Design',
+  'Developer Relations',
+  'Devops',
+  'Discord',
+  'Economy Designer',
+  'Entry Level',
+  'Erc',
+  'Erc 20',
+  'Evm',
+  'Front End',
+  'Full Stack',
+  'Gaming',
+  'Ganache',
+  'Golang',
+  'Hardhat',
+  'Intern',
+  'Java',
+  'Javascript',
+  'Layer 2',
+  'Marketing',
+  'Mobile',
+  'Moderator',
+  'Nft',
+  'Node',
+  'Non Tech',
+  'Open Source',
+  'Openzeppelin',
+  'Pay In Crypto',
+  'Product Manager',
+  'Project Manager',
+  'React',
+  'Refi',
+  'Research',
+  'Ruby',
+  'Rust',
+  'Sales',
+  'Smart Contract',
+  'Solana',
+  'Solidity',
+  'Truffle',
+  'Web3 Py',
+  'Web3js',
+  'Zero Knowledge',
+  'Founder'
 ];
 
 /* ------------------------------------------------------------------
-   SocialLink sub‑component
+   SocialLink Sub‑component
+   ------------------------------------------------------------------
+   Renders a small social link with an icon, label, and clickable href.
 -------------------------------------------------------------------*/
-const SocialLink = ({ href, icon: Icon, label }) =>
-  href ? (
+function SocialLink({ href, icon: Icon, label }) {
+  if (!href) return null;
+  return (
     <a
       href={href}
       target="_blank"
@@ -66,12 +185,16 @@ const SocialLink = ({ href, icon: Icon, label }) =>
     >
       <Icon size={16} /> {label}
     </a>
-  ) : null;
+  );
+}
 
 /* ------------------------------------------------------------------
-   ProfileCard component
+   Main ProfileCard Component
+   ------------------------------------------------------------------
+   Exports a default function that takes a "data" prop, containing user info.
 -------------------------------------------------------------------*/
 export default function ProfileCard({ data = {} }) {
+  // Destructure important fields from 'data'
   const {
     name,
     address,
@@ -89,30 +212,59 @@ export default function ProfileCard({ data = {} }) {
     ensBio = ''
   } = data;
 
-  /* -------------------------- state ---------------------------*/
+  /* ------------------------------------------------------------------
+     React State Variables
+     ------------------------------------------------------------------
+     Keep track of editing, user inputs, and toggles for expansions (e.g. POAPs).
+  -------------------------------------------------------------------*/
   const [showAllPoaps, setShowAllPoaps] = useState(false);
   const [poapData, setPoapData] = useState(poaps);
+
+  // Whether the user is currently in "edit" mode
   const [editing, setEditing] = useState(false);
+
+  // Simple flag to show "Profile Saved!" confirmation
   const [justSaved, setJustSaved] = useState(false);
 
+  // The avatar either from data OR a default image
   const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png');
+
+  // Social fields for editing
   const [editTwitter, setEditTwitter] = useState(twitter || '');
   const [editWebsite, setEditWebsite] = useState(website || '');
   const [editWarpcast, setEditWarpcast] = useState(warpcast || '');
+
+  // Now a dropdown select for the custom Tag
   const [editTag, setEditTag] = useState(tag || '');
+
+  // Bio can come from user input or fallback to 'ensBio'
   const [editBio, setEditBio] = useState(bio || ensBio);
+
+  // Work Experience
   const [editExp, setEditExp] = useState(workExperience);
 
+  // Wagmi hook to get the connected wallet address
   const { address: connected } = useAccount();
-  const isOwner = ownsProfile || (connected && address && connected.toLowerCase() === address.toLowerCase());
 
-  /* ------------------------ effects ---------------------------*/
+  // Check if connected user can edit this profile
+  const isOwner =
+    ownsProfile ||
+    (connected && address && connected.toLowerCase() === address.toLowerCase());
+
+  /* ------------------------------------------------------------------
+     Effects: Fetch POAPs and fallback Avatar
+     ------------------------------------------------------------------
+     This effect runs on mount or whenever 'address' or 'avatar' changes.
+  -------------------------------------------------------------------*/
   useEffect(() => {
     const fetchPoaps = async () => {
       if (!address) return;
       try {
+        // Make a GET request to the Poap.tech API
         const r = await axios.get(`https://api.poap.tech/actions/scan/${address}`, {
-          headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' }
+          headers: {
+            'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo'
+          }
         });
         setPoapData(r.data || []);
       } catch (err) {
@@ -124,11 +276,12 @@ export default function ProfileCard({ data = {} }) {
     const fetchAvatar = async () => {
       if (avatar || !address) return;
       try {
+        // Attempt a fetch from the OpenSea user endpoint
         const r = await axios.get(`https://api.opensea.io/api/v1/user/${address}`);
         const img = r.data?.account?.profile_img_url || r.data?.profile_img_url;
         if (img) setUploadedAvatar(img);
       } catch {
-        // fallback already set
+        // Fallback is already set in state
       }
     };
 
@@ -136,7 +289,14 @@ export default function ProfileCard({ data = {} }) {
     fetchAvatar();
   }, [address, avatar]);
 
-  /* ----------------------- handlers ---------------------------*/
+  /* ------------------------------------------------------------------
+     Handlers
+     ------------------------------------------------------------------*/
+
+  /**
+   * Handle "Save" button when editing. 
+   * We POST to '/api/save-profile' with the updated fields.
+   */
   const handleSave = async () => {
     try {
       const res = await fetch('/api/save-profile', {
@@ -148,7 +308,7 @@ export default function ProfileCard({ data = {} }) {
           twitter: editTwitter,
           warpcast: editWarpcast,
           website: editWebsite,
-          tag: editTag,
+          tag: editTag, // <--- our updated tag field
           bio: editBio,
           custom_avatar: uploadedAvatar,
           experience: editExp.map((e) => ({
@@ -161,7 +321,14 @@ export default function ProfileCard({ data = {} }) {
           }))
         })
       });
-      if (!res.ok) throw new Error((await res.json()).error || 'Unknown error');
+
+      if (!res.ok) {
+        // Attempt to parse an error from JSON; fallback is generic
+        const errorMsg = (await res.json()).error || 'Unknown error';
+        throw new Error(errorMsg);
+      }
+
+      // If successful:
       setEditing(false);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2500);
@@ -170,39 +337,101 @@ export default function ProfileCard({ data = {} }) {
     }
   };
 
+  /**
+   * Handle user uploading a new avatar image
+   * Convert file to a DataURL and set in state
+   */
   const handleAvatarUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     const reader = new FileReader();
-    reader.onloadend = () => setUploadedAvatar(reader.result);
+    reader.onloadend = () => {
+      setUploadedAvatar(reader.result);
+    };
     reader.readAsDataURL(file);
   };
 
-  const updateExp = (i, field, val) =>
-    setEditExp((prev) => prev.map((e, idx) => (idx === i ? { ...e, [field]: val } : e)));
+  /**
+   * Update the "editExp" (work experience array) at index i, on a given field
+   */
+  const updateExp = (i, field, val) => {
+    setEditExp((prev) => {
+      return prev.map((e, idx) => {
+        if (idx === i) {
+          return { ...e, [field]: val };
+        }
+        return e;
+      });
+    });
+  };
 
-  const toggleCurrent = (i) =>
-    setEditExp((prev) =>
-      prev.map((e, idx) =>
-        idx === i ? { ...e, currentlyWorking: !e.currentlyWorking, endDate: e.currentlyWorking ? '' : e.endDate } : e
-      )
-    );
+  /**
+   * Toggle "currentlyWorking" for a given experience row
+   * If we switch to "true", we clear the end date. If we switch to "false", 
+   * we keep the existing or let the user set a new one.
+   */
+  const toggleCurrent = (i) => {
+    setEditExp((prev) => {
+      return prev.map((e, idx) => {
+        if (idx === i) {
+          if (e.currentlyWorking) {
+            // was true, user toggled off
+            return { ...e, currentlyWorking: false };
+          } else {
+            // was false, user toggled on
+            return { ...e, currentlyWorking: true, endDate: '' };
+          }
+        }
+        return e;
+      });
+    });
+  };
 
-  const addExp = () =>
+  /**
+   * Add a new blank work experience entry
+   */
+  const addExp = () => {
     setEditExp((prev) => [
       ...prev,
-      { title: '', company: '', startDate: '', endDate: '', location: '', description: '', currentlyWorking: false }
+      {
+        title: '',
+        company: '',
+        startDate: '',
+        endDate: '',
+        location: '',
+        description: '',
+        currentlyWorking: false
+      }
     ]);
+  };
 
-  const removeExp = (i) => setEditExp((prev) => prev.filter((_, idx) => idx !== i));
-
-  /* ------------------------ derived ---------------------------*/
-  const poapsToShow = Array.isArray(poapData) ? (showAllPoaps ? poapData : poapData.slice(0, 4)) : [];
-  const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : [];
+  /**
+   * Remove a specific experience entry by index
+   */
+  const removeExp = (i) => {
+    setEditExp((prev) => prev.filter((_, idx) => idx !== i));
+  };
 
   /* ------------------------------------------------------------------
-     component JSX
-  ------------------------------------------------------------------*/
+     Derived Data
+     ------------------------------------------------------------------
+     - POAPs to show: either limited to 4 or all if "showAllPoaps"
+     - NFTs limited to 6
+  -------------------------------------------------------------------*/
+  const poapsToShow = Array.isArray(poapData)
+    ? showAllPoaps
+      ? poapData
+      : poapData.slice(0, 4)
+    : [];
+
+  const nftsToShow = Array.isArray(nfts)
+    ? nfts.slice(0, 6)
+    : [];
+
+  /* ------------------------------------------------------------------
+     Render the component
+     ------------------------------------------------------------------*/
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -210,32 +439,49 @@ export default function ProfileCard({ data = {} }) {
       transition={{ duration: 0.6 }}
       className="relative w-full max-w-lg mx-auto rounded-3xl overflow-hidden shadow-2xl ring-1 ring-indigo-200/60 border border-white/10"
     >
-      {/* animated background */}
+      {/*
+        Animated background behind the card
+      */}
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-purple-100 to-cyan-100 opacity-40 animate-gradient-radial blur-2xl" />
 
-      {/* content wrapper */}
+      {/*
+        Content wrapper
+      */}
       <div className="relative z-10 p-8 sm:p-10 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
-        {/* avatar */}
+        
+        {/*
+          Avatar
+        */}
         <div className="relative w-32 h-32 mx-auto -mt-24 mb-4">
           <img
             src={uploadedAvatar}
             alt="avatar"
             className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover"
           />
+
           {isOwner && editing && (
             <label className="absolute bottom-0 right-0 p-1 bg-gray-800/80 rounded-full cursor-pointer hover:bg-gray-700/80">
               <Upload size={14} className="text-white" />
-              <input type="file" accept="image/*" hidden onChange={handleAvatarUpload} />
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={handleAvatarUpload}
+              />
             </label>
           )}
         </div>
 
-        {/* name */}
+        {/*
+          Name (ENS or fallback address)
+        */}
         <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-800 dark:text-white">
           {name || shortenAddress(address)}
         </h2>
 
-        {/* address copy */}
+        {/*
+          Address copy (if address is present)
+        */}
         {address && (
           <p
             className="inline-flex items-center gap-1 text-xs sm:text-sm mx-auto text-indigo-600 dark:text-indigo-300 mt-1 cursor-pointer justify-center"
@@ -246,7 +492,9 @@ export default function ProfileCard({ data = {} }) {
           </p>
         )}
 
-        {/* bio */}
+        {/*
+          Bio (textarea if editing, else just text)
+        */}
         {editing ? (
           <textarea
             value={editBio}
@@ -256,10 +504,16 @@ export default function ProfileCard({ data = {} }) {
             placeholder="Add a short bio..."
           />
         ) : (
-          editBio && <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{editBio}</p>
+          editBio && (
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">
+              {editBio}
+            </p>
+          )
         )}
 
-        {/* socials */}
+        {/*
+          Socials & Tag (in editing mode, show inputs; otherwise show clickable links)
+        */}
         {editing ? (
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
             <input
@@ -268,50 +522,90 @@ export default function ProfileCard({ data = {} }) {
               onChange={(e) => setEditTwitter(e.target.value)}
               className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
             />
+
             <input
               placeholder="Warpcast handle"
               value={editWarpcast}
               onChange={(e) => setEditWarpcast(e.target.value)}
               className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
             />
+
             <input
               placeholder="Website"
               value={editWebsite}
               onChange={(e) => setEditWebsite(e.target.value)}
               className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
             />
-            <input
-              placeholder="Custom tag"
+
+            {/*
+              TAG SELECTION (Dropdown)
+              Replaces the simple text input.
+            */}
+            <select
               value={editTag}
               onChange={(e) => setEditTag(e.target.value)}
               className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
-            />
+            >
+              <option value="">Select a Tag</option>
+              {TAG_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
         ) : (
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             <SocialLink
-              href={editTwitter ? `https://twitter.com/${editTwitter.replace(/^@/, '')}` : null}
+              href={
+                editTwitter
+                  ? `https://twitter.com/${editTwitter.replace(/^@/, '')}`
+                  : null
+              }
               icon={Twitter}
               label="Twitter"
             />
+
             <SocialLink
-              href={editWarpcast ? `https://warpcast.com/${editWarpcast.replace(/^@/, '')}` : null}
+              href={
+                editWarpcast
+                  ? `https://warpcast.com/${editWarpcast.replace(/^@/, '')}`
+                  : null
+              }
               icon={UserPlus2}
               label="Warpcast"
             />
+
             <SocialLink
-              href={editWebsite ? (editWebsite.startsWith('http') ? editWebsite : `https://${editWebsite}`) : null}
+              href={
+                editWebsite
+                  ? editWebsite.startsWith('http')
+                    ? editWebsite
+                    : `https://${editWebsite}`
+                  : null
+              }
               icon={LinkIcon}
               label="Website"
             />
-            {editTag && <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-800">{editTag}</span>}
+
+            {/*
+              Show tag as a small pill if it exists
+            */}
+            {editTag && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-800">
+                {editTag}
+              </span>
+            )}
           </div>
         )}
 
-        {/* work experience */}
+        {/*
+          Work Experience Section
+        */}
         <div className="mt-8 text-left">
           <h3 className="text-lg font-bold mb-3 text-gray-800 dark:text-white flex items-center">
-            Experience {editing && (
+            Experience{' '}
+            {editing && (
               <button
                 onClick={addExp}
                 className="ml-2 inline-flex items-center text-xs text-blue-500 hover:underline"
@@ -343,6 +637,7 @@ export default function ProfileCard({ data = {} }) {
                       onChange={(e) => updateExp(i, 'company', e.target.value)}
                     />
                   </div>
+
                   <div className="grid sm:grid-cols-2 gap-2 mt-2">
                     <input
                       type="date"
@@ -350,6 +645,7 @@ export default function ProfileCard({ data = {} }) {
                       value={exp.startDate}
                       onChange={(e) => updateExp(i, 'startDate', e.target.value)}
                     />
+
                     {!exp.currentlyWorking && (
                       <input
                         type="date"
@@ -359,6 +655,7 @@ export default function ProfileCard({ data = {} }) {
                       />
                     )}
                   </div>
+
                   <div className="flex items-center gap-2 mt-2">
                     <label className="flex items-center text-xs gap-1 cursor-pointer select-none">
                       <input
@@ -369,6 +666,7 @@ export default function ProfileCard({ data = {} }) {
                       />
                       Currently working here
                     </label>
+
                     <button
                       onClick={() => removeExp(i)}
                       className="ml-auto text-red-500 hover:text-red-700"
@@ -376,6 +674,7 @@ export default function ProfileCard({ data = {} }) {
                       <Trash2 size={14} />
                     </button>
                   </div>
+
                   <textarea
                     rows={3}
                     placeholder="Role description"
@@ -387,49 +686,65 @@ export default function ProfileCard({ data = {} }) {
               ) : (
                 <>
                   <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">
-                    {exp.title}{exp.company && ` • ${exp.company}`}
+                    {exp.title}
+                    {exp.company && ` • ${exp.company}`}
                   </p>
                   <p className="text-xs text-gray-500">
                     {formatRange(exp.startDate, exp.endDate, exp.currentlyWorking)}
                     {exp.location && ` • ${exp.location}`}
                   </p>
-                  {exp.description && <p className="text-sm mt-1 text-gray-600 dark:text-gray-300 whitespace-pre-line">{exp.description}</p>}
+                  {exp.description && (
+                    <p className="text-sm mt-1 text-gray-600 dark:text-gray-300 whitespace-pre-line">
+                      {exp.description}
+                    </p>
+                  )}
                 </>
               )}
             </div>
           ))}
         </div>
 
-        {/* POAPs */}
+        {/*
+          POAPs
+        */}
         {poapsToShow.length > 0 && (
           <div className="mt-8 text-left">
             <h3 className="text-lg font-bold mb-1 text-gray-800 dark:text-white">POAPs</h3>
             <div className="grid grid-cols-2 gap-2">
               {poapsToShow.map((poap, i) => (
-                <div key={i} className="flex items-center gap-2 bg-white rounded-lg shadow p-2 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                <div
+                  key={i}
+                  className="flex items-center gap-2 bg-white rounded-lg shadow p-2 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                >
                   <img
                     src={poap.event?.image_url || '/default-poap.png'}
                     alt={poap.event?.name || 'POAP'}
                     className="w-6 h-6 rounded-full"
                   />
-                  <span className="truncate max-w-[9rem]">{poap.event?.name}</span>
+                  <span className="truncate max-w-[9rem]">
+                    {poap.event?.name}
+                  </span>
                 </div>
               ))}
             </div>
+
             {poapData.length > 4 && (
               <div className="flex justify-end mt-2">
                 <button
                   onClick={() => setShowAllPoaps(!showAllPoaps)}
                   className="flex items-center text-xs text-blue-500 hover:underline"
                 >
-                  {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />} View All
+                  {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />} 
+                  {showAllPoaps ? 'View Less' : 'View All'}
                 </button>
               </div>
             )}
           </div>
         )}
 
-        {/* NFTs */}
+        {/*
+          NFTs
+        */}
         {nftsToShow.length > 0 && (
           <div className="mt-8 text-left">
             <h3 className="text-lg font-bold mb-2 text-gray-800 dark:text-white">NFTs (recent)</h3>
@@ -446,7 +761,9 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* OpenSea link */}
+        {/*
+          OpenSea link if address is present
+        */}
         {address && (
           <div className="mt-4 text-center">
             <a
@@ -460,7 +777,9 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* action buttons */}
+        {/*
+          Action buttons (Edit / Save / Cancel), only if user is owner
+        */}
         {isOwner && (
           <div className="mt-6 flex justify-center gap-3">
             {editing ? (
@@ -472,7 +791,16 @@ export default function ProfileCard({ data = {} }) {
                   <Save size={16} /> Save
                 </button>
                 <button
-                  onClick={() => { setEditing(false); setEditBio(bio || ensBio); setEditExp(workExperience); }}
+                  onClick={() => {
+                    // Revert to original data if we cancel
+                    setEditing(false);
+                    setEditBio(bio || ensBio);
+                    setEditExp(workExperience);
+                    setEditTag(tag || '');
+                    setEditTwitter(twitter || '');
+                    setEditWarpcast(warpcast || '');
+                    setEditWebsite(website || '');
+                  }}
                   className="inline-flex items-center gap-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg shadow"
                 >
                   <X size={16} /> Cancel
@@ -489,7 +817,9 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* save confirmation */}
+        {/*
+          Save confirmation message
+        */}
         {justSaved && (
           <div className="mt-4 flex justify-center items-center text-green-600 text-sm">
             <CheckCircle size={16} className="mr-1" /> Profile saved!
