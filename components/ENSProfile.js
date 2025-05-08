@@ -20,7 +20,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-export default function ENSProfile({ ensName, forceOwnerView = false }) {
+export default function ENSProfile({ ensName, forceOwnerView = false, overrideRecord = null }) {
   const [ensData, setEnsData] = useState({});
   const [poaps, setPoaps] = useState([]);
   const [connected, setConnected] = useState(null);
@@ -53,18 +53,18 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
     setEnsData(ens);
     setPoaps(poapList);
 
-    const { data } = await supabase.from('VCR').select('*').eq('ens_name', profileKey).single();
-    if (data) {
-      if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
-      if (data.warpcast) setWarpcast(data.warpcast);
-      if (data.twitter) setTwitter(data.twitter);
-      if (data.website) setWebsite(data.website);
-      if (data.tag) setTag(data.tag);
-      if (data.bio) setBio(data.bio);
-      if (data.experience) setWorkExperience(data.experience);
+    const record = overrideRecord || (await supabase.from('VCR').select('*').eq('ens_name', profileKey).single()).data;
+    if (record) {
+      if (record.custom_avatar) setCustomAvatar(record.custom_avatar);
+      if (record.warpcast) setWarpcast(record.warpcast);
+      if (record.twitter) setTwitter(record.twitter);
+      if (record.website) setWebsite(record.website);
+      if (record.tag) setTag(record.tag);
+      if (record.bio) setBio(record.bio);
+      if (record.experience) setWorkExperience(record.experience);
     }
     setLoading(false);
-  }, [connected, ensName, profileKey]);
+  }, [connected, ensName, profileKey, overrideRecord]);
 
   useEffect(() => {
     if (profileKey) fetchData();
