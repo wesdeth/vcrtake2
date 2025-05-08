@@ -174,7 +174,7 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
                 website: ensData.website || '',
                 tag: ensData.tag || 'Active Builder',
                 efpLink,
-                warpcast: warpcast,
+                warpcast,
                 poaps,
                 ownsProfile,
                 bio,
