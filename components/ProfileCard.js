@@ -46,7 +46,7 @@ export default function ProfileCard({ data }) {
   const [displayedPoaps, setDisplayedPoaps] = useState([]);
   const [editing, setEditing] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
-  const [uploadedAvatar, setUploadedAvatar] = useState('');
+  const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '');
   const [editTwitter, setEditTwitter] = useState(twitter);
   const [editWebsite, setEditWebsite] = useState(website);
   const [editWarpcast, setEditWarpcast] = useState(warpcast);
@@ -73,11 +73,11 @@ export default function ProfileCard({ data }) {
     };
 
     const fetchDefaultAvatar = async () => {
-      if (avatar) return setUploadedAvatar(avatar);
+      if (avatar) return;
       try {
         const res = await axios.get(`https://api.opensea.io/api/v1/user/${address}`);
         const openseaAvatar = res.data?.account?.profile_img_url;
-        if (openseaAvatar) return setUploadedAvatar(openseaAvatar);
+        if (openseaAvatar) setUploadedAvatar(openseaAvatar);
       } catch {
         setUploadedAvatar('/default-avatar.png');
       }
@@ -141,11 +141,22 @@ export default function ProfileCard({ data }) {
     <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="relative w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-xl border border-white/20">
       <div className="absolute inset-0 z-0 bg-gradient-to-br from-white via-purple-100 to-yellow-100 opacity-30 animate-gradient-radial blur-2xl" />
       <div className="relative z-10 p-6 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+        <div className="w-24 h-24 mx-auto mb-4 relative">
+          <img src={uploadedAvatar || '/default-avatar.png'} alt="avatar" className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md" />
+          {editing && (
+            <label className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow cursor-pointer">
+              <Upload size={16} className="text-blue-500" />
+              <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+            </label>
+          )}
+        </div>
+
         {justSaved && (
           <div className="absolute top-4 right-4 flex items-center gap-1 text-green-600 text-sm font-semibold">
             <CheckCircle size={16} /> Saved
           </div>
         )}
+
         <h2 className="text-2xl font-black text-gray-800 dark:text-white truncate">{name || shortenAddress(address)}</h2>
         <p onClick={() => navigator.clipboard.writeText(address)} className="text-xs text-gray-500 dark:text-gray-400 mt-1 cursor-pointer flex items-center gap-1" title="Click to copy address">
           {shortenAddress(address)} <Copy size={12} />
