@@ -185,32 +185,12 @@ export default function ProfileCard({ data }) {
           {shortenAddress(address)} <Copy size={12} />
         </p>
 
-        {!editing && workExperience.length === 0 && (
-          <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 italic">Connect your wallet to edit your work experience.</div>
+        {!editing && (
+          <div className="mt-4 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{editBio || ensBio}</div>
         )}
 
-        {editing && (
-          <div className="mt-6 text-left">
-            <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">Work Experience</h3>
-            {editWorkExperience.map((exp, index) => (
-              <div key={index} className="mb-4 space-y-2">
-                <input className="w-full p-2 border rounded text-sm" placeholder="Title" value={exp.title} onChange={(e) => handleWorkChange(index, 'title', e.target.value)} />
-                <input className="w-full p-2 border rounded text-sm" placeholder="Company" value={exp.company} onChange={(e) => handleWorkChange(index, 'company', e.target.value)} />
-                <input className="w-full p-2 border rounded text-sm" placeholder="Location" value={exp.location} onChange={(e) => handleWorkChange(index, 'location', e.target.value)} />
-                <textarea className="w-full p-2 border rounded text-sm" placeholder="Description" value={exp.description || ''} onChange={(e) => handleWorkChange(index, 'description', e.target.value)} rows={3} />
-                <input className="w-full p-2 border rounded text-sm" type="date" value={exp.startDate} onChange={(e) => handleWorkChange(index, 'startDate', e.target.value)} />
-                {!exp.currentlyWorking && (
-                  <input className="w-full p-2 border rounded text-sm" type="date" value={exp.endDate} onChange={(e) => handleWorkChange(index, 'endDate', e.target.value)} />
-                )}
-                <label className="inline-flex items-center text-sm gap-2">
-                  <input type="checkbox" checked={exp.currentlyWorking || false} onChange={() => toggleCurrentlyWorking(index)} />
-                  I am currently working in this role
-                </label>
-                <button onClick={() => removeWorkExperience(index)} className="text-red-500 text-xs flex items-center gap-1"><Trash2 size={12} /> Remove</button>
-              </div>
-            ))}
-            <button onClick={addWorkExperience} className="flex items-center gap-1 text-blue-500 text-sm mt-2"><PlusCircle size={14} /> Add Work Experience</button>
-          </div>
+        {!editing && workExperience.length === 0 && (
+          <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 italic">No work experience listed.</div>
         )}
 
         {!editing && workExperience.length > 0 && (
@@ -245,6 +225,28 @@ export default function ProfileCard({ data }) {
                   {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />} View All
                 </button>
               </div>
+            )}
+          </div>
+        )}
+
+        {address && (
+          <div className="mt-4 text-center">
+            <a href={`https://opensea.io/${address}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline">
+              <ExternalLink size={14} /> View NFTs on OpenSea
+            </a>
+          </div>
+        )}
+
+        {isOwner && (
+          <div className="mt-6">
+            {editing ? (
+              <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition">
+                <Save size={16} className="inline mr-2" /> Save Changes
+              </button>
+            ) : (
+              <button onClick={() => setEditing(true)} className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition">
+                <Edit size={16} className="inline mr-2" /> Edit Profile
+              </button>
             )}
           </div>
         )}
