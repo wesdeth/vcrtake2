@@ -41,6 +41,19 @@ const formatRange = (s, e, current) => {
 };
 
 /* ------------------------------------------------------------------
+   Tag options (capitalized)
+-------------------------------------------------------------------*/
+const TAG_OPTIONS = [
+  'Ai', 'Analyst', 'Backend', 'Bitcoin', 'Blockchain', 'Community Manager', 'Crypto', 'Cryptography', 'Cto',
+  'Customer Support', 'Dao', 'Data Science', 'Defi', 'Design', 'Developer Relations', 'Devops', 'Discord',
+  'Economy Designer', 'Entry Level', 'Erc', 'Erc 20', 'Evm', 'Front End', 'Full Stack', 'Gaming', 'Ganache',
+  'Golang', 'Hardhat', 'Intern', 'Java', 'Javascript', 'Layer 2', 'Marketing', 'Mobile', 'Moderator', 'Nft',
+  'Node', 'Non Tech', 'Open Source', 'Openzeppelin', 'Pay In Crypto', 'Product Manager', 'Project Manager',
+  'React', 'Refi', 'Research', 'Ruby', 'Rust', 'Sales', 'Smart Contract', 'Solana', 'Solidity', 'Truffle',
+  'Web3 Py', 'Web3js', 'Zero Knowledge', 'Founder'
+];
+
+/* ------------------------------------------------------------------
    SocialLink sub‑component
 -------------------------------------------------------------------*/
 const SocialLink = ({ href, icon: Icon, label }) =>
