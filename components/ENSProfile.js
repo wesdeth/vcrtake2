@@ -26,7 +26,7 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
   const [connected, setConnected] = useState(null);
   const [ownsProfile, setOwnsProfile] = useState(false);
   const [customAvatar, setCustomAvatar] = useState('');
-  const [farcaster, setFarcaster] = useState('');
+  const [warpcast, setWarpcast] = useState('');
   const [bio, setBio] = useState('');
   const [workExperience, setWorkExperience] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
     const { data } = await supabase.from('VCR').select('*').eq('ens_name', profileKey).single();
     if (data) {
       if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
-      if (data.farcaster) setFarcaster(data.farcaster);
+      if (data.warpcast) setWarpcast(data.warpcast);
       if (data.bio) setBio(data.bio);
       if (data.experience) setWorkExperience(data.experience);
     }
@@ -174,7 +174,7 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
                 website: ensData.website || '',
                 tag: ensData.tag || 'Active Builder',
                 efpLink,
-                farcaster,
+                warpcast: warpcast,
                 poaps,
                 ownsProfile,
                 bio,
