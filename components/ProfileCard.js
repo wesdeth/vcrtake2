@@ -139,7 +139,7 @@ export default function ProfileCard({ data }) {
                   onClick={() => setShowAllPoaps(!showAllPoaps)}
                   className="text-sm text-blue-600 flex items-center gap-1 hover:underline"
                 >
-                  {showAllPoaps ? 'Hide' : 'View All on POAP'}
+                  {showAllPoaps ? 'Hide' : 'View All'}
                   {showAllPoaps ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </button>
               </div>
