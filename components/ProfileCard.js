@@ -25,10 +25,15 @@ function shortenAddress(addr) {
   return addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
 }
 
+function parseDateString(dateString) {
+  const parsed = Date.parse(dateString.replace(/\//g, '-'));
+  return isNaN(parsed) ? null : new Date(parsed);
+}
+
 function formatDateRange(startDate, endDate, currentlyWorking) {
   if (!startDate) return '';
-  const start = new Date(startDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
-  const end = currentlyWorking ? 'Present' : endDate ? new Date(endDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) : '';
+  const start = parseDateString(startDate)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
+  const end = currentlyWorking ? 'Present' : parseDateString(endDate)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) || '';
   return `${start} – ${end}`;
 }
 
