@@ -1,8 +1,10 @@
-// components/ProfileCard.js
+// === ProfileCard.js (Part 1 of 2) ===
+// Copy this entire block into your file *first*, then ask for Part 2.
+// ------------------------------------------------------------------
 import { useState, useEffect } from 'react';
 import {
   Copy,
-  Twitter, // lucide "bird" icon until an official X logo is available
+  Twitter,
   Link as LinkIcon,
   UserPlus2,
   ChevronDown,
@@ -55,8 +57,8 @@ export default function ProfileCard({ data = {} }) {
     tag,
     efpLink,
     warpcast,
-    poaps = [], // pre‑fetched POAPs (optional)
-    nfts = [],  // pre‑fetched NFTs  (optional)
+    poaps = [],
+    nfts = [],
     ownsProfile = false,
     workExperience = [],
     bio = '',
@@ -80,16 +82,15 @@ export default function ProfileCard({ data = {} }) {
 
   /* -------------------- derived --------------------------- */
   const { address: connected } = useAccount();
-  const isOwner = ownsProfile || (connected && connected.toLowerCase() === (address || '').toLowerCase());
+  const isOwner = ownsProfile || (connected && address && connected.toLowerCase() === address.toLowerCase());
 
   /* -------------------- effects --------------------------- */
   useEffect(() => {
     const fetchPoaps = async () => {
+      if (!address) return;
       try {
         const r = await axios.get(`https://api.poap.tech/actions/scan/${address}`, {
-          headers: {
-            'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo'
-          }
+          headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' }
         });
         setPoapData(r.data || []);
       } catch (err) {
@@ -98,7 +99,7 @@ export default function ProfileCard({ data = {} }) {
     };
 
     const fetchAvatar = async () => {
-      if (avatar) return;
+      if (avatar || !address) return;
       try {
         const r = await axios.get(`https://api.opensea.io/api/v1/user/${address}`);
         const img = r.data?.account?.profile_img_url;
@@ -108,14 +109,12 @@ export default function ProfileCard({ data = {} }) {
       }
     };
 
-    if (address) {
-      fetchPoaps();
-      fetchAvatar();
-    }
+    fetchPoaps();
+    fetchAvatar();
   }, [address, avatar]);
 
   const poapsToShow = showAllPoaps ? poapData : poapData.slice(0, 4);
-  const nftsToShow  = nfts.slice(0, 6);
+  const nftsToShow = nfts.slice(0, 6);
 
   /* -------------------- handlers ------------------------- */
   const handleSave = async () => {
@@ -159,7 +158,7 @@ export default function ProfileCard({ data = {} }) {
     reader.readAsDataURL(file);
   };
 
-  /* ---------- work‑experience field helpers -------------- */
+  /* ---------- work‑experience helpers ---------- */
   const updateExp = (i, field, val) =>
     setEditExp((prev) => prev.map((e, idx) => (idx === i ? { ...e, [field]: val } : e)));
 
@@ -221,10 +220,10 @@ export default function ProfileCard({ data = {} }) {
             className="w-full h-full rounded-full object-cover border-4 border-white shadow-lg"
           />
           {editing && (
-            <label className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow cursor-pointer">
-              <Upload size={18} className="text-indigo-500" />
-              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-            </label>
+            <label className="
+ <Upload size={18} className="text-indigo-500" />
+            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+          </label>
           )}
         </div>
 
@@ -338,4 +337,177 @@ export default function ProfileCard({ data = {} }) {
                     className="w-full p-2 border rounded text-sm"
                     placeholder="Location"
                     value={exp.location}
-                    onChange
+                    onChange={(e) => updateExp(idx, 'location', e.target.value)}
+                  />
+                  <textarea
+                    className="w-full p-2 border rounded text-sm"
+                    placeholder="Description"
+                    value={exp.description}
+                    onChange={(e) => updateExp(idx, 'description', e.target.value)}
+                  />
+                  <button
+                    onClick={() => removeExp(idx)}
+                    className="text-red-500 text-xs flex items-center gap-1"
+                  >
+                    <Trash2 size={12} /> Remove
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={addExp}
+                className="flex items-center gap-1 text-blue-500 text-sm mt-2"
+              >
+                <PlusCircle size={14} /> Add Work Experience
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* bio display */}
+            {editBio && (
+              <div className="mt-4 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                {editBio}
+              </div>
+            )}
+
+            {/* social icons */}
+            {(twitter || website || warpcast || efpLink) && (
+              <div className="mt-4 flex justify-center gap-4 text-gray-600 dark:text-gray-300">
+                {twitter && (
+                  <a
+                    href={`https://x.com/${twitter.replace(/^@/, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="X"
+                    className="hover:text-blue-500"
+                  >
+                    <Twitter size={20} />
+                  </a>
+                )}
+                {warpcast && (
+                  <a
+                    href={`https://warpcast.com/${warpcast.replace(/^@/, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Warpcast"
+                    className="hover:text-violet-500"
+                  >
+                    <UserPlus2 size={20} />
+                  </a>
+                )}
+                {efpLink && (
+                  <a
+                    href={efpLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Ethereum Follow Profile"
+                    className="hover:text-indigo-500"
+                  >
+                    <UserPlus2 size={20} />
+                  </a>
+                )}
+                {website && (
+                  <a
+                    href={website.startsWith('http') ? website : `https://${website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Website"
+                    className="hover:text-emerald-600"
+                  >
+                    <LinkIcon size={20} />
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* work experience list */}
+            {workExperience.length > 0 && (
+              <div className="mt-6 text-left">
+                <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-gray-800 dark:text-white mb-2">
+                  Work Experience
+                </h3>
+                <ul className="space-y-4">
+                  {workExperience.map((exp, i) => (
+                    <li key={i} className="text-sm">
+                      <div className="font-semibold text-gray-800 dark:text-white">
+                        {exp.title} at {exp.company}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400">
+                        {formatRange(exp.startDate, exp.endDate, exp.currentlyWorking)} • {exp.location}
+                      </div>
+                      {exp.description && (
+                        <div className="text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
+                          {exp.description}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ─── POAP grid ───────────────────────────────────── */}
+        {poapData.length > 0 && (
+          <div className="mt-6 text-left">
+            <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-gray-800 dark:text-white mb-2">
+              POAPs
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {poapsToShow.map((poap, i) => (
+                <div key={i} className="flex items-center gap-2 bg-white rounded-lg shadow p-2 text-sm text-gray-700">
+                  <img src={poap.event.image_url} alt={poap.event.name} className="w-6 h-6 rounded-full" />
+                  <span className="truncate">{poap.event.name}</span>
+                </div>
+              ))}
+            </div>
+            {poapData.length > 4 && (
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => setShowAllPoaps(!showAllPoaps)}
+                  className="flex items-center text-xs text-blue-500 hover:underline"
+                >
+                  {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />} View All
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── NFT gallery (first 6) ───────────────────────── */}
+        {nftsToShow.length > 0 && (
+          <div className="mt-6 text-left">
+            <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-gray-800 dark:text-white mb-2">
+              NFTs
+            </h3>
+            <div className="grid grid-cols-3 gap-2">
+              {nftsToShow.map((nft, i) => (
+                <img
+                  key={i}
+                  src={nft.image || nft.image_url || '/nft-placeholder.png'}
+                  alt={nft.name || `NFT ${i}`}
+                  className="w-full h-24 object-cover rounded-lg shadow"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── OpenSea link ───────────────────────────────── */}
+        {address && (
+          <div className="mt-4 text-center">
+            <a
+              href={`https://opensea.io/${address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+            >
+              <ExternalLink size={14} /> View full collection on OpenSea
+            </a>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
