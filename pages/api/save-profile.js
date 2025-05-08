@@ -28,6 +28,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'ENS name is required' });
   }
 
+  // Normalize experience dates
+  const normalizedExperience = (experience || []).map((item) => ({
+    ...item,
+    startDate: item.startDate || '',
+    endDate: item.endDate || ''
+  }));
+
   try {
     const { data, error } = await supabase
       .from('VCR')
@@ -40,7 +47,7 @@ export default async function handler(req, res) {
           tag,
           bio,
           custom_avatar,
-          experience
+          experience: normalizedExperience
         },
         { onConflict: 'ens_name', returning: 'representation' }
       );
