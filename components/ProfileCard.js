@@ -104,7 +104,11 @@ export default function ProfileCard({ data }) {
           tag: editTag,
           bio: editBio,
           custom_avatar: uploadedAvatar,
-          experience: editWorkExperience
+          experience: editWorkExperience.map(exp => ({
+            ...exp,
+            startDate: exp.startDate || '',
+            endDate: exp.endDate || ''
+          }))
         })
       });
       const result = await res.json();
@@ -134,7 +138,11 @@ export default function ProfileCard({ data }) {
     setEditWorkExperience(copy);
   };
 
-  const addWorkExperience = () => setEditWorkExperience([...editWorkExperience, { title: '', company: '', date: '', location: '' }]);
+  const addWorkExperience = () => setEditWorkExperience([
+    ...editWorkExperience,
+    { title: '', company: '', startDate: '', endDate: '', location: '' }
+  ]);
+
   const removeWorkExperience = (i) => setEditWorkExperience(editWorkExperience.filter((_, idx) => i !== idx));
 
   return (
@@ -186,7 +194,8 @@ export default function ProfileCard({ data }) {
                 <div key={index} className="mb-2 space-y-1">
                   <input className="w-full p-2 border rounded text-sm" placeholder="Title" value={exp.title} onChange={(e) => handleWorkChange(index, 'title', e.target.value)} />
                   <input className="w-full p-2 border rounded text-sm" placeholder="Company" value={exp.company} onChange={(e) => handleWorkChange(index, 'company', e.target.value)} />
-                  <input className="w-full p-2 border rounded text-sm" placeholder="Date" value={exp.date} onChange={(e) => handleWorkChange(index, 'date', e.target.value)} />
+                  <input className="w-full p-2 border rounded text-sm" placeholder="Start Date" value={exp.startDate} onChange={(e) => handleWorkChange(index, 'startDate', e.target.value)} />
+                  <input className="w-full p-2 border rounded text-sm" placeholder="End Date" value={exp.endDate} onChange={(e) => handleWorkChange(index, 'endDate', e.target.value)} />
                   <input className="w-full p-2 border rounded text-sm" placeholder="Location" value={exp.location} onChange={(e) => handleWorkChange(index, 'location', e.target.value)} />
                   <button onClick={() => removeWorkExperience(index)} className="text-red-500 text-xs flex items-center gap-1"><Trash2 size={12} /> Remove</button>
                 </div>
