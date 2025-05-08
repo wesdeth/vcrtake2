@@ -15,20 +15,32 @@ export default function Navbar() {
   ];
 
   return (
-    <div className="w-full py-4 flex justify-center">
-      <nav className="flex items-center justify-center gap-8 bg-[#635BFF] text-white px-8 py-3 rounded-full border border-[#E5E7EB] shadow-lg text-sm font-semibold">
-        {navItems.map(({ label, href }) => (
-          <Link key={href} href={href}>
-            <span
-              className={`cursor-pointer transition-all duration-200 ease-in-out transform hover:scale-105 hover:text-[#FFC542] ${
-                router.pathname === href ? 'text-[#FFC542]' : ''
-              }`}
-            >
-              {label}
-            </span>
-          </Link>
-        ))}
-      </nav>
-    </div>
+    // Outer container with a vibrant rainbow gradient
+    <header className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-400 p-4 shadow-sm">
+      {/* Inner wrapper ensures content is centered, with optional max-width for bigger screens */}
+      <div className="max-w-7xl mx-auto">
+        {/* The "pill" nav bar itself: white background, subtle ring, rounded-full shape */}
+        <nav className="flex items-center justify-center gap-6 sm:gap-8 bg-white text-gray-800 px-8 py-3 rounded-full ring-1 ring-white/40 shadow-xl font-semibold">
+          {navItems.map(({ label, href }) => {
+            const isActive = router.pathname === href;
+            return (
+              <Link key={href} href={href}>
+                <span
+                  className={`cursor-pointer transition-all duration-200 ease-in-out transform hover:scale-110 hover:text-purple-600 px-2 sm:px-3
+                    ${
+                      isActive
+                        ? 'text-purple-600 underline decoration-2 underline-offset-4 scale-105'
+                        : ''
+                    }
+                  `}
+                >
+                  {label}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
   );
 }
