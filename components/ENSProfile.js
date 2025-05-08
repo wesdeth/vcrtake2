@@ -27,6 +27,9 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
   const [ownsProfile, setOwnsProfile] = useState(false);
   const [customAvatar, setCustomAvatar] = useState('');
   const [warpcast, setWarpcast] = useState('');
+  const [twitter, setTwitter] = useState('');
+  const [website, setWebsite] = useState('');
+  const [tag, setTag] = useState('');
   const [bio, setBio] = useState('');
   const [workExperience, setWorkExperience] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,9 +57,9 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
     if (data) {
       if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
       if (data.warpcast) setWarpcast(data.warpcast);
-      if (data.twitter) ens.twitter = data.twitter;
-      if (data.website) ens.website = data.website;
-      if (data.tag) ens.tag = data.tag;
+      if (data.twitter) setTwitter(data.twitter);
+      if (data.website) setWebsite(data.website);
+      if (data.tag) setTag(data.tag);
       if (data.bio) setBio(data.bio);
       if (data.experience) setWorkExperience(data.experience);
     }
@@ -173,9 +176,9 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
                 name: ensData.name || ensName || address,
                 address: ensData.address || address,
                 avatar: resolvedAvatar,
-                twitter: ensData.twitter || '',
-                website: ensData.website || '',
-                tag: ensData.tag || 'Active Builder',
+                twitter,
+                website,
+                tag: tag || 'Active Builder',
                 efpLink,
                 warpcast,
                 poaps,
