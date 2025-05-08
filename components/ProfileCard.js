@@ -45,7 +45,6 @@ export default function ProfileCard({ data }) {
   const [displayedPoaps, setDisplayedPoaps] = useState([]);
   const [editing, setEditing] = useState(false);
   const [uploadedAvatar, setUploadedAvatar] = useState('');
-
   const [editTwitter, setEditTwitter] = useState(twitter);
   const [editWebsite, setEditWebsite] = useState(website);
   const [editFarcaster, setEditFarcaster] = useState(farcaster);
@@ -54,6 +53,7 @@ export default function ProfileCard({ data }) {
   const [editWorkExperience, setEditWorkExperience] = useState(workExperience);
 
   const { address: connected } = useAccount();
+  const isOwner = ownsProfile || connected?.toLowerCase() === address?.toLowerCase();
 
   useEffect(() => {
     const fetchPoapImages = async () => {
@@ -117,8 +117,6 @@ export default function ProfileCard({ data }) {
     }
   };
 
-  const isOwner = ownsProfile || connected?.toLowerCase() === address?.toLowerCase();
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -157,6 +155,111 @@ export default function ProfileCard({ data }) {
             <button onClick={resetBio} className="flex items-center text-sm text-blue-500 hover:underline gap-1">
               <RefreshCw size={14} /> Reset to ENS Bio
             </button>
+          </div>
+        )}
+
+        {!editing && (
+          <div className="mt-6">
+            <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+              {editBio}
+            </div>
+
+            <div className="mt-4">
+              <div className="flex flex-wrap justify-center gap-2">
+                {tag && (
+                  <span className="px-3 py-1 text-sm bg-blue-600 text-white rounded-full font-semibold">
+                    {tag}
+                  </span>
+                )}
+                {twitter && (
+                  <a
+                    href={`https://twitter.com/${twitter}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-blue-500 hover:underline"
+                  >
+                    <Twitter size={16} /> Twitter
+                  </a>
+                )}
+                {farcaster && (
+                  <a
+                    href={`https://warpcast.com/${farcaster}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-purple-500 hover:underline"
+                  >
+                    <MessageSquare size={16} /> Farcaster
+                  </a>
+                )}
+                {website && (
+                  <a
+                    href={website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-green-500 hover:underline"
+                  >
+                    <LinkIcon size={16} /> Website
+                  </a>
+                )}
+                {efpLink && (
+                  <a
+                    href={efpLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-purple-500 hover:underline"
+                  >
+                    <UserPlus2 size={16} /> Follow on EFP
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {displayedPoaps.length > 0 && (
+              <div className="mt-6 text-left">
+                <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">POAPs</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {poapsToShow.map((poap, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 bg-white rounded-lg shadow p-2 text-sm text-gray-700"
+                    >
+                      <img src={poap.event.image_url} alt={poap.event.name} className="w-6 h-6 rounded-full" />
+                      <span className="truncate">{poap.event.name}</span>
+                    </div>
+                  ))}
+                </div>
+                {displayedPoaps.length > 4 && (
+                  <div className="flex justify-end mt-2">
+                    <button
+                      onClick={() => setShowAllPoaps(!showAllPoaps)}
+                      className="flex items-center text-xs text-blue-500 hover:underline"
+                    >
+                      {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />} View All
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {isOwner && (
+          <div className="mt-6">
+            {editing ? (
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition"
+              >
+                <Save size={16} className="inline mr-2" /> Save Changes
+              </button>
+            ) : (
+              <button
+                onClick={() => setEditing(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
+              >
+                <Edit size={16} className="inline mr-2" /> Edit Profile
+              </button>
+            )}
           </div>
         )}
       </div>
