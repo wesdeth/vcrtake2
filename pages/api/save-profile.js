@@ -22,22 +22,28 @@ export default async function handler(req, res) {
     experience
   } = req.body;
 
-  console.log('[Incoming Request Body]', JSON.stringify(req.body, null, 2));
+  console.log('[Incoming Request Body]', req.body);
 
   if (!ensName) {
     return res.status(400).json({ error: 'ENS name is required' });
   }
 
-  // Normalize experience array and ensure all expected fields are present
-  const normalizedExperience = (experience || []).map((item) => ({
-    title: item.title || '',
-    company: item.company || '',
-    startDate: item.startDate || '',
-    endDate: item.currentlyWorking ? null : item.endDate || '',
-    location: item.location || '',
-    description: item.description || '',
-    currentlyWorking: !!item.currentlyWorking
-  }));
+  // Sanitize and validate experience array
+  const normalizedExperience = (Array.isArray(experience) ? experience : []).map((item, index) => {
+    if (!item.title || !item.company) {
+      console.warn(`[Experience Validation] Skipping invalid entry at index ${index}`, item);
+      return null;
+    }
+    return {
+      title: item.title || '',
+      company: item.company || '',
+      location: item.location || '',
+      description: item.description || '',
+      startDate: item.startDate || '',
+      endDate: item.currentlyWorking ? null : item.endDate || '',
+      currentlyWorking: !!item.currentlyWorking
+    };
+  }).filter(Boolean); // Remove null entries
 
   try {
     const { data, error } = await supabase
@@ -60,14 +66,14 @@ export default async function handler(req, res) {
       );
 
     if (error) {
-      console.error('[Supabase Error]', error.message, error.details || error);
-      throw error;
+      console.error('[Supabase Error]', error);
+      return res.status(500).json({ error: 'Database error', details: error.message });
     }
 
-    console.log('[Supabase Save Successful]', data);
+    console.log('[Supabase Upsert Success]', data);
     return res.status(200).json({ message: 'Profile saved successfully', data });
   } catch (err) {
-    console.error('[Handler Error]', err.message || err);
-    return res.status(500).json({ error: 'Failed to save profile' });
+    console.error('[Handler Exception]', err);
+    return res.status(500).json({ error: 'Failed to save profile', details: err.message });
   }
 }
