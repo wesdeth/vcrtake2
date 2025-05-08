@@ -250,7 +250,7 @@ export default function ProfileCard({ data }) {
 
             {/* work exp editor */}
             <div className="mt-4 text-left">
-              <h3 className="text-sm font-bold mb-2 text-gray-800 dark:text-white">Work Experience</h3>
+              <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-gray-800 dark:text-white mb-2">Work Experience</h3>
               {editExp.map((exp, idx) => (
                 <div key={idx} className="mb-2 space-y-1">
                   <input className="w-full p-2 border rounded text-sm" placeholder="Title" value={exp.title} onChange={(e) => updateExp(idx, 'title', e.target.value)} />
@@ -304,7 +304,7 @@ export default function ProfileCard({ data }) {
             {/* work experience display */}
             {workExperience.length > 0 && (
               <div className="mt-6 text-left">
-                <h3 className="text-sm font-bold mb-2 text-gray-800 dark:text-white">Work Experience</h3>
+                <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-gray-800 dark:text-white mb-2">Work Experience</h3>
                 <ul className="space-y-4">
                   {workExperience.map((exp, i) => (
                     <li key={i} className="text-sm">
@@ -326,7 +326,7 @@ export default function ProfileCard({ data }) {
         {/* POAP list */}
         {poapData.length > 0 && (
           <div className="mt-6 text-left">
-            <h3 className="text-sm font-bold mb-2 text-gray-800 dark:text-white">POAPs</h3>
+            <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-gray-800 dark:text-white mb-2">POAPs</h3>
             <div className="grid grid-cols-2 gap-2">
               {poapsToShow.map((poap, i) => (
                 <div key={i} className="flex items-center gap-2 bg-white rounded-lg shadow p-2 text-sm text-gray-700">
