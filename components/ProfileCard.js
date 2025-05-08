@@ -27,7 +27,7 @@ import axios from 'axios';
    This component displays a user's profile information:
      - Name, Address, Avatar, Bio
      - Social Links (Twitter, Warpcast, Website)
-     - Custom Tag (now a dropdown for selection)
+     - Custom Tag (dropdown)
      - Work Experience
      - POAPs
      - NFTs
@@ -152,9 +152,10 @@ function SocialLink({ href, icon: Icon, label }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+      className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline transition-colors"
     >
-      <Icon size={16} /> {label}
+      <Icon size={16} />
+      {label}
     </a>
   );
 }
@@ -279,7 +280,7 @@ export default function ProfileCard({ data = {} }) {
           twitter: editTwitter,
           warpcast: editWarpcast,
           website: editWebsite,
-          tag: editTag, // <--- our updated tag field
+          tag: editTag,
           bio: editBio,
           custom_avatar: uploadedAvatar,
           experience: editExp.map((e) => ({
@@ -294,7 +295,6 @@ export default function ProfileCard({ data = {} }) {
       });
 
       if (!res.ok) {
-        // Attempt to parse an error from JSON; fallback is generic
         const errorMsg = (await res.json()).error || 'Unknown error';
         throw new Error(errorMsg);
       }
@@ -327,14 +327,9 @@ export default function ProfileCard({ data = {} }) {
    * Update the "editExp" (work experience array) at index i, on a given field
    */
   const updateExp = (i, field, val) => {
-    setEditExp((prev) => {
-      return prev.map((e, idx) => {
-        if (idx === i) {
-          return { ...e, [field]: val };
-        }
-        return e;
-      });
-    });
+    setEditExp((prev) =>
+      prev.map((expItem, idx) => (idx === i ? { ...expItem, [field]: val } : expItem))
+    );
   };
 
   /**
@@ -343,20 +338,20 @@ export default function ProfileCard({ data = {} }) {
    * we keep the existing or let the user set a new one.
    */
   const toggleCurrent = (i) => {
-    setEditExp((prev) => {
-      return prev.map((e, idx) => {
+    setEditExp((prev) =>
+      prev.map((expItem, idx) => {
         if (idx === i) {
-          if (e.currentlyWorking) {
+          if (expItem.currentlyWorking) {
             // was true, user toggled off
-            return { ...e, currentlyWorking: false };
+            return { ...expItem, currentlyWorking: false };
           } else {
             // was false, user toggled on
-            return { ...e, currentlyWorking: true, endDate: '' };
+            return { ...expItem, currentlyWorking: true, endDate: '' };
           }
         }
-        return e;
-      });
-    });
+        return expItem;
+      })
+    );
   };
 
   /**
@@ -396,9 +391,7 @@ export default function ProfileCard({ data = {} }) {
       : poapData.slice(0, 4)
     : [];
 
-  const nftsToShow = Array.isArray(nfts)
-    ? nfts.slice(0, 6)
-    : [];
+  const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : [];
 
   /* ------------------------------------------------------------------
      Render the component
@@ -408,33 +401,31 @@ export default function ProfileCard({ data = {} }) {
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      // Changed to max-w-2xl and overflow-visible to accommodate larger profiles
-      className="relative w-full max-w-2xl mx-auto rounded-3xl overflow-visible shadow-2xl ring-1 ring-indigo-200/60 border border-white/10"
+      // Upgraded styling for a more refined look
+      className="relative w-full max-w-3xl mx-auto rounded-3xl overflow-visible shadow-xl border border-gray-100 ring-1 ring-gray-200/70
+                 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800"
     >
       {/*
-        Animated background behind the card
+        Soft gradient background
       */}
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-purple-100 to-cyan-100 opacity-40 animate-gradient-radial blur-2xl" />
+      <div className="absolute inset-0 opacity-40 animate-pulse-slow pointer-events-none" />
 
       {/*
         Content wrapper
-        Increased padding to give more room
       */}
-      <div className="relative z-10 p-10 sm:p-12 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+      <div className="relative z-10 p-10 sm:p-12 text-center backdrop-blur-xl">
         
         {/*
-          Avatar
-          Slightly adjusted the negative margin so it won't be cut off
+          Avatar with improved spacing
         */}
-        <div className="relative w-32 h-32 mx-auto -mt-16 mb-4">
+        <div className="relative w-36 h-36 mx-auto -mt-16 mb-4">
           <img
             src={uploadedAvatar}
             alt="avatar"
-            className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover"
+            className="w-36 h-36 rounded-full border-4 border-white dark:border-gray-700 shadow-md object-cover"
           />
-
           {isOwner && editing && (
-            <label className="absolute bottom-0 right-0 p-1 bg-gray-800/80 rounded-full cursor-pointer hover:bg-gray-700/80">
+            <label className="absolute bottom-2 right-2 p-1 bg-gray-800/80 rounded-full cursor-pointer hover:bg-gray-700/80 transition-colors">
               <Upload size={14} className="text-white" />
               <input
                 type="file"
@@ -449,7 +440,7 @@ export default function ProfileCard({ data = {} }) {
         {/*
           Name (ENS or fallback address)
         */}
-        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-800 dark:text-white">
+        <h2 className="text-4xl font-bold tracking-tight text-gray-800 dark:text-gray-100">
           {name || shortenAddress(address)}
         </h2>
 
@@ -458,7 +449,7 @@ export default function ProfileCard({ data = {} }) {
         */}
         {address && (
           <p
-            className="inline-flex items-center gap-1 text-xs sm:text-sm mx-auto text-indigo-600 dark:text-indigo-300 mt-1 cursor-pointer justify-center"
+            className="inline-flex items-center gap-1 text-xs sm:text-sm mx-auto text-indigo-600 dark:text-indigo-300 mt-1 cursor-pointer justify-center hover:text-indigo-500 transition-colors"
             title="Copy address"
             onClick={() => navigator.clipboard.writeText(address)}
           >
@@ -473,13 +464,13 @@ export default function ProfileCard({ data = {} }) {
           <textarea
             value={editBio}
             onChange={(e) => setEditBio(e.target.value)}
-            rows={3}
-            className="mt-3 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl p-3 text-sm"
+            rows={4}
+            className="mt-4 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-sm placeholder-gray-400"
             placeholder="Add a short bio..."
           />
         ) : (
           editBio && (
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">
+            <p className="mt-4 text-base text-gray-600 dark:text-gray-300 whitespace-pre-line">
               {editBio}
             </p>
           )
@@ -488,100 +479,96 @@ export default function ProfileCard({ data = {} }) {
         {/*
           Socials & Tag (in editing mode, show inputs; otherwise show clickable links)
         */}
-        {editing ? (
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
-            <input
-              placeholder="Twitter handle"
-              value={editTwitter}
-              onChange={(e) => setEditTwitter(e.target.value)}
-              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
-            />
+        <div className="mt-6">
+          {editing ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+              <input
+                placeholder="Twitter handle"
+                value={editTwitter}
+                onChange={(e) => setEditTwitter(e.target.value)}
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
+              />
 
-            <input
-              placeholder="Warpcast handle"
-              value={editWarpcast}
-              onChange={(e) => setEditWarpcast(e.target.value)}
-              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
-            />
+              <input
+                placeholder="Warpcast handle"
+                value={editWarpcast}
+                onChange={(e) => setEditWarpcast(e.target.value)}
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
+              />
 
-            <input
-              placeholder="Website"
-              value={editWebsite}
-              onChange={(e) => setEditWebsite(e.target.value)}
-              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
-            />
+              <input
+                placeholder="Website"
+                value={editWebsite}
+                onChange={(e) => setEditWebsite(e.target.value)}
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
+              />
 
-            {/*
-              TAG SELECTION (Dropdown)
-            */}
-            <select
-              value={editTag}
-              onChange={(e) => setEditTag(e.target.value)}
-              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
-            >
-              <option value="">Select a Tag</option>
-              {TAG_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : (
-          <div className="mt-4 flex flex-wrap justify-center gap-3">
-            <SocialLink
-              href={
-                editTwitter
-                  ? `https://twitter.com/${editTwitter.replace(/^@/, '')}`
-                  : null
-              }
-              icon={Twitter}
-              label="Twitter"
-            />
+              <select
+                value={editTag}
+                onChange={(e) => setEditTag(e.target.value)}
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
+              >
+                <option value="">Select a Tag</option>
+                {TAG_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="flex flex-wrap justify-center gap-3">
+              <SocialLink
+                href={
+                  editTwitter
+                    ? `https://twitter.com/${editTwitter.replace(/^@/, '')}`
+                    : null
+                }
+                icon={Twitter}
+                label="Twitter"
+              />
 
-            <SocialLink
-              href={
-                editWarpcast
-                  ? `https://warpcast.com/${editWarpcast.replace(/^@/, '')}`
-                  : null
-              }
-              icon={UserPlus2}
-              label="Warpcast"
-            />
+              <SocialLink
+                href={
+                  editWarpcast
+                    ? `https://warpcast.com/${editWarpcast.replace(/^@/, '')}`
+                    : null
+                }
+                icon={UserPlus2}
+                label="Warpcast"
+              />
 
-            <SocialLink
-              href={
-                editWebsite
-                  ? editWebsite.startsWith('http')
-                    ? editWebsite
-                    : `https://${editWebsite}`
-                  : null
-              }
-              icon={LinkIcon}
-              label="Website"
-            />
+              <SocialLink
+                href={
+                  editWebsite
+                    ? editWebsite.startsWith('http')
+                      ? editWebsite
+                      : `https://${editWebsite}`
+                    : null
+                }
+                icon={LinkIcon}
+                label="Website"
+              />
 
-            {/*
-              Show tag as a small pill if it exists
-            */}
-            {editTag && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-800">
-                {editTag}
-              </span>
-            )}
-          </div>
-        )}
+              {editTag && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-800/20 dark:text-indigo-200">
+                  {editTag}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
         {/*
           Work Experience Section
         */}
-        <div className="mt-8 text-left">
-          <h3 className="text-lg font-bold mb-3 text-gray-800 dark:text-white flex items-center">
+        <div className="mt-10 text-left">
+          <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-100 flex items-center">
             Experience{' '}
             {editing && (
               <button
                 onClick={addExp}
-                className="ml-2 inline-flex items-center text-xs text-blue-500 hover:underline"
+                className="ml-2 inline-flex items-center text-xs text-blue-600 hover:underline transition-colors"
               >
                 <PlusCircle size={14} className="mr-0.5" /> Add
               </button>
@@ -593,28 +580,28 @@ export default function ProfileCard({ data = {} }) {
           )}
 
           {editExp.map((exp, i) => (
-            <div key={i} className="mb-4 last:mb-0">
+            <div key={i} className="mb-6 last:mb-0">
               {editing ? (
                 <>
                   <div className="grid sm:grid-cols-2 gap-2">
                     <input
-                      className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
+                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm placeholder-gray-400"
                       placeholder="Job title"
                       value={exp.title}
                       onChange={(e) => updateExp(i, 'title', e.target.value)}
                     />
                     <input
-                      className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
+                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm placeholder-gray-400"
                       placeholder="Company"
                       value={exp.company}
                       onChange={(e) => updateExp(i, 'company', e.target.value)}
                     />
                   </div>
 
-                  <div className="grid sm:grid-cols-2 gap-2 mt-2">
+                  <div className="grid sm:grid-cols-2 gap-2 mt-3">
                     <input
                       type="date"
-                      className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
+                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm placeholder-gray-400"
                       value={exp.startDate}
                       onChange={(e) => updateExp(i, 'startDate', e.target.value)}
                     />
@@ -622,27 +609,27 @@ export default function ProfileCard({ data = {} }) {
                     {!exp.currentlyWorking && (
                       <input
                         type="date"
-                        className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
+                        className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm placeholder-gray-400"
                         value={exp.endDate}
                         onChange={(e) => updateExp(i, 'endDate', e.target.value)}
                       />
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 mt-2">
-                    <label className="flex items-center text-xs gap-1 cursor-pointer select-none">
+                  <div className="flex items-center gap-2 mt-3">
+                    <label className="flex items-center text-xs gap-1 cursor-pointer select-none text-gray-600 dark:text-gray-300">
                       <input
                         type="checkbox"
                         checked={exp.currentlyWorking}
                         onChange={() => toggleCurrent(i)}
-                        className="h-4 w-4 text-indigo-600 rounded"
+                        className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500"
                       />
                       Currently working here
                     </label>
 
                     <button
                       onClick={() => removeExp(i)}
-                      className="ml-auto text-red-500 hover:text-red-700"
+                      className="ml-auto text-red-500 hover:text-red-700 transition-colors"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -653,21 +640,21 @@ export default function ProfileCard({ data = {} }) {
                     placeholder="Role description"
                     value={exp.description}
                     onChange={(e) => updateExp(i, 'description', e.target.value)}
-                    className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm mt-2"
+                    className="w-full mt-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm placeholder-gray-400"
                   />
                 </>
               ) : (
                 <>
-                  <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">
+                  <p className="font-semibold text-md text-gray-800 dark:text-gray-100">
                     {exp.title}
                     {exp.company && ` • ${exp.company}`}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {formatRange(exp.startDate, exp.endDate, exp.currentlyWorking)}
                     {exp.location && ` • ${exp.location}`}
                   </p>
                   {exp.description && (
-                    <p className="text-sm mt-1 text-gray-600 dark:text-gray-300 whitespace-pre-line">
+                    <p className="text-sm mt-2 text-gray-600 dark:text-gray-300 whitespace-pre-line leading-relaxed">
                       {exp.description}
                     </p>
                   )}
@@ -678,25 +665,25 @@ export default function ProfileCard({ data = {} }) {
         </div>
 
         {/*
-          POAPs
+          POAPs Section
         */}
         {poapsToShow.length > 0 && (
-          <div className="mt-8 text-left">
-            <h3 className="text-lg font-bold mb-1 text-gray-800 dark:text-white">POAPs</h3>
+          <div className="mt-12 text-left">
+            <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-100">
+              POAPs
+            </h3>
             <div className="grid grid-cols-2 gap-2">
               {poapsToShow.map((poap, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-2 bg-white rounded-lg shadow p-2 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                  className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg shadow-sm p-2 text-sm text-gray-700 dark:text-gray-300"
                 >
                   <img
                     src={poap.event?.image_url || '/default-poap.png'}
                     alt={poap.event?.name || 'POAP'}
                     className="w-6 h-6 rounded-full"
                   />
-                  <span className="truncate max-w-[9rem]">
-                    {poap.event?.name}
-                  </span>
+                  <span className="truncate max-w-[9rem]">{poap.event?.name}</span>
                 </div>
               ))}
             </div>
@@ -705,9 +692,9 @@ export default function ProfileCard({ data = {} }) {
               <div className="flex justify-end mt-2">
                 <button
                   onClick={() => setShowAllPoaps(!showAllPoaps)}
-                  className="flex items-center text-xs text-blue-500 hover:underline"
+                  className="flex items-center text-xs text-blue-600 hover:underline transition-colors"
                 >
-                  {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />} 
+                  {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                   {showAllPoaps ? 'View Less' : 'View All'}
                 </button>
               </div>
@@ -716,18 +703,20 @@ export default function ProfileCard({ data = {} }) {
         )}
 
         {/*
-          NFTs
+          NFTs Section
         */}
         {nftsToShow.length > 0 && (
-          <div className="mt-8 text-left">
-            <h3 className="text-lg font-bold mb-2 text-gray-800 dark:text-white">NFTs (recent)</h3>
-            <div className="grid grid-cols-3 gap-2">
+          <div className="mt-12 text-left">
+            <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-100">
+              NFTs (recent)
+            </h3>
+            <div className="grid grid-cols-3 gap-3">
               {nftsToShow.map((nft, i) => (
                 <img
                   key={i}
                   src={nft.image || nft.image_url || '/nft-placeholder.png'}
                   alt={nft.name || `NFT ${i}`}
-                  className="w-full h-24 object-cover rounded-lg shadow"
+                  className="w-full h-24 object-cover rounded-lg shadow-sm"
                 />
               ))}
             </div>
@@ -735,15 +724,15 @@ export default function ProfileCard({ data = {} }) {
         )}
 
         {/*
-          OpenSea link if address is present
+          OpenSea link (if address is present)
         */}
         {address && (
-          <div className="mt-4 text-center">
+          <div className="mt-6 text-center">
             <a
               href={`https://opensea.io/${address}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+              className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors"
             >
               <ExternalLink size={14} /> View full collection on OpenSea
             </a>
@@ -754,12 +743,12 @@ export default function ProfileCard({ data = {} }) {
           Action buttons (Edit / Save / Cancel), only if user is owner
         */}
         {isOwner && (
-          <div className="mt-6 flex justify-center gap-3">
+          <div className="mt-8 flex justify-center gap-3">
             {editing ? (
               <>
                 <button
                   onClick={handleSave}
-                  className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow"
+                  className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
                 >
                   <Save size={16} /> Save
                 </button>
@@ -774,7 +763,7 @@ export default function ProfileCard({ data = {} }) {
                     setEditWarpcast(warpcast || '');
                     setEditWebsite(website || '');
                   }}
-                  className="inline-flex items-center gap-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg shadow"
+                  className="inline-flex items-center gap-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg shadow-sm transition-colors"
                 >
                   <X size={16} /> Cancel
                 </button>
@@ -782,7 +771,7 @@ export default function ProfileCard({ data = {} }) {
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow"
+                className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
               >
                 <Edit size={16} /> Edit Profile
               </button>
