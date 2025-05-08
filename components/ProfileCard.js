@@ -6,7 +6,6 @@ import {
   Twitter,
   Link as LinkIcon,
   UserPlus2,
-  MessageSquare,
   ChevronDown,
   ChevronUp,
   Briefcase,
@@ -14,11 +13,13 @@ import {
   Save,
   Trash2,
   Upload,
-  RefreshCw
+  RefreshCw,
+  ExternalLink
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import axios from 'axios';
+import Image from 'next/image';
 
 function shortenAddress(addr) {
   return addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
@@ -47,7 +48,7 @@ export default function ProfileCard({ data }) {
   const [uploadedAvatar, setUploadedAvatar] = useState('');
   const [editTwitter, setEditTwitter] = useState(twitter);
   const [editWebsite, setEditWebsite] = useState(website);
-  const [editFarcaster, setEditFarcaster] = useState(farcaster);
+  const [editWarpcast, setEditWarpcast] = useState(farcaster);
   const [editTag, setEditTag] = useState(tag);
   const [editBio, setEditBio] = useState(bio || ensBio);
   const [editWorkExperience, setEditWorkExperience] = useState(workExperience);
@@ -94,7 +95,7 @@ export default function ProfileCard({ data }) {
       avatar: uploadedAvatar,
       twitter: editTwitter,
       website: editWebsite,
-      farcaster: editFarcaster,
+      warpcast: editWarpcast,
       tag: editTag,
       bio: editBio,
       workExperience: editWorkExperience
@@ -160,17 +161,10 @@ export default function ProfileCard({ data }) {
 
         {!editing && (
           <div className="mt-6">
-            <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
-              {editBio}
-            </div>
-
+            <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{editBio}</div>
             <div className="mt-4">
               <div className="flex flex-wrap justify-center gap-2">
-                {tag && (
-                  <span className="px-3 py-1 text-sm bg-blue-600 text-white rounded-full font-semibold">
-                    {tag}
-                  </span>
-                )}
+                {tag && <span className="px-3 py-1 text-sm bg-blue-600 text-white rounded-full font-semibold">{tag}</span>}
                 {twitter && (
                   <a
                     href={`https://twitter.com/${twitter}`}
@@ -181,14 +175,14 @@ export default function ProfileCard({ data }) {
                     <Twitter size={16} /> Twitter
                   </a>
                 )}
-                {farcaster && (
+                {editWarpcast && (
                   <a
-                    href={`https://warpcast.com/${farcaster}`}
+                    href={`https://warpcast.com/${editWarpcast}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-purple-500 hover:underline"
                   >
-                    <MessageSquare size={16} /> Farcaster
+                    <Image src="/Warpcast.png" alt="Warpcast" width={16} height={16} className="rounded-sm" /> Warpcast
                   </a>
                 )}
                 {website && (
