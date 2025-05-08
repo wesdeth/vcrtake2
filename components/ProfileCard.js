@@ -227,6 +227,27 @@ export default function ProfileCard({ data }) {
             </ul>
           </div>
         )}
+
+        {displayedPoaps.length > 0 && (
+          <div className="mt-6 text-left">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">POAPs</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {poapsToShow.map((poap, i) => (
+                <div key={i} className="flex items-center gap-2 bg-white rounded-lg shadow p-2 text-sm text-gray-700">
+                  <img src={poap.event.image_url} alt={poap.event.name} className="w-6 h-6 rounded-full" />
+                  <span className="truncate">{poap.event.name}</span>
+                </div>
+              ))}
+            </div>
+            {displayedPoaps.length > 4 && (
+              <div className="flex justify-end mt-2">
+                <button onClick={() => setShowAllPoaps(!showAllPoaps)} className="flex items-center text-xs text-blue-500 hover:underline">
+                  {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />} View All
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </motion.div>
   );
