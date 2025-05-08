@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   Copy,
-  Twitter, // lucide “bird” icon until an official X logo is available
+  Twitter, // lucide “bird” icon until an official X logo ships
   Link as LinkIcon,
   UserPlus2,
   ChevronDown,
@@ -26,11 +26,11 @@ const parseDate = (d) => {
   const p = Date.parse(d.replace(/\//g, '-'));
   return Number.isNaN(p) ? null : new Date(p);
 };
-const formatRange = (s, e, cur) => {
-  if (!s) return '';
-  const start = parseDate(s)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
-  const end = cur ? 'Present' : parseDate(e)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) || '';
-  return `${start} – ${end}`;
+const formatRange = (start, end, current) => {
+  if (!start) return '';
+  const s = parseDate(start)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
+  const e = current ? 'Present' : parseDate(end)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) || '';
+  return `${s} – ${e}`;
 };
 
 // --------------------------------------------------------------------------
@@ -51,6 +51,7 @@ export default function ProfileCard({ data }) {
     ensBio = ''
   } = data;
 
+  // local state
   const [showAllPoaps, setShowAllPoaps] = useState(false);
   const [poapData, setPoapData] = useState([]);
   const [editing, setEditing] = useState(false);
@@ -67,7 +68,7 @@ export default function ProfileCard({ data }) {
   const { address: connected } = useAccount();
   const isOwner = ownsProfile || connected?.toLowerCase() === address?.toLowerCase();
 
-  // ---------- effects ------------------------------------------------------
+  // effects
   useEffect(() => {
     const fetchPoaps = async () => {
       try {
@@ -99,7 +100,7 @@ export default function ProfileCard({ data }) {
 
   const poapsToShow = showAllPoaps ? poapData : poapData.slice(0, 4);
 
-  // ---------- save handler -------------------------------------------------
+  // handlers
   const handleSave = async () => {
     try {
       const res = await fetch('/api/save-profile', {
@@ -141,15 +142,15 @@ export default function ProfileCard({ data }) {
     reader.readAsDataURL(file);
   };
 
+  // work exp helpers
   const updateExp = (i, field, val) => setEditExp((prev) => prev.map((e, idx) => (idx === i ? { ...e, [field]: val } : e)));
   const toggleCurrent = (i) => setEditExp((prev) => prev.map((e, idx) => (idx === i ? { ...e, currentlyWorking: !e.currentlyWorking, endDate: e.currentlyWorking ? '' : e.endDate } : e)));
   const addExp = () => setEditExp((prev) => [...prev, { title: '', company: '', startDate: '', endDate: '', location: '', description: '', currentlyWorking: false }]);
   const removeExp = (i) => setEditExp((prev) => prev.filter((_, idx) => idx !== i));
 
-  // ---------- JSX ----------------------------------------------------------
+  // JSX
   return (
     <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="relative w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-xl border border-white/20">
-      {/* bg gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-white via-purple-100 to-yellow-100 opacity-30 animate-gradient-radial blur-2xl" />
 
       <div className="relative z-10 p-6 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
@@ -185,4 +186,4 @@ export default function ProfileCard({ data }) {
             </div>
             <div className="flex flex-col gap-2 text-left text-sm">
               <input className="p-2 border rounded" value={editTwitter} onChange={(e) => setEditTwitter(e.target.value)} placeholder="X handle (formerly Twitter)" />
-              <input className="p-2 border rounded" value={editWarpcast} onChange
+              <input className="p-2 border rounded" value={editWarpcast} onChange={(e
