@@ -12,7 +12,8 @@ import {
   Edit,
   Save,
   Upload,
-  RefreshCw
+  RefreshCw,
+  ExternalLink
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
@@ -182,6 +183,55 @@ export default function ProfileCard({ data }) {
               {website && <a href={website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-green-500 hover:underline"><LinkIcon size={16} /> Website</a>}
               {efpLink && <a href={efpLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-purple-500 hover:underline"><UserPlus2 size={16} /> Follow on EFP</a>}
             </div>
+
+            {workExperience.length > 0 && (
+              <div className="mt-6 text-left">
+                <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">Work Experience</h3>
+                {workExperience.map((exp, i) => (
+                  <div key={i} className="flex gap-2 items-start text-sm text-gray-700 dark:text-gray-300 mb-1">
+                    <Briefcase size={14} className="mt-0.5" />
+                    <div>
+                      <div className="font-semibold">{exp.title}</div>
+                      <div className="text-xs">{exp.company} &bull; {exp.date} &bull; {exp.location}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {displayedPoaps.length > 0 && (
+              <div className="mt-6 text-left">
+                <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">POAPs</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {poapsToShow.map((poap, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-white rounded-lg shadow p-2 text-sm text-gray-700">
+                      <img src={poap.event.image_url} alt={poap.event.name} className="w-6 h-6 rounded-full" />
+                      <span className="truncate">{poap.event.name}</span>
+                    </div>
+                  ))}
+                </div>
+                {displayedPoaps.length > 4 && (
+                  <div className="flex justify-end mt-2">
+                    <button onClick={() => setShowAllPoaps(!showAllPoaps)} className="flex items-center text-xs text-blue-500 hover:underline">
+                      {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />} View All
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {address && (
+              <div className="mt-4 text-center">
+                <a
+                  href={`https://opensea.io/${address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                >
+                  <ExternalLink size={14} /> View NFTs on OpenSea
+                </a>
+              </div>
+            )}
           </>
         )}
 
