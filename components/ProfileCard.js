@@ -45,10 +45,6 @@ import axios from 'axios';
      - See recent NFTs
      - Save changes (POST to `/api/save-profile`)
 
-   This revised code specifically addresses the Tag input as a dropdown
-   from a predefined set of tags in TAG_OPTIONS. On saving, the selected
-   tag value is included in the request body to your Supabase logic.
-
    Usage:
      <ProfileCard data={profileData} />
 
@@ -412,7 +408,8 @@ export default function ProfileCard({ data = {} }) {
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="relative w-full max-w-lg mx-auto rounded-3xl overflow-hidden shadow-2xl ring-1 ring-indigo-200/60 border border-white/10"
+      // Changed to max-w-2xl and overflow-visible to accommodate larger profiles
+      className="relative w-full max-w-2xl mx-auto rounded-3xl overflow-visible shadow-2xl ring-1 ring-indigo-200/60 border border-white/10"
     >
       {/*
         Animated background behind the card
@@ -421,13 +418,15 @@ export default function ProfileCard({ data = {} }) {
 
       {/*
         Content wrapper
+        Increased padding to give more room
       */}
-      <div className="relative z-10 p-8 sm:p-10 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+      <div className="relative z-10 p-10 sm:p-12 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
         
         {/*
           Avatar
+          Slightly adjusted the negative margin so it won't be cut off
         */}
-        <div className="relative w-32 h-32 mx-auto -mt-24 mb-4">
+        <div className="relative w-32 h-32 mx-auto -mt-16 mb-4">
           <img
             src={uploadedAvatar}
             alt="avatar"
@@ -514,7 +513,6 @@ export default function ProfileCard({ data = {} }) {
 
             {/*
               TAG SELECTION (Dropdown)
-              Replaces the simple text input.
             */}
             <select
               value={editTag}
