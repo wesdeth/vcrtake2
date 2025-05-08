@@ -13,6 +13,7 @@ export default async function handler(req, res) {
 
   const {
     ensName,
+    address,
     twitter,
     warpcast,
     website,
@@ -25,8 +26,8 @@ export default async function handler(req, res) {
 
   console.log('[Incoming Request Body]', JSON.stringify(req.body, null, 2));
 
-  if (!ensName) {
-    return res.status(400).json({ error: 'ENS name is required' });
+  if (!ensName || !address) {
+    return res.status(400).json({ error: 'ENS name and address are required' });
   }
 
   try {
@@ -45,6 +46,7 @@ export default async function handler(req, res) {
       .upsert(
         {
           ens_name: ensName,
+          address,
           twitter,
           warpcast,
           website,
