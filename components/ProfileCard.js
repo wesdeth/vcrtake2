@@ -193,11 +193,12 @@ export default function ProfileCard({ data }) {
           {name || shortenAddress(address)}
         </h2>
         <p
-          className="text-xs text-gray-500 dark:text-gray-400 mt-1 cursor-pointer flex items-center gap-1"
+          className="inline-flex items-center gap-1 text-xs mx-auto text-gray-500 dark:text-gray-400 mt-1 cursor-pointer justify-center"
           title="Copy address"
           onClick={() => navigator.clipboard.writeText(address)}
         >
           {shortenAddress(address)} <Copy size={12} />
+        </p
         </p>
 
         {/* bio & socials */}
