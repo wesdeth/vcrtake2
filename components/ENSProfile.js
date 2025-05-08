@@ -9,7 +9,7 @@ import { useAccount } from 'wagmi';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
 import ProfileCard from './ProfileCard';
-import { Eye, Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
@@ -124,10 +124,14 @@ export default function ENSProfile({ ensName, forceOwnerView = false, overrideRe
         <style>{`body { font-family: 'Comic Relief', cursive; }`}</style>
       </Head>
       <div className="min-h-screen bg-gradient-to-br from-[#F9FAFB] via-[#F3E8FF] to-[#74E0FF] p-4">
+        {/* badge — only visible when viewer owns the profile */}
         <div className="flex justify-center mb-6">
-          <span className={`flex items-center gap-2 text-xs px-3 py-1 rounded-full font-medium ${ownsProfile ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#E5E7EB] text-[#4B5563]'}`}>
-            {ownsProfile ? <><Pencil size={12} /> Edit Mode</> : <><Eye size={12} /> View Only</>}
-          </span>
+          {ownsProfile && (
+            <span className="flex items-center gap-2 text-xs px-3 py-1 rounded-full font-medium bg-[#D1FAE5] text-[#065F46]">
+              <Pencil size={12} />
+              Edit&nbsp;Mode
+            </span>
+          )}
         </div>
 
         {loading ? (
