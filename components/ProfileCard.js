@@ -185,8 +185,42 @@ export default function ProfileCard({ data }) {
           {shortenAddress(address)} <Copy size={12} />
         </p>
 
+        {editing && (
+          <div className="my-3 space-y-2">
+            <textarea className="w-full rounded p-2 border border-gray-300 text-sm" rows={3} value={editBio} onChange={(e) => setEditBio(e.target.value)} placeholder="Enter your bio" />
+            <button onClick={resetBio} className="flex items-center text-sm text-blue-500 hover:underline gap-1">
+              <RefreshCw size={14} /> Reset to ENS Bio
+            </button>
+            <input className="p-2 border rounded w-full text-sm" value={editTwitter} onChange={(e) => setEditTwitter(e.target.value)} placeholder="Twitter handle" />
+            <input className="p-2 border rounded w-full text-sm" value={editWarpcast} onChange={(e) => setEditWarpcast(e.target.value)} placeholder="Warpcast username" />
+            <input className="p-2 border rounded w-full text-sm" value={editWebsite} onChange={(e) => setEditWebsite(e.target.value)} placeholder="Website URL" />
+            <input className="p-2 border rounded w-full text-sm" value={editTag} onChange={(e) => setEditTag(e.target.value)} placeholder="Your Tag or Title" />
+          </div>
+        )}
+
         {!editing && (
           <div className="mt-4 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{editBio || ensBio}</div>
+        )}
+
+        {editing && (
+          <div className="mt-4 text-left">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">Work Experience</h3>
+            {editWorkExperience.map((exp, index) => (
+              <div key={index} className="mb-2 space-y-1">
+                <input className="w-full p-2 border rounded text-sm" placeholder="Title" value={exp.title} onChange={(e) => handleWorkChange(index, 'title', e.target.value)} />
+                <input className="w-full p-2 border rounded text-sm" placeholder="Company" value={exp.company} onChange={(e) => handleWorkChange(index, 'company', e.target.value)} />
+                <input className="w-full p-2 border rounded text-sm" placeholder="Start Date" value={exp.startDate} onChange={(e) => handleWorkChange(index, 'startDate', e.target.value)} />
+                <input className="w-full p-2 border rounded text-sm" placeholder="End Date" value={exp.endDate} onChange={(e) => handleWorkChange(index, 'endDate', e.target.value)} disabled={exp.currentlyWorking} />
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={exp.currentlyWorking} onChange={() => toggleCurrentlyWorking(index)} /> Currently Working Here
+                </label>
+                <input className="w-full p-2 border rounded text-sm" placeholder="Location" value={exp.location} onChange={(e) => handleWorkChange(index, 'location', e.target.value)} />
+                <textarea className="w-full p-2 border rounded text-sm" placeholder="Description" value={exp.description} onChange={(e) => handleWorkChange(index, 'description', e.target.value)} rows={2} />
+                <button onClick={() => removeWorkExperience(index)} className="text-red-500 text-xs flex items-center gap-1"><Trash2 size={12} /> Remove</button>
+              </div>
+            ))}
+            <button onClick={addWorkExperience} className="flex items-center gap-1 text-blue-500 text-sm mt-2"><PlusCircle size={14} /> Add Work Experience</button>
+          </div>
         )}
 
         {!editing && workExperience.length === 0 && (
@@ -254,4 +288,3 @@ export default function ProfileCard({ data }) {
     </motion.div>
   );
 }
- 
