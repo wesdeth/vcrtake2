@@ -155,7 +155,7 @@ export default function ProfileCard({ data }) {
 
   const addWorkExperience = () => setEditWorkExperience([
     ...editWorkExperience,
-    { title: '', company: '', startDate: '', endDate: '', location: '', currentlyWorking: false }
+    { title: '', company: '', startDate: '', endDate: '', location: '', description: '', currentlyWorking: false }
   ]);
 
   const removeWorkExperience = (i) => setEditWorkExperience(editWorkExperience.filter((_, idx) => i !== idx));
@@ -197,13 +197,14 @@ export default function ProfileCard({ data }) {
                 <input className="w-full p-2 border rounded text-sm" placeholder="Title" value={exp.title} onChange={(e) => handleWorkChange(index, 'title', e.target.value)} />
                 <input className="w-full p-2 border rounded text-sm" placeholder="Company" value={exp.company} onChange={(e) => handleWorkChange(index, 'company', e.target.value)} />
                 <input className="w-full p-2 border rounded text-sm" placeholder="Location" value={exp.location} onChange={(e) => handleWorkChange(index, 'location', e.target.value)} />
+                <textarea className="w-full p-2 border rounded text-sm" placeholder="Description" value={exp.description || ''} onChange={(e) => handleWorkChange(index, 'description', e.target.value)} rows={3} />
                 <input className="w-full p-2 border rounded text-sm" type="date" value={exp.startDate} onChange={(e) => handleWorkChange(index, 'startDate', e.target.value)} />
                 {!exp.currentlyWorking && (
                   <input className="w-full p-2 border rounded text-sm" type="date" value={exp.endDate} onChange={(e) => handleWorkChange(index, 'endDate', e.target.value)} />
                 )}
                 <label className="inline-flex items-center text-sm gap-2">
                   <input type="checkbox" checked={exp.currentlyWorking || false} onChange={() => toggleCurrentlyWorking(index)} />
-                  Currently Working Here
+                  I am currently working in this role
                 </label>
                 <button onClick={() => removeWorkExperience(index)} className="text-red-500 text-xs flex items-center gap-1"><Trash2 size={12} /> Remove</button>
               </div>
@@ -220,6 +221,7 @@ export default function ProfileCard({ data }) {
                 <li key={i} className="text-sm text-left">
                   <div className="font-semibold text-gray-800 dark:text-white">{exp.title} at {exp.company}</div>
                   <div className="text-gray-600 dark:text-gray-400">{formatDateRange(exp.startDate, exp.endDate, exp.currentlyWorking)} • {exp.location}</div>
+                  {exp.description && <div className="text-gray-700 dark:text-gray-300 mt-1 whitespace-pre-line">{exp.description}</div>}
                 </li>
               ))}
             </ul>
