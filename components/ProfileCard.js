@@ -152,7 +152,11 @@ export default function ProfileCard({ data }) {
           {shortenAddress(address)} <Copy size={12} />
         </p>
 
-        {editing && (
+{!editing && workExperience.length === 0 && (
+          <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 italic">Connect your wallet to edit your work experience.</div>
+        )}
+        
+{editing && (
           <>
             <div className="my-3">
               <textarea className="w-full rounded p-2 border border-gray-300 text-sm" rows={3} value={editBio} onChange={(e) => setEditBio(e.target.value)} placeholder="Enter your bio" />
