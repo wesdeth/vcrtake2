@@ -45,6 +45,7 @@ export default function ProfileCard({ data }) {
   const [displayedPoaps, setDisplayedPoaps] = useState([]);
   const [editing, setEditing] = useState(false);
   const [uploadedAvatar, setUploadedAvatar] = useState('');
+
   const [editTwitter, setEditTwitter] = useState(twitter);
   const [editWebsite, setEditWebsite] = useState(website);
   const [editFarcaster, setEditFarcaster] = useState(farcaster);
@@ -158,8 +159,6 @@ export default function ProfileCard({ data }) {
             </button>
           </div>
         )}
-
-        {/* Additional editable content should continue here... */}
       </div>
     </motion.div>
   );
