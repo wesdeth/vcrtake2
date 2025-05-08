@@ -8,7 +8,6 @@ import {
   UserPlus2,
   ChevronDown,
   ChevronUp,
-  Briefcase,
   Edit,
   Save,
   Upload,
@@ -106,52 +105,36 @@ export default function ProfileCard({ data }) {
           experience: editWorkExperience
         })
       });
-
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
-      console.log('Profile saved:', result);
       setEditing(false);
     } catch (err) {
       console.error('Failed to save profile:', err.message);
     }
   };
 
-  const resetBio = () => {
-    setEditBio(ensBio);
-  };
+  const resetBio = () => setEditBio(ensBio);
 
   const handleAvatarUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadedAvatar(reader.result);
-      };
+      reader.onloadend = () => setUploadedAvatar(reader.result);
       reader.readAsDataURL(file);
     }
   };
 
-  const handleWorkChange = (index, field, value) => {
-    const updated = [...editWorkExperience];
-    updated[index][field] = value;
-    setEditWorkExperience(updated);
+  const handleWorkChange = (i, field, val) => {
+    const copy = [...editWorkExperience];
+    copy[i][field] = val;
+    setEditWorkExperience(copy);
   };
 
-  const addWorkExperience = () => {
-    setEditWorkExperience([...editWorkExperience, { title: '', company: '', date: '', location: '' }]);
-  };
-
-  const removeWorkExperience = (index) => {
-    setEditWorkExperience(editWorkExperience.filter((_, i) => i !== index));
-  };
+  const addWorkExperience = () => setEditWorkExperience([...editWorkExperience, { title: '', company: '', date: '', location: '' }]);
+  const removeWorkExperience = (i) => setEditWorkExperience(editWorkExperience.filter((_, idx) => i !== idx));
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      className="relative w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-xl border border-white/20"
-    >
+    <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="relative w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-xl border border-white/20">
       <div className="absolute inset-0 z-0 bg-gradient-to-br from-white via-purple-100 to-yellow-100 opacity-30 animate-gradient-radial blur-2xl" />
       <div className="relative z-10 p-6 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
         <div className="w-24 h-24 mx-auto mb-4 relative">
@@ -165,7 +148,6 @@ export default function ProfileCard({ data }) {
         </div>
 
         <h2 className="text-2xl font-black text-gray-800 dark:text-white truncate">{name || shortenAddress(address)}</h2>
-
         <p onClick={() => navigator.clipboard.writeText(address)} className="text-xs text-gray-500 dark:text-gray-400 mt-1 cursor-pointer flex items-center gap-1" title="Click to copy address">
           {shortenAddress(address)} <Copy size={12} />
         </p>
@@ -179,19 +161,19 @@ export default function ProfileCard({ data }) {
               </button>
             </div>
             <div className="flex flex-col gap-2 text-left text-sm">
-              <input type="text" className="p-2 border rounded" value={editTwitter} onChange={(e) => setEditTwitter(e.target.value)} placeholder="Twitter handle" />
-              <input type="text" className="p-2 border rounded" value={editWarpcast} onChange={(e) => setEditWarpcast(e.target.value)} placeholder="Warpcast username" />
-              <input type="text" className="p-2 border rounded" value={editWebsite} onChange={(e) => setEditWebsite(e.target.value)} placeholder="Website URL" />
-              <input type="text" className="p-2 border rounded" value={editTag} onChange={(e) => setEditTag(e.target.value)} placeholder="Your Tag or Title" />
+              <input className="p-2 border rounded" value={editTwitter} onChange={(e) => setEditTwitter(e.target.value)} placeholder="Twitter handle" />
+              <input className="p-2 border rounded" value={editWarpcast} onChange={(e) => setEditWarpcast(e.target.value)} placeholder="Warpcast username" />
+              <input className="p-2 border rounded" value={editWebsite} onChange={(e) => setEditWebsite(e.target.value)} placeholder="Website URL" />
+              <input className="p-2 border rounded" value={editTag} onChange={(e) => setEditTag(e.target.value)} placeholder="Your Tag or Title" />
             </div>
             <div className="mt-4 text-left">
               <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">Work Experience</h3>
               {editWorkExperience.map((exp, index) => (
                 <div key={index} className="mb-2 space-y-1">
-                  <input type="text" className="w-full p-2 border rounded text-sm" placeholder="Title" value={exp.title} onChange={(e) => handleWorkChange(index, 'title', e.target.value)} />
-                  <input type="text" className="w-full p-2 border rounded text-sm" placeholder="Company" value={exp.company} onChange={(e) => handleWorkChange(index, 'company', e.target.value)} />
-                  <input type="text" className="w-full p-2 border rounded text-sm" placeholder="Date" value={exp.date} onChange={(e) => handleWorkChange(index, 'date', e.target.value)} />
-                  <input type="text" className="w-full p-2 border rounded text-sm" placeholder="Location" value={exp.location} onChange={(e) => handleWorkChange(index, 'location', e.target.value)} />
+                  <input className="w-full p-2 border rounded text-sm" placeholder="Title" value={exp.title} onChange={(e) => handleWorkChange(index, 'title', e.target.value)} />
+                  <input className="w-full p-2 border rounded text-sm" placeholder="Company" value={exp.company} onChange={(e) => handleWorkChange(index, 'company', e.target.value)} />
+                  <input className="w-full p-2 border rounded text-sm" placeholder="Date" value={exp.date} onChange={(e) => handleWorkChange(index, 'date', e.target.value)} />
+                  <input className="w-full p-2 border rounded text-sm" placeholder="Location" value={exp.location} onChange={(e) => handleWorkChange(index, 'location', e.target.value)} />
                   <button onClick={() => removeWorkExperience(index)} className="text-red-500 text-xs flex items-center gap-1"><Trash2 size={12} /> Remove</button>
                 </div>
               ))}
@@ -200,40 +182,46 @@ export default function ProfileCard({ data }) {
           </>
         )}
 
-            {displayedPoaps.length > 0 && (
-              <div className="mt-6 text-left">
-                <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">POAPs</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {poapsToShow.map((poap, i) => (
-                    <div key={i} className="flex items-center gap-2 bg-white rounded-lg shadow p-2 text-sm text-gray-700">
-                      <img src={poap.event.image_url} alt={poap.event.name} className="w-6 h-6 rounded-full" />
-                      <span className="truncate">{poap.event.name}</span>
-                    </div>
-                  ))}
-                </div>
-                {displayedPoaps.length > 4 && (
-                  <div className="flex justify-end mt-2">
-                    <button onClick={() => setShowAllPoaps(!showAllPoaps)} className="flex items-center text-xs text-blue-500 hover:underline">
-                      {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />} View All
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {address && (
-              <div className="mt-4 text-center">
-                <a
-                  href={`https://opensea.io/${address}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                >
-                  <ExternalLink size={14} /> View NFTs on OpenSea
-                </a>
-              </div>
-            )}
+        {!editing && (
+          <>
+            <div className="mt-4 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{editBio}</div>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              {tag && <span className="px-3 py-1 text-sm bg-blue-600 text-white rounded-full font-semibold">{tag}</span>}
+              {twitter && <a href={`https://twitter.com/${twitter}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline"><Twitter size={16} /> Twitter</a>}
+              {warpcast && <a href={`https://warpcast.com/${warpcast}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-purple-500 hover:underline"><Image src="/Warpcast.png" alt="Warpcast" width={16} height={16} className="rounded-sm" /> Warpcast</a>}
+              {website && <a href={website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-green-500 hover:underline"><LinkIcon size={16} /> Website</a>}
+              {efpLink && <a href={efpLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-purple-500 hover:underline"><UserPlus2 size={16} /> Follow on EFP</a>}
+            </div>
           </>
+        )}
+
+        {displayedPoaps.length > 0 && (
+          <div className="mt-6 text-left">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">POAPs</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {poapsToShow.map((poap, i) => (
+                <div key={i} className="flex items-center gap-2 bg-white rounded-lg shadow p-2 text-sm text-gray-700">
+                  <img src={poap.event.image_url} alt={poap.event.name} className="w-6 h-6 rounded-full" />
+                  <span className="truncate">{poap.event.name}</span>
+                </div>
+              ))}
+            </div>
+            {displayedPoaps.length > 4 && (
+              <div className="flex justify-end mt-2">
+                <button onClick={() => setShowAllPoaps(!showAllPoaps)} className="flex items-center text-xs text-blue-500 hover:underline">
+                  {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />} View All
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {address && (
+          <div className="mt-4 text-center">
+            <a href={`https://opensea.io/${address}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline">
+              <ExternalLink size={14} /> View NFTs on OpenSea
+            </a>
+          </div>
         )}
 
         {isOwner && (
