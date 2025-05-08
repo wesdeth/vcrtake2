@@ -39,7 +39,8 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       if (!ensName) return;
-      const { data } = await supabase.from('VCR').select('*').eq('ens_name', ensName).single();
+      const { data, error } = await supabase.from('VCR').select('*').eq('ens_name', ensName).single();
+      if (error) console.error('Supabase fetch error:', error);
       setEnsRecord(data);
       setLoading(false);
     };
