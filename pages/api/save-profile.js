@@ -19,7 +19,8 @@ export default async function handler(req, res) {
     tag,
     bio,
     custom_avatar,
-    experience
+    experience,
+    name
   } = req.body;
 
   console.log('[Incoming Request Body]', JSON.stringify(req.body, null, 2));
@@ -67,4 +68,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to save profile', message: err.message });
   }
 }
- 
