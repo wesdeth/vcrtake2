@@ -90,8 +90,9 @@ export default function ProfileCard({ data = {} }) {
       if (avatar || !address) return;
       try {
         const r = await axios.get(`https://api.opensea.io/api/v1/user/${address}`);
-        const img = r.data?.account?.profile_img_url;
+        const img = r.data?.account?.profile_img_url || r.data?.profile_img_url;
         if (img) setUploadedAvatar(img);
+        else setUploadedAvatar('/default-avatar.png');
       } catch {
         setUploadedAvatar('/default-avatar.png');
       }
