@@ -14,7 +14,8 @@ import {
   RefreshCw,
   ExternalLink,
   PlusCircle,
-  Trash2
+  Trash2,
+  CheckCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
@@ -44,6 +45,7 @@ export default function ProfileCard({ data }) {
   const [showAllPoaps, setShowAllPoaps] = useState(false);
   const [displayedPoaps, setDisplayedPoaps] = useState([]);
   const [editing, setEditing] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [uploadedAvatar, setUploadedAvatar] = useState('');
   const [editTwitter, setEditTwitter] = useState(twitter);
   const [editWebsite, setEditWebsite] = useState(website);
@@ -108,6 +110,8 @@ export default function ProfileCard({ data }) {
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
       setEditing(false);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 3000);
     } catch (err) {
       console.error('Failed to save profile:', err.message);
     }
@@ -137,26 +141,21 @@ export default function ProfileCard({ data }) {
     <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="relative w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-xl border border-white/20">
       <div className="absolute inset-0 z-0 bg-gradient-to-br from-white via-purple-100 to-yellow-100 opacity-30 animate-gradient-radial blur-2xl" />
       <div className="relative z-10 p-6 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
-        <div className="w-24 h-24 mx-auto mb-4 relative">
-          <img src={uploadedAvatar || '/default-avatar.png'} alt="avatar" className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md" />
-          {editing && (
-            <label className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow cursor-pointer">
-              <Upload size={16} className="text-blue-500" />
-              <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-            </label>
-          )}
-        </div>
-
+        {justSaved && (
+          <div className="absolute top-4 right-4 flex items-center gap-1 text-green-600 text-sm font-semibold">
+            <CheckCircle size={16} /> Saved
+          </div>
+        )}
         <h2 className="text-2xl font-black text-gray-800 dark:text-white truncate">{name || shortenAddress(address)}</h2>
         <p onClick={() => navigator.clipboard.writeText(address)} className="text-xs text-gray-500 dark:text-gray-400 mt-1 cursor-pointer flex items-center gap-1" title="Click to copy address">
           {shortenAddress(address)} <Copy size={12} />
         </p>
 
-{!editing && workExperience.length === 0 && (
+        {!editing && workExperience.length === 0 && (
           <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 italic">Connect your wallet to edit your work experience.</div>
         )}
-        
-{editing && (
+
+        {editing && (
           <>
             <div className="my-3">
               <textarea className="w-full rounded p-2 border border-gray-300 text-sm" rows={3} value={editBio} onChange={(e) => setEditBio(e.target.value)} placeholder="Enter your bio" />
