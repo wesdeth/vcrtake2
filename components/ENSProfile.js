@@ -9,8 +9,6 @@ import { useAccount } from 'wagmi';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
 import ProfileCard from './ProfileCard';
-import { Eye, Pencil } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
@@ -53,7 +51,7 @@ export default function ENSProfile({ ensName, forceOwnerView = false, overrideRe
     setEnsData(ens);
     setPoaps(poapList);
 
-    const record = overrideRecord || (await supabase.from('VCR').select('*').eq('ens_name', profileKey).single()).data;
+    const record = overrideRecord || (await supabase.from('VCR').select('*').eq('ens_name', ens.name || ensName || connected).single()).data;
     if (record) {
       if (record.custom_avatar) setCustomAvatar(record.custom_avatar);
       if (record.warpcast) setWarpcast(record.warpcast);
@@ -64,34 +62,19 @@ export default function ENSProfile({ ensName, forceOwnerView = false, overrideRe
       if (record.experience) setWorkExperience(record.experience);
     }
     setLoading(false);
-  }, [connected, ensName, profileKey, overrideRecord]);
-
-  useEffect(() => {
-    if (profileKey) fetchData();
-  }, [fetchData, profileKey]);
+  }, [connected, ensName, overrideRecord]);
 
   useEffect(() => {
     if (address) setConnected(address);
   }, [address]);
 
   useEffect(() => {
+    if (ensName || connected) fetchData();
+  }, [fetchData, ensName, connected]);
+
+  useEffect(() => {
     const checkOwnership = async () => {
-      if (!connected) {
-        if (forceOwnerView) {
-          toast.error('Connect your wallet to view or edit your profile.', {
-            icon: '🔒',
-            style: {
-              borderRadius: '10px',
-              background: '#1F2937',
-              color: '#FFC542',
-              fontFamily: 'Cal Sans, sans-serif',
-              border: '1px solid #FFC542'
-            },
-            duration: 5000
-          });
-        }
-        return;
-      }
+      if (!connected) return;
       if (isWalletOnly) return setOwnsProfile(true);
 
       try {
@@ -119,29 +102,14 @@ export default function ENSProfile({ ensName, forceOwnerView = false, overrideRe
           .map(getAddress)
           .includes(connectedNorm);
 
-        if (forceOwnerView && !owns) {
-          toast.error('You must be the ENS owner or manager to view this profile.', {
-            icon: '🚫',
-            style: {
-              borderRadius: '10px',
-              background: '#1F2937',
-              color: '#FFC542',
-              fontFamily: 'Cal Sans, sans-serif',
-              border: '1px solid #FFC542'
-            },
-            duration: 5000
-          });
-          setOwnsProfile(false);
-        } else {
-          setOwnsProfile(owns);
-        }
+        setOwnsProfile(owns);
       } catch (err) {
         console.error('❌ Ownership check failed:', err);
         setOwnsProfile(false);
       }
     };
-    checkOwnership();
-  }, [connected, ensName, isWalletOnly, provider, ensData.address, forceOwnerView]);
+    if (ensName) checkOwnership();
+  }, [connected, ensName, isWalletOnly, provider]);
 
   const resolvedAvatar = customAvatar || (ensData.avatar && ensData.avatar.startsWith('http') ? ensData.avatar : '/Avatar.jpg');
   const efpLink = ensData.address ? `https://efp.social/profile/${ensData.address}` : '';
@@ -154,12 +122,6 @@ export default function ENSProfile({ ensName, forceOwnerView = false, overrideRe
         <style>{`body { font-family: 'Comic Relief', cursive; }`}</style>
       </Head>
       <div className="min-h-screen bg-gradient-to-br from-[#F9FAFB] via-[#F3E8FF] to-[#74E0FF] p-4">
-        <div className="flex justify-center mb-6">
-          <span className={`flex items-center gap-2 text-xs px-3 py-1 rounded-full font-medium ${ownsProfile ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#E5E7EB] text-[#4B5563]'}`}>
-            {ownsProfile ? <><Pencil size={12} /> Edit Mode</> : <><Eye size={12} /> View Only</>}
-          </span>
-        </div>
-
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <p className="text-[#6B7280]">Loading...</p>
