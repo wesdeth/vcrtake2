@@ -27,6 +27,8 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
   const [ownsProfile, setOwnsProfile] = useState(false);
   const [customAvatar, setCustomAvatar] = useState('');
   const [farcaster, setFarcaster] = useState('');
+  const [bio, setBio] = useState('');
+  const [workExperience, setWorkExperience] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const { address } = useAccount();
@@ -52,6 +54,8 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
     if (data) {
       if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
       if (data.farcaster) setFarcaster(data.farcaster);
+      if (data.bio) setBio(data.bio);
+      if (data.experience) setWorkExperience(data.experience);
     }
     setLoading(false);
   }, [connected, ensName, profileKey]);
@@ -172,7 +176,10 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
                 efpLink,
                 farcaster,
                 poaps,
-                ownsProfile
+                ownsProfile,
+                bio,
+                ensBio: ensData.bio || '',
+                workExperience
               }}
             />
           </motion.div>
