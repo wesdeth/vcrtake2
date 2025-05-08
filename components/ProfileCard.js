@@ -1,5 +1,4 @@
-// components/ProfileCard.js — full, fixed and syntactically valid
-// ---------------------------------------------------------
+// components/ProfileCard.js — full, fixed and finalized
 import { useState, useEffect } from 'react';
 import {
   Copy,
@@ -162,6 +161,7 @@ export default function ProfileCard({ data = {} }) {
   const removeExp = (i) => setEditExp((prev) => prev.filter((_, idx) => idx !== i));
 
   const poapsToShow = Array.isArray(poapData) ? (showAllPoaps ? poapData : poapData.slice(0, 4)) : [];
+  const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : [];
 
   return (
     <motion.div
@@ -171,28 +171,7 @@ export default function ProfileCard({ data = {} }) {
       className="relative w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-2xl ring-1 ring-indigo-200/60 border border-white/10"
     >
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-purple-100 to-cyan-100 opacity-40 animate-gradient-radial blur-2xl" />
-
       <div className="relative z-10 p-8 sm:p-10 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
-        {justSaved && (
-          <div className="absolute top-4 right-4 flex items-center gap-1 text-green-600 text-sm font-semibold">
-            <CheckCircle size={16} /> Saved
-          </div>
-        )}
-
-        <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-6 relative">
-          <img
-            src={uploadedAvatar || '/default-avatar.png'}
-            alt="avatar"
-            className="w-full h-full rounded-full object-cover border-4 border-white shadow-lg"
-          />
-          {editing && (
-            <label className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow cursor-pointer">
-              <Upload size={18} className="text-indigo-500" />
-              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-            </label>
-          )}
-        </div>
-
         <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-800 dark:text-white">
           {name || shortenAddress(address)}
         </h2>
@@ -205,138 +184,21 @@ export default function ProfileCard({ data = {} }) {
             {shortenAddress(address)} <Copy size={12} />
           </p>
         )}
-        {tag && <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{tag}</p>}
-
-        {editing ? (
-          <>
-            <div className="my-3">
-              <textarea
-                className="w-full p-2 border rounded text-sm"
-                rows={3}
-                value={editBio}
-                onChange={(e) => setEditBio(e.target.value)}
-                placeholder="Enter your bio"
-              />
-              <button
-                onClick={() => setEditBio(ensBio)}
-                className="flex items-center gap-1 text-sm text-blue-500 hover:underline mt-1"
-              >
-                <RefreshCw size={14} /> Reset to ENS Bio
-              </button>
-            </div>
-            <div className="flex flex-col gap-2 text-left text-sm">
-              <input
-                className="p-2 border rounded"
-                value={editTwitter}
-                onChange={(e) => setEditTwitter(e.target.value)}
-                placeholder="X handle (formerly Twitter)"
-              />
-              <input
-                className="p-2 border rounded"
-                value={editWarpcast}
-                onChange={(e) => setEditWarpcast(e.target.value)}
-                placeholder="Warpcast username"
-              />
-              <input
-                className="p-2 border rounded"
-                value={editWebsite}
-                onChange={(e) => setEditWebsite(e.target.value)}
-                placeholder="Website URL"
-              />
-              <input
-                className="p-2 border rounded"
-                value={editTag}
-                onChange={(e) => setEditTag(e.target.value)}
-                placeholder="Tag / Title"
-              />
-            </div>
-          </>
-        ) : (
-          <>
-            {editBio && (
-              <div className="mt-4 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
-                {editBio}
-              </div>
-            )}
-            {(twitter || website || warpcast || efpLink) && (
-              <div className="mt-4 flex justify-center gap-4 text-gray-600 dark:text-gray-300">
-                {twitter && (
-                  <a
-                    href={`https://x.com/${twitter.replace(/^@/, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="X"
-                    className="hover:text-blue-500"
-                  >
-                    <Twitter size={20} />
-                  </a>
-                )}
-                {warpcast && (
-                  <a
-                    href={`https://warpcast.com/${warpcast.replace(/^@/, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Warpcast"
-                    className="hover:text-violet-500"
-                  >
-                    <UserPlus2 size={20} />
-                  </a>
-                )}
-                {efpLink && (
-                  <a
-                    href={efpLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Ethereum Follow Profile"
-                    className="hover:text-indigo-500"
-                  >
-                    <UserPlus2 size={20} />
-                  </a>
-                )}
-                {website && (
-                  <a
-                    href={website.startsWith('http') ? website : `https://${website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Website"
-                    className="hover:text-emerald-600"
-                  >
-                    <LinkIcon size={20} />
-                  </a>
-                )}
-              </div>
-            )}
-          </>
+        {editBio && (
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{editBio}</p>
         )}
-
-        {nfts.length > 0 && (
-          <div className="mt-6 text-left">
-            <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-gray-800 dark:text-white mb-2">
-              NFTs
-            </h3>
-            <div className="grid grid-cols-3 gap-2">
-              {nfts.slice(0, 6).map((nft, i) => (
-                <img
-                  key={i}
-                  src={nft.image || nft.image_url || '/nft-placeholder.png'}
-                  alt={nft.name || `NFT ${i}`}
-                  className="w-full h-24 object-cover rounded-lg shadow"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {poapData.length > 0 && (
-          <div className="mt-6 text-left">
-            <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-gray-800 dark:text-white mb-2">
-              POAPs
-            </h3>
+        {poapsToShow.length > 0 && (
+          <div className="mt-4 text-left">
+            <h3 className="text-lg font-bold mb-1 text-gray-800 dark:text-white">POAPs</h3>
             <div className="grid grid-cols-2 gap-2">
               {poapsToShow.map((poap, i) => (
                 <div key={i} className="flex items-center gap-2 bg-white rounded-lg shadow p-2 text-sm text-gray-700">
-                  <img src={poap.event.image_url} alt={poap.event.name} className="w-6 h-6 rounded-full" />
-                  <span className="truncate">{poap.event.name}</span>
+                  <img
+                    src={poap.event?.image_url || '/default-poap.png'}
+                    alt={poap.event?.name || 'POAP'}
+                    className="w-6 h-6 rounded-full"
+                  />
+                  <span className="truncate">{poap.event?.name}</span>
                 </div>
               ))}
             </div>
@@ -352,7 +214,23 @@ export default function ProfileCard({ data = {} }) {
             )}
           </div>
         )}
-
+        {nftsToShow.length > 0 && (
+          <div className="mt-6 text-left">
+            <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-gray-800 dark:text-white mb-2">
+              NFTs
+            </h3>
+            <div className="grid grid-cols-3 gap-2">
+              {nftsToShow.map((nft, i) => (
+                <img
+                  key={i}
+                  src={nft.image || nft.image_url || '/nft-placeholder.png'}
+                  alt={nft.name || `NFT ${i}`}
+                  className="w-full h-24 object-cover rounded-lg shadow"
+                />
+              ))}
+            </div>
+          </div>
+        )}
         {address && (
           <div className="mt-4 text-center">
             <a
