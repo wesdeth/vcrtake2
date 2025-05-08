@@ -54,6 +54,9 @@ export default function ENSProfile({ ensName, forceOwnerView = false }) {
     if (data) {
       if (data.custom_avatar) setCustomAvatar(data.custom_avatar);
       if (data.warpcast) setWarpcast(data.warpcast);
+      if (data.twitter) ens.twitter = data.twitter;
+      if (data.website) ens.website = data.website;
+      if (data.tag) ens.tag = data.tag;
       if (data.bio) setBio(data.bio);
       if (data.experience) setWorkExperience(data.experience);
     }
