@@ -25,6 +25,13 @@ function shortenAddress(addr) {
   return addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
 }
 
+function formatDateRange(startDate, endDate, currentlyWorking) {
+  if (!startDate) return '';
+  const start = new Date(startDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
+  const end = currentlyWorking ? 'Present' : endDate ? new Date(endDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) : '';
+  return `${start} – ${end}`;
+}
+
 export default function ProfileCard({ data }) {
   const {
     name,
@@ -107,7 +114,8 @@ export default function ProfileCard({ data }) {
           experience: editWorkExperience.map(exp => ({
             ...exp,
             startDate: exp.startDate || '',
-            endDate: exp.endDate || ''
+            endDate: exp.currentlyWorking ? null : exp.endDate || '',
+            currentlyWorking: !!exp.currentlyWorking
           }))
         })
       });
@@ -138,9 +146,16 @@ export default function ProfileCard({ data }) {
     setEditWorkExperience(copy);
   };
 
+  const toggleCurrentlyWorking = (i) => {
+    const copy = [...editWorkExperience];
+    copy[i].currentlyWorking = !copy[i].currentlyWorking;
+    if (copy[i].currentlyWorking) copy[i].endDate = '';
+    setEditWorkExperience(copy);
+  };
+
   const addWorkExperience = () => setEditWorkExperience([
     ...editWorkExperience,
-    { title: '', company: '', startDate: '', endDate: '', location: '' }
+    { title: '', company: '', startDate: '', endDate: '', location: '', currentlyWorking: false }
   ]);
 
   const removeWorkExperience = (i) => setEditWorkExperience(editWorkExperience.filter((_, idx) => i !== idx));
@@ -175,89 +190,39 @@ export default function ProfileCard({ data }) {
         )}
 
         {editing && (
-          <>
-            <div className="my-3">
-              <textarea className="w-full rounded p-2 border border-gray-300 text-sm" rows={3} value={editBio} onChange={(e) => setEditBio(e.target.value)} placeholder="Enter your bio" />
-              <button onClick={resetBio} className="flex items-center text-sm text-blue-500 hover:underline gap-1 mt-1">
-                <RefreshCw size={14} /> Reset to ENS Bio
-              </button>
-            </div>
-            <div className="flex flex-col gap-2 text-left text-sm">
-              <input className="p-2 border rounded" value={editTwitter} onChange={(e) => setEditTwitter(e.target.value)} placeholder="Twitter handle" />
-              <input className="p-2 border rounded" value={editWarpcast} onChange={(e) => setEditWarpcast(e.target.value)} placeholder="Warpcast username" />
-              <input className="p-2 border rounded" value={editWebsite} onChange={(e) => setEditWebsite(e.target.value)} placeholder="Website URL" />
-              <input className="p-2 border rounded" value={editTag} onChange={(e) => setEditTag(e.target.value)} placeholder="Your Tag or Title" />
-            </div>
-            <div className="mt-4 text-left">
-              <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">Work Experience</h3>
-              {editWorkExperience.map((exp, index) => (
-                <div key={index} className="mb-2 space-y-1">
-                  <input className="w-full p-2 border rounded text-sm" placeholder="Title" value={exp.title} onChange={(e) => handleWorkChange(index, 'title', e.target.value)} />
-                  <input className="w-full p-2 border rounded text-sm" placeholder="Company" value={exp.company} onChange={(e) => handleWorkChange(index, 'company', e.target.value)} />
-                  <input className="w-full p-2 border rounded text-sm" placeholder="Start Date" value={exp.startDate} onChange={(e) => handleWorkChange(index, 'startDate', e.target.value)} />
-                  <input className="w-full p-2 border rounded text-sm" placeholder="End Date" value={exp.endDate} onChange={(e) => handleWorkChange(index, 'endDate', e.target.value)} />
-                  <input className="w-full p-2 border rounded text-sm" placeholder="Location" value={exp.location} onChange={(e) => handleWorkChange(index, 'location', e.target.value)} />
-                  <button onClick={() => removeWorkExperience(index)} className="text-red-500 text-xs flex items-center gap-1"><Trash2 size={12} /> Remove</button>
-                </div>
-              ))}
-              <button onClick={addWorkExperience} className="flex items-center gap-1 text-blue-500 text-sm mt-2"><PlusCircle size={14} /> Add Work Experience</button>
-            </div>
-          </>
-        )}
-
-        {!editing && (
-          <>
-            <div className="mt-4 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{editBio}</div>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {tag && <span className="px-3 py-1 text-sm bg-blue-600 text-white rounded-full font-semibold">{tag}</span>}
-              {twitter && <a href={`https://twitter.com/${twitter}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline"><Twitter size={16} /> Twitter</a>}
-              {warpcast && <a href={`https://warpcast.com/${warpcast}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-purple-500 hover:underline"><Image src="/Warpcast.png" alt="Warpcast" width={16} height={16} className="rounded-sm" /> Warpcast</a>}
-              {website && <a href={website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-green-500 hover:underline"><LinkIcon size={16} /> Website</a>}
-              {efpLink && <a href={efpLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-purple-500 hover:underline"><UserPlus2 size={16} /> Follow on EFP</a>}
-            </div>
-          </>
-        )}
-
-        {displayedPoaps.length > 0 && (
           <div className="mt-6 text-left">
-            <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">POAPs</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {poapsToShow.map((poap, i) => (
-                <div key={i} className="flex items-center gap-2 bg-white rounded-lg shadow p-2 text-sm text-gray-700">
-                  <img src={poap.event.image_url} alt={poap.event.name} className="w-6 h-6 rounded-full" />
-                  <span className="truncate">{poap.event.name}</span>
-                </div>
-              ))}
-            </div>
-            {displayedPoaps.length > 4 && (
-              <div className="flex justify-end mt-2">
-                <button onClick={() => setShowAllPoaps(!showAllPoaps)} className="flex items-center text-xs text-blue-500 hover:underline">
-                  {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />} View All
-                </button>
+            <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">Work Experience</h3>
+            {editWorkExperience.map((exp, index) => (
+              <div key={index} className="mb-4 space-y-2">
+                <input className="w-full p-2 border rounded text-sm" placeholder="Title" value={exp.title} onChange={(e) => handleWorkChange(index, 'title', e.target.value)} />
+                <input className="w-full p-2 border rounded text-sm" placeholder="Company" value={exp.company} onChange={(e) => handleWorkChange(index, 'company', e.target.value)} />
+                <input className="w-full p-2 border rounded text-sm" placeholder="Location" value={exp.location} onChange={(e) => handleWorkChange(index, 'location', e.target.value)} />
+                <input className="w-full p-2 border rounded text-sm" type="date" value={exp.startDate} onChange={(e) => handleWorkChange(index, 'startDate', e.target.value)} />
+                {!exp.currentlyWorking && (
+                  <input className="w-full p-2 border rounded text-sm" type="date" value={exp.endDate} onChange={(e) => handleWorkChange(index, 'endDate', e.target.value)} />
+                )}
+                <label className="inline-flex items-center text-sm gap-2">
+                  <input type="checkbox" checked={exp.currentlyWorking || false} onChange={() => toggleCurrentlyWorking(index)} />
+                  Currently Working Here
+                </label>
+                <button onClick={() => removeWorkExperience(index)} className="text-red-500 text-xs flex items-center gap-1"><Trash2 size={12} /> Remove</button>
               </div>
-            )}
+            ))}
+            <button onClick={addWorkExperience} className="flex items-center gap-1 text-blue-500 text-sm mt-2"><PlusCircle size={14} /> Add Work Experience</button>
           </div>
         )}
 
-        {address && (
-          <div className="mt-4 text-center">
-            <a href={`https://opensea.io/${address}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline">
-              <ExternalLink size={14} /> View NFTs on OpenSea
-            </a>
-          </div>
-        )}
-
-        {isOwner && (
-          <div className="mt-6">
-            {editing ? (
-              <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition">
-                <Save size={16} className="inline mr-2" /> Save Changes
-              </button>
-            ) : (
-              <button onClick={() => setEditing(true)} className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition">
-                <Edit size={16} className="inline mr-2" /> Edit Profile
-              </button>
-            )}
+        {!editing && workExperience.length > 0 && (
+          <div className="mt-6 text-left">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-2">Work Experience</h3>
+            <ul className="space-y-4">
+              {workExperience.map((exp, i) => (
+                <li key={i} className="text-sm text-left">
+                  <div className="font-semibold text-gray-800 dark:text-white">{exp.title} at {exp.company}</div>
+                  <div className="text-gray-600 dark:text-gray-400">{formatDateRange(exp.startDate, exp.endDate, exp.currentlyWorking)} • {exp.location}</div>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
