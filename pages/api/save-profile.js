@@ -32,7 +32,8 @@ export default async function handler(req, res) {
   const normalizedExperience = (experience || []).map((item) => ({
     ...item,
     startDate: item.startDate || '',
-    endDate: item.endDate || ''
+    endDate: item.currentlyWorking ? null : item.endDate || '',
+    currentlyWorking: !!item.currentlyWorking
   }));
 
   try {
