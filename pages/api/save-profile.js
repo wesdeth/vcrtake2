@@ -20,14 +20,13 @@ export default async function handler(req, res) {
     tag,
     bio,
     custom_avatar,
-    experience,
-    name
+    experience
   } = req.body;
 
   console.log('[Incoming Request Body]', JSON.stringify(req.body, null, 2));
 
   if (!ensName || !address) {
-    return res.status(400).json({ error: 'ENS name and address are required' });
+    return res.status(400).json({ error: 'ENS name and address are required.' });
   }
 
   try {
@@ -59,14 +58,14 @@ export default async function handler(req, res) {
       );
 
     if (error) {
-      console.error('[Supabase Error]', error.message, error.details || '', error.hint || '');
+      console.error('[Supabase Error]', error.message, error.details, error.hint);
       return res.status(500).json({ error: 'Database error', details: error });
     }
 
     console.log('[Supabase Response]', data);
     return res.status(200).json({ message: 'Profile saved successfully', data });
   } catch (err) {
-    console.error('[Handler Exception]', err);
-    return res.status(500).json({ error: 'Failed to save profile', message: err.message });
+    console.error('[Unhandled Exception]', err);
+    return res.status(500).json({ error: 'Unexpected server error', message: err.message });
   }
 }
