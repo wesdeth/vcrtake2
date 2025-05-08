@@ -22,30 +22,23 @@ export default async function handler(req, res) {
     experience
   } = req.body;
 
-  console.log('[Incoming Request Body]', req.body);
+  console.log('[Incoming Request Body]', JSON.stringify(req.body, null, 2));
 
   if (!ensName) {
     return res.status(400).json({ error: 'ENS name is required' });
   }
 
-  // Sanitize and validate experience array
-  const normalizedExperience = (Array.isArray(experience) ? experience : []).map((item, index) => {
-    if (!item.title || !item.company) {
-      console.warn(`[Experience Validation] Skipping invalid entry at index ${index}`, item);
-      return null;
-    }
-    return {
+  try {
+    const normalizedExperience = (experience || []).map((item) => ({
       title: item.title || '',
       company: item.company || '',
-      location: item.location || '',
-      description: item.description || '',
       startDate: item.startDate || '',
       endDate: item.currentlyWorking ? null : item.endDate || '',
-      currentlyWorking: !!item.currentlyWorking
-    };
-  }).filter(Boolean); // Remove null entries
+      currentlyWorking: !!item.currentlyWorking,
+      location: item.location || '',
+      description: item.description || ''
+    }));
 
-  try {
     const { data, error } = await supabase
       .from('VCR')
       .upsert(
@@ -59,21 +52,18 @@ export default async function handler(req, res) {
           custom_avatar,
           experience: normalizedExperience
         },
-        {
-          onConflict: 'ens_name',
-          returning: 'representation'
-        }
+        { onConflict: 'ens_name', returning: 'representation' }
       );
 
     if (error) {
-      console.error('[Supabase Error]', error);
-      return res.status(500).json({ error: 'Database error', details: error.message });
+      console.error('[Supabase Error]', error.message, error.details || '', error.hint || '');
+      return res.status(500).json({ error: 'Database error', details: error });
     }
 
-    console.log('[Supabase Upsert Success]', data);
+    console.log('[Supabase Response]', data);
     return res.status(200).json({ message: 'Profile saved successfully', data });
   } catch (err) {
     console.error('[Handler Exception]', err);
-    return res.status(500).json({ error: 'Failed to save profile', details: err.message });
+    return res.status(500).json({ error: 'Failed to save profile', message: err.message });
   }
 }
