@@ -104,36 +104,38 @@ export default function ProfileCard({ data }) {
   const poapsToShow = showAllPoaps ? displayedPoaps : displayedPoaps.slice(0, 4);
 
   const handleSave = async () => {
-    try {
-      const res = await fetch('/api/save-profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ensName: name,
-          twitter: editTwitter,
-          warpcast: editWarpcast,
-          website: editWebsite,
-          tag: editTag,
-          bio: editBio,
-          custom_avatar: uploadedAvatar,
-          experience: editWorkExperience.map(exp => ({
-            ...exp,
-            startDate: exp.startDate || '',
-            endDate: exp.currentlyWorking ? null : exp.endDate || '',
-            currentlyWorking: !!exp.currentlyWorking,
-            description: exp.description || ''
-          }))
-        })
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-      setEditing(false);
-      setJustSaved(true);
-      setTimeout(() => setJustSaved(false), 3000);
-    } catch (err) {
-      console.error('Failed to save profile:', err.message);
-    }
-  };
+  try {
+    const res = await fetch('/api/save-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ensName: name,
+        address, // ✅ Include the address here
+        twitter: editTwitter,
+        warpcast: editWarpcast,
+        website: editWebsite,
+        tag: editTag,
+        bio: editBio,
+        custom_avatar: uploadedAvatar,
+        experience: editWorkExperience.map(exp => ({
+          ...exp,
+          startDate: exp.startDate || '',
+          endDate: exp.currentlyWorking ? null : exp.endDate || '',
+          currentlyWorking: !!exp.currentlyWorking,
+          location: exp.location || '',
+          description: exp.description || ''
+        }))
+      })
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error);
+    setEditing(false);
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 3000);
+  } catch (err) {
+    console.error('Failed to save profile:', err.message);
+  }
+};
 
   const resetBio = () => setEditBio(ensBio);
 
