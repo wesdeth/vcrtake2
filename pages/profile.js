@@ -2,34 +2,39 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useAccount } from 'wagmi';
-import ENSProfile from '../components/ENSProfile'; // fixed the import path
+import ENSProfile from '../components/ENSProfile';
 
 export default function ProfilePage() {
   const { address, isConnected } = useAccount();
-  const [ensName, setEnsName] = useState('');
+  const [ensOrAddress, setEnsOrAddress] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const resolveENS = async () => {
+    const fetchPrimaryName = async () => {
+      if (!address) return;
+
       try {
-        const res = await fetch(`/api/reverse-ens?address=${address}`);
-        const data = await res.json();
-        if (data.ensName) setEnsName(data.ensName);
-        else setEnsName(address);
+        const res = await fetch(`https://metadata.ens.domains/mainnet/address/${address}`);
+        const json = await res.json();
+        if (json.name) {
+          setEnsOrAddress(json.name);
+        } else {
+          setEnsOrAddress(address);
+        }
       } catch (err) {
-        console.error('Failed to resolve ENS:', err);
-        setEnsName(address);
+        console.error('❌ Failed to resolve ENS name from address:', err);
+        setEnsOrAddress(address);
       } finally {
         setLoading(false);
       }
     };
 
-    if (isConnected && address) {
-      resolveENS();
+    if (address) {
+      fetchPrimaryName();
     } else {
       setLoading(false);
     }
-  }, [address, isConnected]);
+  }, [address]);
 
   return (
     <>
@@ -40,10 +45,10 @@ export default function ProfilePage() {
         <div className="max-w-3xl mx-auto text-center mt-16">
           {loading ? (
             <p className="text-lg text-gray-500 dark:text-gray-400">Loading your profile...</p>
-          ) : !isConnected ? (
+          ) : !ensOrAddress ? (
             <p className="text-lg text-gray-500 dark:text-gray-400">Connect your wallet to view your profile.</p>
           ) : (
-            <ENSProfile ensName={ensName} forceOwnerView={true} />
+            <ENSProfile ensName={ensOrAddress} forceOwnerView={true} />
           )}
         </div>
       </div>
