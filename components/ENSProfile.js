@@ -9,6 +9,8 @@ import { useAccount } from 'wagmi';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
 import ProfileCard from './ProfileCard';
+import { Eye, Pencil } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 const NAME_WRAPPER = '0x114D4603199df73e7D157787f8778E21fCd13066';
@@ -122,6 +124,12 @@ export default function ENSProfile({ ensName, forceOwnerView = false, overrideRe
         <style>{`body { font-family: 'Comic Relief', cursive; }`}</style>
       </Head>
       <div className="min-h-screen bg-gradient-to-br from-[#F9FAFB] via-[#F3E8FF] to-[#74E0FF] p-4">
+        <div className="flex justify-center mb-6">
+          <span className={`flex items-center gap-2 text-xs px-3 py-1 rounded-full font-medium ${ownsProfile ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#E5E7EB] text-[#4B5563]'}`}>
+            {ownsProfile ? <><Pencil size={12} /> Edit Mode</> : <><Eye size={12} /> View Only</>}
+          </span>
+        </div>
+
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <p className="text-[#6B7280]">Loading...</p>
