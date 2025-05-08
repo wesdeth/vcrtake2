@@ -82,6 +82,7 @@ export default function ProfileCard({ data = {} }) {
         setPoapData(r.data || []);
       } catch (err) {
         console.error('POAP fetch error', err);
+        setPoapData([]);
       }
     };
 
@@ -159,7 +160,7 @@ export default function ProfileCard({ data = {} }) {
 
   const removeExp = (i) => setEditExp((prev) => prev.filter((_, idx) => idx !== i));
 
-  const poapsToShow = showAllPoaps ? poapData : poapData.slice(0, 4);
+  const poapsToShow = Array.isArray(poapData) ? (showAllPoaps ? poapData : poapData.slice(0, 4)) : [];
 
   return (
     <motion.div
