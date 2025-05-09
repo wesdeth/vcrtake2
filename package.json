@@ -26,7 +26,7 @@
     "stripe": "^12.14.0",
     "viem": "1.21.4",
     "ethers": "^5.7.2",
-  "@xmtp/react-sdk": "2.2.2",
+  "@xmtp/xmtp-js": "^8.0.0", // or latest
     "wagmi": "1.4.5"
   },
   "devDependencies": {
