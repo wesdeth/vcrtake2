@@ -1,6 +1,5 @@
 // components/EditableBio.js
 import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
 import toast from 'react-hot-toast';
 import { createClient } from '@supabase/supabase-js';
 import Head from 'next/head';
@@ -10,6 +9,13 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
+/**
+ * EditableBio
+ * 
+ * Minimal code to store user’s bio, social handles, & “looking for work” 
+ * in your Supabase DB — no on-chain ENS text record updates, 
+ * letting EFP or other systems handle “official” on-chain data.
+ */
 export default function EditableBio({
   ensName,
   connectedAddress,
@@ -26,15 +32,26 @@ export default function EditableBio({
   const [lookingForWork, setLookingForWork] = useState(initialLooking);
   const [loadingAI, setLoadingAI] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // For local use only; won't attempt on-chain record setting
   const [twitter, setTwitter] = useState('');
   const [website, setWebsite] = useState('');
   const [farcaster, setFarcaster] = useState('');
 
+  // On mount/update, sync local state with passed props
   useEffect(() => {
     setBio(initialBio);
     setLookingForWork(initialLooking);
   }, [initialBio, initialLooking]);
 
+  /**
+   * Save data to Supabase "ProfileCard" (or whichever) table
+   * 
+   * NOTE: We remove the old `resolver.setText(...)` calls
+   * that tried to set ENS records on chain. 
+   * So now we only store in DB, leaving EFP or your new approach in ProfileCard 
+   * to manage “real” social & follower data.
+   */
   const handleSave = async () => {
     if (saving) return;
 
@@ -45,24 +62,7 @@ export default function EditableBio({
 
     try {
       setSaving(true);
-      if (ensName.endsWith('.eth')) {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const resolver = await provider.getResolver(ensName);
-
-        if (!resolver) {
-          toast.error('ENS name does not have a resolver configured.');
-          return;
-        }
-
-        const connectedResolver = resolver.connect(signer);
-        await connectedResolver.setText('description', bio);
-        await connectedResolver.setText('lookingForWork', lookingForWork ? 'true' : 'false');
-        if (twitter) await connectedResolver.setText('com.twitter', twitter);
-        if (website) await connectedResolver.setText('url', website);
-        if (farcaster) await connectedResolver.setText('com.farcaster', farcaster);
-      }
-
+      // Upsert to your DB table
       const now = new Date().toISOString();
       const { error } = await supabase.from('ProfileCard').upsert({
         address: connectedAddress,
@@ -70,6 +70,7 @@ export default function EditableBio({
         twitter,
         website,
         farcaster,
+        // Possibly set some tag or "open" if lookingForWork
         tag: lookingForWork ? 'open' : null,
         updated_at: now
       });
@@ -87,13 +88,19 @@ export default function EditableBio({
     }
   };
 
+  /**
+   * Optionally generate a user bio from an AI endpoint, if showAIGenerator is true
+   */
   const handleAIGenerate = async () => {
     setLoadingAI(true);
     try {
       const response = await fetch('/api/generate-bio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: `Write a short, professional Web3 bio for someone using the ENS name: ${ensName}.`, auto: false })
+        body: JSON.stringify({
+          prompt: `Write a short, professional Web3 bio for ${ensName || connectedAddress}.`,
+          auto: false
+        })
       });
 
       const data = await response.json();
@@ -113,7 +120,10 @@ export default function EditableBio({
   return (
     <>
       <Head>
-        <link href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap" rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap"
+          rel="stylesheet"
+        />
       </Head>
       <div className="space-y-4">
         {editing ? (
