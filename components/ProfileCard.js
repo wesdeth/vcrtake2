@@ -1,5 +1,4 @@
 // components/ProfileCard.js
-
 import { useState, useEffect } from 'react';
 import {
   Copy,
@@ -21,37 +20,41 @@ import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import axios from 'axios';
 
-/* -------------------------------------------------------------------------------------------------
+/* -----------------------------------------------------------------------------------------------
    ProfileCard Component
-   -----------------------------------------------------------------------------------------------
+
    Displays / edits a user's profile:
      - Name, Address, Avatar, Bio
      - Social Links (Twitter, Warpcast, Website)
-     - Tag (dropdown)
+     - "Looking for Work" checkbox
      - Work Experience
      - POAPs
      - NFTs
-     - "Looking for Work" checkbox (new)
--------------------------------------------------------------------------------------------------*/
+     - EFP Followers fetch
+
+   Usage:
+     <ProfileCard data={profileData} />
+
+   Make sure your /api/save-profile supports any new fields (like lookingForWork).
+------------------------------------------------------------------------------------------------*/
 
 /* ------------------------------------------------------------------
    Utility Helpers
-   ------------------------------------------------------------------*/
-
-/** Shorten an Ethereum address for display, e.g. "0x1234...ABCD". */
+-------------------------------------------------------------------*/
+/** Shorten an Ethereum address, e.g. "0x1234...ABCD". */
 const shortenAddress = (addr = '') => {
   if (!addr) return '';
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 };
 
-/** Parse various date string formats into a Date object. */
+/** Parse a date string for "MM/DD/YYYY" or "YYYY-MM-DD", return Date or null. */
 const parseDate = (d) => {
   if (!d) return null;
   const p = Date.parse(d.replace(/\//g, '-'));
   return Number.isNaN(p) ? null : new Date(p);
 };
 
-/** Format a date range with optional "current" check, e.g. "May 2023 – Present". */
+/** Format a date range, e.g. "May 2023 – Present" (if current). */
 const formatRange = (s, e, current) => {
   if (!s) return '';
   const start = parseDate(s)?.toLocaleDateString(undefined, {
@@ -60,14 +63,11 @@ const formatRange = (s, e, current) => {
   });
   const end = current
     ? 'Present'
-    : parseDate(e)?.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short'
-      }) || '';
+    : parseDate(e)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) || '';
   return `${start} – ${end}`;
 };
 
-/** Dropdown Tag Options. */
+/** Tag options for editing. */
 const TAG_OPTIONS = [
   'Front-End Developer',
   'Back-End Developer',
@@ -103,7 +103,7 @@ const TAG_OPTIONS = [
   'Founder / Co-Founder'
 ];
 
-/** Sub-component for small social link icons. */
+/** Renders a small social link with an icon. */
 function SocialLink({ href, icon: Icon, label }) {
   if (!href) return null;
   return (
@@ -119,7 +119,9 @@ function SocialLink({ href, icon: Icon, label }) {
   );
 }
 
-/** Main ProfileCard Component */
+/* ------------------------------------------------------------------
+   Main ProfileCard Component
+-------------------------------------------------------------------*/
 export default function ProfileCard({ data = {} }) {
   const {
     name,
@@ -127,32 +129,32 @@ export default function ProfileCard({ data = {} }) {
     avatar,
     twitter,
     website,
-    tag,
-    efpLink,
     warpcast,
+    tag,
     poaps = [],
     nfts = [],
-    ownsProfile = false,
-    workExperience = [],
     bio = '',
     ensBio = '',
-    /* 
-      IMPORTANT: Add a "lookingForWork" boolean in your data 
-      (e.g. from the DB or Supabase). 
-    */
-    lookingForWork = false 
+    workExperience = [],
+    lookingForWork = false,
+    ownsProfile = false
   } = data;
+
+  /** Wagmi to check if connected user is the owner. */
+  const { address: connected } = useAccount();
+  const isOwner =
+    ownsProfile ||
+    (connected && address && connected.toLowerCase() === address.toLowerCase());
 
   /* ----------------------------------
      State
   ----------------------------------*/
   const [showAllPoaps, setShowAllPoaps] = useState(false);
   const [poapData, setPoapData] = useState(poaps);
-
   const [editing, setEditing] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 
-  // The "Looking for Work" checkbox
+  // "Looking for Work" local state for editing
   const [editLookingForWork, setEditLookingForWork] = useState(lookingForWork);
 
   // Avatar
@@ -172,16 +174,14 @@ export default function ProfileCard({ data = {} }) {
   // Work Experience
   const [editExp, setEditExp] = useState(workExperience);
 
-  // Wagmi connected address
-  const { address: connected } = useAccount();
-  const isOwner =
-    ownsProfile ||
-    (connected && address && connected.toLowerCase() === address.toLowerCase());
+  // EFP (Ethereum Follow Protocol) followers count
+  const [followersCount, setFollowersCount] = useState(null);
 
-  /* ----------------------------------
-     Effects: Fetch POAPs & fallback Avatar
-  ----------------------------------*/
+  /* ------------------------------------------------------------------
+     Effects
+  ------------------------------------------------------------------*/
   useEffect(() => {
+    // 1) Fetch POAPs if address is present
     const fetchPoaps = async () => {
       if (!address) return;
       try {
@@ -196,6 +196,7 @@ export default function ProfileCard({ data = {} }) {
       }
     };
 
+    // 2) Fetch fallback Avatar from OpenSea if not provided
     const fetchAvatar = async () => {
       if (avatar || !address) return;
       try {
@@ -203,7 +204,7 @@ export default function ProfileCard({ data = {} }) {
         const img = r.data?.account?.profile_img_url || r.data?.profile_img_url;
         if (img) setUploadedAvatar(img);
       } catch {
-        // fallback already set
+        // fallback is already set
       }
     };
 
@@ -211,9 +212,34 @@ export default function ProfileCard({ data = {} }) {
     fetchAvatar();
   }, [address, avatar]);
 
-  /* ----------------------------------
+  // EFP "Followers" fetch
+  useEffect(() => {
+    if (!address) return;
+    const fetchEfpFollowers = async () => {
+      try {
+        const res = await axios.get(`https://api.ethfollow.xyz/api/v1/followers?address=${address}`);
+        // Suppose the API returns { count: number, followers: [...] }
+        setFollowersCount(res.data?.count ?? 0);
+      } catch (err) {
+        console.error('Failed fetching EFP followers', err);
+        setFollowersCount(0);
+      }
+    };
+    fetchEfpFollowers();
+  }, [address]);
+
+  /* ------------------------------------------------------------------
      Handlers
-  ----------------------------------*/
+  ------------------------------------------------------------------*/
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => setUploadedAvatar(reader.result);
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async () => {
     try {
       const res = await fetch('/api/save-profile', {
@@ -228,10 +254,6 @@ export default function ProfileCard({ data = {} }) {
           tag: editTag,
           bio: editBio,
           custom_avatar: uploadedAvatar,
-          /* 
-            NEW: pass `editLookingForWork` to your server 
-            so it can be stored in DB 
-          */
           lookingForWork: editLookingForWork,
           experience: editExp.map((e) => ({
             ...e,
@@ -248,8 +270,6 @@ export default function ProfileCard({ data = {} }) {
         const errorMsg = (await res.json()).error || 'Unknown error';
         throw new Error(errorMsg);
       }
-
-      // If successful:
       setEditing(false);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2500);
@@ -258,23 +278,13 @@ export default function ProfileCard({ data = {} }) {
     }
   };
 
-  /** Upload a new avatar from file input */
-  const handleAvatarUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setUploadedAvatar(reader.result);
-    reader.readAsDataURL(file);
-  };
-
-  /** Update an experience field */
+  // Work Experience updaters
   const updateExp = (i, field, val) => {
     setEditExp((prev) =>
       prev.map((expItem, idx) => (idx === i ? { ...expItem, [field]: val } : expItem))
     );
   };
 
-  /** Toggle "currentlyWorking" for an experience item */
   const toggleCurrent = (i) => {
     setEditExp((prev) =>
       prev.map((expItem, idx) => {
@@ -290,7 +300,6 @@ export default function ProfileCard({ data = {} }) {
     );
   };
 
-  /** Add a new blank experience entry */
   const addExp = () => {
     setEditExp((prev) => [
       ...prev,
@@ -306,14 +315,13 @@ export default function ProfileCard({ data = {} }) {
     ]);
   };
 
-  /** Remove an experience entry */
   const removeExp = (i) => {
     setEditExp((prev) => prev.filter((_, idx) => idx !== i));
   };
 
-  /* ----------------------------------
+  /* ------------------------------------------------------------------
      Derived
-  ----------------------------------*/
+  ------------------------------------------------------------------*/
   const poapsToShow = Array.isArray(poapData)
     ? showAllPoaps
       ? poapData
@@ -321,22 +329,25 @@ export default function ProfileCard({ data = {} }) {
     : [];
   const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : [];
 
-  /* ----------------------------------
+  /* ------------------------------------------------------------------
      Render
-  ----------------------------------*/
+  ------------------------------------------------------------------*/
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="relative w-full max-w-3xl mx-auto rounded-3xl overflow-visible
-                 shadow-xl border border-gray-100 ring-1 ring-gray-200/70
-                 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800"
+      className="
+        relative w-full max-w-3xl mx-auto 
+        rounded-3xl overflow-visible
+        shadow-xl border border-gray-100 ring-1 ring-gray-200/70
+        bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800
+      "
     >
-      {/* Soft gradient background behind content */}
+      {/* Subtle background behind content */}
       <div className="absolute inset-0 opacity-40 animate-pulse-slow pointer-events-none" />
 
-      {/* Content wrapper */}
+      {/* Main content */}
       <div className="relative z-10 p-10 sm:p-12 text-center backdrop-blur-xl">
         {/* Avatar */}
         <div className="relative w-36 h-36 mx-auto -mt-16 mb-4">
@@ -358,7 +369,7 @@ export default function ProfileCard({ data = {} }) {
           )}
         </div>
 
-        {/* Name */}
+        {/* Name or fallback address */}
         <h2 className="text-4xl font-bold tracking-tight text-gray-800 dark:text-gray-100">
           {name || shortenAddress(address)}
         </h2>
@@ -371,6 +382,13 @@ export default function ProfileCard({ data = {} }) {
             onClick={() => navigator.clipboard.writeText(address)}
           >
             {shortenAddress(address)} <Copy size={12} />
+          </p>
+        )}
+
+        {/* EFP Followers */}
+        {followersCount !== null && (
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+            {followersCount} Follower{followersCount === 1 ? '' : 's'}
           </p>
         )}
 
@@ -399,24 +417,43 @@ export default function ProfileCard({ data = {} }) {
                 placeholder="Twitter handle"
                 value={editTwitter}
                 onChange={(e) => setEditTwitter(e.target.value)}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
+                className="
+                  bg-white dark:bg-gray-900 border 
+                  border-gray-200 dark:border-gray-700 
+                  rounded-lg p-2 text-sm w-full 
+                  placeholder-gray-400
+                "
               />
               <input
                 placeholder="Warpcast handle"
                 value={editWarpcast}
                 onChange={(e) => setEditWarpcast(e.target.value)}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
+                className="
+                  bg-white dark:bg-gray-900 border 
+                  border-gray-200 dark:border-gray-700 
+                  rounded-lg p-2 text-sm w-full 
+                  placeholder-gray-400
+                "
               />
               <input
                 placeholder="Website"
                 value={editWebsite}
                 onChange={(e) => setEditWebsite(e.target.value)}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
+                className="
+                  bg-white dark:bg-gray-900 border 
+                  border-gray-200 dark:border-gray-700 
+                  rounded-lg p-2 text-sm w-full 
+                  placeholder-gray-400
+                "
               />
               <select
                 value={editTag}
                 onChange={(e) => setEditTag(e.target.value)}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
+                className="
+                  bg-white dark:bg-gray-900 border 
+                  border-gray-200 dark:border-gray-700
+                  rounded-lg p-2 text-sm w-full
+                "
               >
                 <option value="">Select a Tag</option>
                 {TAG_OPTIONS.map((option) => (
@@ -466,11 +503,7 @@ export default function ProfileCard({ data = {} }) {
           )}
         </div>
 
-        {/*
-          ~~~~~~~ "Looking for Work" Checkbox ~~~~~~~
-          Shown only if editing. If not editing but the user is lookingForWork, 
-          we can show a small badge or skip it entirely. 
-        */}
+        {/* Looking for Work */}
         <div className="mt-4">
           {editing ? (
             <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
@@ -483,7 +516,6 @@ export default function ProfileCard({ data = {} }) {
               Looking for Work
             </label>
           ) : (
-            // If not editing but user is flagged as looking for work, show a pill
             editLookingForWork && (
               <div className="mt-1">
                 <span className="inline-block px-2 py-1 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-full">
@@ -494,7 +526,7 @@ export default function ProfileCard({ data = {} }) {
           )}
         </div>
 
-        {/* Experience Section */}
+        {/* Work Experience */}
         <div className="mt-10 text-left">
           <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-100 flex items-center">
             Experience{' '}
@@ -652,7 +684,7 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* OpenSea link if address present */}
+        {/* Link to OpenSea if address present */}
         {address && (
           <div className="mt-6 text-center">
             <a
@@ -666,7 +698,7 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Action buttons if user is owner */}
+        {/* Edit / Save / Cancel buttons if user is owner */}
         {isOwner && (
           <div className="mt-8 flex justify-center gap-3">
             {editing ? (
@@ -679,7 +711,7 @@ export default function ProfileCard({ data = {} }) {
                 </button>
                 <button
                   onClick={() => {
-                    // Revert
+                    // revert changes
                     setEditing(false);
                     setEditBio(bio || ensBio);
                     setEditExp(workExperience);
@@ -705,7 +737,7 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Save Confirmation */}
+        {/* Save confirmation */}
         {justSaved && (
           <div className="mt-4 flex justify-center items-center text-green-600 text-sm">
             <CheckCircle size={16} className="mr-1" /> Profile saved!
