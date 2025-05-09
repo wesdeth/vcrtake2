@@ -1,51 +1,10 @@
-// pages/jobs.js
-import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import { useState } from 'react';
 
-export default function Jobs() {
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  // NEW: category filter state, e.g. "react", "solidity", etc.
-  const [category, setCategory] = useState('');
-
-  useEffect(() => {
-    const fetchJobs = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Build the URL dynamically
-        let url = 'https://web3.career/api/v1?token=YOUR_TOKEN_HERE';
-        
-        // If category is chosen, append &tag=category
-        if (category.trim() !== '') {
-          url += `&tag=${encodeURIComponent(category)}`;
-        }
-
-        // Optionally add remote or limit:
-        // url += '&remote=true&limit=50';
-
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error('Failed to fetch jobs from web3.career');
-        }
-
-        const data = await response.json();
-        // data[2] is the actual job array
-        const jobsArray = data[2];
-
-        setJobs(jobsArray);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchJobs();
-  }, [category]); // re-fetch whenever category changes
+export default function Jobs({ initialJobs, error: serverError }) {
+  // State to hold the jobs data once the page loads:
+  const [jobs] = useState(initialJobs || []);
+  const [error] = useState(serverError);
 
   return (
     <>
@@ -56,24 +15,17 @@ export default function Jobs() {
       <div className="min-h-screen pt-20 px-6 py-10 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white font-calsans">
         <h1 className="text-3xl font-bold mb-6 text-center">🌐 Web3 Job Board</h1>
 
-        {/** Category filter input */}
-        <div className="mb-6 flex justify-center items-center gap-2">
-          <label className="text-sm text-gray-700 dark:text-gray-300">
-            Category / Tag:
-          </label>
-          <input
-            type="text"
-            placeholder="e.g. solidity, react..."
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="border border-gray-300 rounded px-2 py-1 text-sm"
-          />
-        </div>
+        {error && (
+          <p className="text-center text-red-500">
+            Error: {error}
+          </p>
+        )}
 
-        {loading && <p className="text-center">Loading jobs...</p>}
-        {error && <p className="text-center text-red-500">Error: {error}</p>}
+        {!error && (!jobs || jobs.length === 0) && (
+          <p className="text-center">No jobs found or still loading…</p>
+        )}
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-4">
           {jobs.map((job) => (
             <a
               key={job.id}
@@ -95,4 +47,41 @@ export default function Jobs() {
       </div>
     </>
   );
+}
+
+/**
+ * Fetches jobs from web3.career on the server side,
+ * so we avoid client-side CORS or network issues.
+ */
+export async function getServerSideProps() {
+  let initialJobs = [];
+  let error = null;
+
+  try {
+    // Ideally, use an ENV var: `process.env.WEB3_CAREERS_TOKEN`
+    // e.g., `const token = process.env.WEB3_CAREERS_TOKEN;`
+    const token = 'YOUR_API_TOKEN_HERE'; // e.g. 'uMZCW1SZwZt3kyGd6G9RS8UPVv6dEP3q'
+    const url = `https://web3.career/api/v1?token=${token}`;
+
+    // Optionally add filters like &remote=true, &tag=react, &limit=100, etc.
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`web3.career fetch failed. Status: ${response.status}`);
+    }
+
+    // The data is an array; index 2 is the actual job listings
+    const data = await response.json();
+    initialJobs = data[2] || [];
+  } catch (err) {
+    console.error('Failed to fetch from web3.career:', err);
+    error = err.message || 'Failed to fetch from web3.career';
+  }
+
+  return {
+    props: {
+      initialJobs,
+      error
+    }
+  };
 }
