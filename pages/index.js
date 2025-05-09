@@ -13,32 +13,28 @@ export default function Home() {
 
   // Floating profiles data
   const [floatingProfiles, setFloatingProfiles] = useState([]);
-  const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2]);
+  // Now track 5 indexes instead of 3
+  const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2, 3, 4]);
   const [fade, setFade] = useState(true);
   const timerRef = useRef(null);
 
-  // Badge count: store in state, and we’ll manage it in localStorage
+  // Badge count for “onchain resumes created”
   const [resumeCount, setResumeCount] = useState(12380);
 
-  /**
-   * ------------------------------------------------------------------
-   *  1) Randomly Increase Badge Count in localStorage
-   *     - We do this once every 24 hours by checking lastUpdate time.
-   * ------------------------------------------------------------------
-   */
+  /* ------------------------------------------------------------------
+   *  1) Randomly Increase Badge Count in localStorage once every 24hrs
+   * ------------------------------------------------------------------*/
   useEffect(() => {
     const storageKey = 'resumeCountData';
     const now = Date.now();
     const oneDay = 24 * 60 * 60 * 1000;
 
-    // Try to load from localStorage
     const stored = localStorage.getItem(storageKey);
-
     if (stored) {
       const parsed = JSON.parse(stored);
       const { count, lastUpdate } = parsed;
 
-      // If it’s been more than 24 hrs, increment by 5–10
+      // If it's been more than 24 hrs, increment by 5–10
       if (now - lastUpdate > oneDay) {
         const randomIncrement = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
         const newCount = count + randomIncrement;
@@ -61,28 +57,25 @@ export default function Home() {
     }
   }, []);
 
-  /**
-   * ------------------------------------------------------------------
-   *  2) Fetch recent updates from /api/recent-updates & 
-   *     also fetch POAP data + ENS name for each profile
-   * ------------------------------------------------------------------
-   */
+  /* ------------------------------------------------------------------
+   *  2) Fetch recent updates & also fetch POAP data + ENS name
+   * ------------------------------------------------------------------*/
   useEffect(() => {
     const fetchRecentUpdates = async () => {
       try {
-        // 1) Our “recent updates” call
         const res = await fetch('/api/recent-updates?limit=15');
         const data = await res.json();
 
-        // 2) For each profile, fetch POAP + ENS
+        let updatedData = data || [];
+
         const enrichedData = await Promise.all(
-          data.map(async (profile) => {
-            // --- POAP fetch ---
+          updatedData.map(async (profile) => {
             let hasPoaps = false;
             let tagColor = 'text-[#635BFF]';
             let borderColor = 'border-[#A5B4FC]';
             let tag = profile.tag || 'Active Builder';
 
+            // Fetch POAP
             try {
               const poapRes = await axios.get(
                 `https://api.poap.tech/actions/scan/${profile.address}`,
@@ -99,25 +92,25 @@ export default function Home() {
                 borderColor = 'border-[#D8B4FE]';
               }
             } catch {
-              // fallback to default
+              // fallback
             }
 
-            // --- ENS name fetch ---
+            // Fetch ENS
             let resolvedEns = profile.name; 
             try {
               const ensRes = await axios.get(
                 `https://api.ensideas.com/ens/resolve/${profile.address}`
               );
               if (ensRes.data?.name) {
-                resolvedEns = ensRes.data.name; // This is the official ENS name
+                resolvedEns = ensRes.data.name;
               }
             } catch {
-              // fallback to whatever was in profile.name
+              // fallback
             }
 
             return {
               ...profile,
-              name: resolvedEns, // override with possible ENS
+              name: resolvedEns,
               tag,
               color: tagColor,
               border: borderColor
@@ -125,37 +118,121 @@ export default function Home() {
           })
         );
 
-        // 3) Ensure at least one is “Looking for Work”
-        const noneTagged = enrichedData.every((p) => p.tag !== 'Looking for Work');
-        if (enrichedData.length > 0 && noneTagged) {
-          const index = Math.floor(Math.random() * enrichedData.length);
-          enrichedData[index].tag = 'Looking for Work';
-          enrichedData[index].color = 'text-[#FFC542]';
-          enrichedData[index].border = 'border-[#FDE68A]';
+        // 5 placeholders (instead of 3)
+        const placeholders = [
+          {
+            address: '0xPLACEHOLDER1',
+            name: 'validator.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER2',
+            name: 'evanmoyer.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER3',
+            name: 'brantly.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER4',
+            name: 'dragonmaster.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER5',
+            name: 'rainbowlover.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          }
+        ];
+
+        let finalData = enrichedData;
+
+        // Ensure at least 5 items in rotation
+        if (finalData.length < 5) {
+          finalData = [...finalData, ...placeholders].slice(0, 5);
         }
 
-        setFloatingProfiles(enrichedData);
+        // At least one is “Looking for Work”
+        const noneTagged = finalData.every((p) => p.tag !== 'Looking for Work');
+        if (finalData.length > 0 && noneTagged) {
+          const index = Math.floor(Math.random() * finalData.length);
+          finalData[index].tag = 'Looking for Work';
+          finalData[index].color = 'text-[#FFC542]';
+          finalData[index].border = 'border-[#FDE68A]';
+        }
+
+        setFloatingProfiles(finalData);
       } catch (err) {
         console.error('Failed to fetch recent updates:', err);
+
+        // If fetch fails, show 5 placeholders
+        setFloatingProfiles([
+          {
+            address: '0xPLACEHOLDER1',
+            name: 'validator.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER2',
+            name: 'evanmoyer.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER3',
+            name: 'brantly.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER4',
+            name: 'dragonmaster.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER5',
+            name: 'rainbowlover.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          }
+        ]);
       }
     };
 
     fetchRecentUpdates();
   }, []);
 
-  /**
-   * ------------------------------------------------------------------
+  /* ------------------------------------------------------------------
    *  3) Rotate the "floating profiles" every 7 seconds
-   * ------------------------------------------------------------------
-   */
+   * ------------------------------------------------------------------*/
   useEffect(() => {
     if (!floatingProfiles.length) return;
 
     timerRef.current = setInterval(() => {
       setFade(false);
       setTimeout(() => {
+        // Now add 5 instead of 3
         setCurrentIndexes((prev) =>
-          prev.map((i) => (i + 3) % floatingProfiles.length)
+          prev.map((i) => (i + 5) % floatingProfiles.length)
         );
         setFade(true);
       }, 400);
@@ -170,18 +247,16 @@ export default function Home() {
       setFade(false);
       setTimeout(() => {
         setCurrentIndexes((prev) =>
-          prev.map((i) => (i + 3) % floatingProfiles.length)
+          prev.map((i) => (i + 5) % floatingProfiles.length)
         );
         setFade(true);
       }, 400);
     }, 7000);
   };
 
-  /**
-   * ------------------------------------------------------------------
+  /* ------------------------------------------------------------------
    *  4) Form Handler
-   * ------------------------------------------------------------------
-   */
+   * ------------------------------------------------------------------*/
   const handleSearch = (e) => {
     e.preventDefault();
     if (input.endsWith('.eth') || input.startsWith('0x')) {
@@ -400,7 +475,8 @@ export default function Home() {
             relative
           "
         >
-          © {new Date().getFullYear()} Verified Chain Resume — Built with ❤️ for the Web3 community.<br />
+          © {new Date().getFullYear()} Verified Chain Resume — Built with ❤️ for the Web3 community.
+          <br />
           <span className="text-[#6B7280]">
             Created by wesd.eth
           </span>
