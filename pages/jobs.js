@@ -10,11 +10,21 @@ export default function Jobs() {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const res = await fetch('https://remoteok.com/api'); // Example API
-        if (!res.ok) throw new Error('Failed to fetch jobs');
-        const data = await res.json();
-        const filtered = data.filter((job) => job.position);
-        setJobs(filtered);
+        // Example: fetch 50 remote jobs from US,
+        // or you can omit &remote=true&country=united-states if you want all.
+        // e.g. "https://web3.career/api/v1?token=YOUR_TOKEN_HERE&limit=50&remote=true"
+        const response = await fetch(
+          'https://web3.career/api/v1?token=uMZCW1SZwZt3kyGd6G9RS8UPVv6dEP3q'
+        );
+        if (!response.ok) {
+          throw new Error('Failed to fetch jobs from web3.career');
+        }
+
+        // The data is an array, with the 3rd element (index 2) being the jobs
+        const data = await response.json();
+        const jobsArray = data[2]; // Grab the actual job listings
+
+        setJobs(jobsArray);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -30,6 +40,7 @@ export default function Jobs() {
       <Head>
         <title>Jobs | Verified Chain Resume</title>
       </Head>
+      
       <div className="min-h-screen pt-20 px-6 py-10 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white font-calsans">
         <h1 className="text-3xl font-bold mb-6 text-center">🌐 Web3 Job Board</h1>
 
@@ -40,15 +51,21 @@ export default function Jobs() {
           {jobs.map((job) => (
             <a
               key={job.id}
-              href={job.url}
+              href={job.apply_url} 
               target="_blank"
               rel="noopener noreferrer"
               className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition border border-gray-200 dark:border-gray-700"
             >
-              <h2 className="text-lg font-semibold mb-1">{job.position}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{job.company}</p>
+              <h2 className="text-lg font-semibold mb-1">
+                {job.title}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {job.company}
+              </p>
+
+              {/* For location, web3.career uses 'country' or 'city' fields */}
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {job.location || 'Remote'} — {job.tags?.join(', ')}
+                {job.country || 'Remote'} — {(job.tags || []).join(', ')}
               </p>
             </a>
           ))}
