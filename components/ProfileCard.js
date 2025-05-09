@@ -23,36 +23,36 @@ import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import axios from 'axios';
 
-/* -----------------------------------------------------------------------------------------------
+/* ------------------------------------------------------------------
    ProfileCard
 
-   Uses EFP’s “/api/v1/users/[ensOrAddress]/ens” to get social handles,
-   and “/api/v1/users/[ensOrAddress]/followers” for the follower array,
-   from which we derive followersCount = array.length.
+   - Shows follower count (from EFP) right under address
+   - Then a "Socials" section with both DB-based fields (Twitter, Warpcast, Website)
+     and EFP-based data (farcaster, github, telegram, etc. from EFP).
+   - EFP data is read-only. DB fields are editable if user is the owner.
 
-   If EFP returns 404/empty, we show no followers (or 0).
-   We also let DB-based fields (twitter, warpcast, website) be edited or fallback
-   if EFP has no record.
+   We also do `limit=9999&cache=fresh` on the EFP followers call to try 
+   to get a full count in case EFP was only returning partial data.
 
-   The rest (POAP, NFT, “lookingForWork”) is unchanged.
-------------------------------------------------------------------------------------------------*/
+   The rest (experience, POAP, NFT) remains the same as before.
 
-/* ------------------------------------------------------------------
-   Utility Helpers
--------------------------------------------------------------------*/
+   If EFP’s official site still shows a different follower count, 
+   their public API might be incomplete. 
+------------------------------------------------------------------*/
 
-/** Shorten an Ethereum address, e.g. "0x1234…ABCD". */
-const shortenAddress = (addr = '') =>
-  addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '';
+/** Shorten an Ethereum address for display. */
+function shortenAddress(addr = '') {
+  return addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '';
+}
 
-/** Parse a date string, returns Date or null. */
+/** Parse a date string (YYYY-MM-DD or MM/DD/YYYY). */
 function parseDate(d) {
   if (!d) return null;
   const p = Date.parse(d.replace(/\//g, '-'));
   return Number.isNaN(p) ? null : new Date(p);
 }
 
-/** Format "Month Year – Present" if current is true. */
+/** Format a range "May 2023 – Present" if current. */
 function formatRange(s, e, current) {
   if (!s) return '';
   const start = parseDate(s)?.toLocaleDateString(undefined, {
@@ -68,7 +68,7 @@ function formatRange(s, e, current) {
   return `${start} – ${end}`;
 }
 
-/** Known EFP platform => { label, icon, prefix }. Adjust as needed. */
+/** Known EFP platform => link building rules. */
 const SOCIAL_KEY_MAP = {
   twitter: {
     label: 'Twitter',
@@ -88,7 +88,7 @@ const SOCIAL_KEY_MAP = {
   discord: {
     label: 'Discord',
     icon: MessageCircle,
-    prefix: null // no direct link
+    prefix: null
   },
   telegram: {
     label: 'Telegram',
@@ -102,9 +102,7 @@ const SOCIAL_KEY_MAP = {
   }
 };
 
-/**
- * EFP Social sub-component. Renders a link or text for each recognized platform.
- */
+/** Renders a social link from EFP data. (Read-only) */
 function DisplaySocial({ platform, handle }) {
   const mapping = SOCIAL_KEY_MAP[platform.toLowerCase()];
   if (!mapping) {
@@ -116,10 +114,9 @@ function DisplaySocial({ platform, handle }) {
       </div>
     );
   }
-
   const { label, icon: Icon, prefix } = mapping;
   if (!prefix) {
-    // e.g. Discord "username#1234"
+    // e.g. Discord
     return (
       <div className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
         <Icon size={16} />
@@ -127,7 +124,6 @@ function DisplaySocial({ platform, handle }) {
       </div>
     );
   } else {
-    // clickable link
     return (
       <a
         href={prefix + handle.replace(/^@/, '')}
@@ -142,7 +138,7 @@ function DisplaySocial({ platform, handle }) {
   }
 }
 
-/** Simple link for DB-based fields (Twitter, Warpcast, Website). */
+/** DB-based social link (editable if user is owner). */
 function SocialLink({ href, icon: Icon, label }) {
   if (!href) return null;
   return (
@@ -158,41 +154,38 @@ function SocialLink({ href, icon: Icon, label }) {
   );
 }
 
-/* ------------------------------------------------------------------
-   Main ProfileCard
--------------------------------------------------------------------*/
+/** Main ProfileCard Component */
 export default function ProfileCard({ data = {} }) {
-  // Deconstruct data props
   const {
-    name,               // e.g. "validator.eth"
-    address,            // 0x...
+    name,
+    address,
     avatar,
-    twitter,            // from DB
-    website,            // from DB
-    warpcast,           // from DB
+    twitter,      // DB field
+    website,      // DB field
+    warpcast,     // DB field
     tag,
     poaps = [],
     nfts = [],
     bio = '',
-    ensBio = '',        // fallback if no custom bio
+    ensBio = '',
     workExperience = [],
     lookingForWork = false,
     ownsProfile = false
   } = data;
 
-  // Check if connected user is owner
+  // Wagmi to check ownership
   const { address: connected } = useAccount();
   const isOwner =
     ownsProfile ||
     (connected && address && connected.toLowerCase() === address.toLowerCase());
 
-  /* ------------------ State ------------------ */
+  /* ----------------- State ----------------- */
   const [showAllPoaps, setShowAllPoaps] = useState(false);
   const [poapData, setPoapData] = useState(poaps);
   const [editing, setEditing] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 
-  // "Looking for Work"
+  // “Looking for Work” local state
   const [editLookingForWork, setEditLookingForWork] = useState(lookingForWork);
 
   // Avatars
@@ -212,51 +205,44 @@ export default function ProfileCard({ data = {} }) {
 
   // EFP data
   const [followersCount, setFollowersCount] = useState(null);
-  const [efpSocialData, setEfpSocialData] = useState({}); 
+  const [efpSocialData, setEfpSocialData] = useState({});
 
-  /* ------------------------------------------------------------------
-     Effects
-  ------------------------------------------------------------------*/
-
-  /** 1) Fetch POAPs from Poap.tech & fallback Avatar from OpenSea */
+  /* ----------------------------------------------------------------
+     Effects: POAP fetch, fallback avatar, EFP fetch
+  ----------------------------------------------------------------*/
+  // 1) POAP & fallback avatar
   useEffect(() => {
-    const fetchPoaps = async () => {
-      if (!address) return;
-      try {
-        const r = await axios.get(`https://api.poap.tech/actions/scan/${address}`, {
-          headers: {
-            'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo'
-          }
-        });
-        setPoapData(r.data || []);
-      } catch {
-        setPoapData([]);
-      }
-    };
+    if (!address) return;
 
-    const fetchAvatar = async () => {
-      if (avatar || !address) return;
-      try {
-        const r = await axios.get(`https://api.opensea.io/api/v1/user/${address}`);
+    // POAP fetch
+    axios.get(`https://api.poap.tech/actions/scan/${address}`, {
+      headers: {
+        'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo'
+      }
+    })
+    .then((r) => {
+      setPoapData(r.data || []);
+    })
+    .catch(() => {
+      setPoapData([]);
+    });
+
+    // fallback avatar from OpenSea if no custom avatar
+    if (!avatar) {
+      axios.get(`https://api.opensea.io/api/v1/user/${address}`)
+      .then((r) => {
         const img = r.data?.account?.profile_img_url || r.data?.profile_img_url;
         if (img) setUploadedAvatar(img);
-      } catch {
-        // fallback
-      }
-    };
-
-    fetchPoaps();
-    fetchAvatar();
+      })
+      .catch(() => {
+        /* fallback is set */
+      });
+    }
   }, [address, avatar]);
 
-  /**
-   * 2) EFP fetch: 
-   *    - GET /api/v1/users/[userKey]/ens for social data
-   *    - GET /api/v1/users/[userKey]/followers => { followers: [...] }
-   *      We'll measure the length of the array for follower count
-   */
+  // 2) EFP fetch: social & followers
   useEffect(() => {
-    const fetchEFP = async () => {
+    const fetchEfp = async () => {
       let userKey = null;
       if (name && name.endsWith('.eth')) {
         userKey = name.toLowerCase();
@@ -266,36 +252,34 @@ export default function ProfileCard({ data = {} }) {
       if (!userKey) return;
 
       try {
-        // 1) EFP social
-        const ensRes = await axios.get(
+        // EFP Social
+        const socialRes = await axios.get(
           `https://api.ethfollow.xyz/api/v1/users/${userKey}/ens`
         );
-        console.log(`🔹 EFP Social Data for ${userKey}:`, ensRes.data);
-        setEfpSocialData(ensRes.data || {});
+        console.log(`🔹 EFP Social Data for ${userKey}:`, socialRes.data);
+        setEfpSocialData(socialRes.data || {});
 
-        // 2) EFP followers
+        // EFP followers (with large limit)
         const followersRes = await axios.get(
-          `https://api.ethfollow.xyz/api/v1/users/${userKey}/followers`
+          `https://api.ethfollow.xyz/api/v1/users/${userKey}/followers?limit=9999&cache=fresh`
         );
         console.log(`🔹 EFP Followers for ${userKey}:`, followersRes.data);
 
-        // the API might return { followers: [...], ... } with no "count" field
         const followerArr = followersRes.data?.followers || [];
-        const derivedCount = followerArr.length;
-        setFollowersCount(derivedCount);
+        setFollowersCount(followerArr.length);
       } catch (err) {
-        console.warn(`EFP fetch failed for ${userKey}`, err);
+        console.warn('EFP fetch error for', userKey, err);
         setFollowersCount(0);
       }
     };
 
-    fetchEFP();
+    fetchEfp();
   }, [name, address]);
 
-  /* ------------------------------------------------------------------
+  /* ----------------------------------------------------------------
      Handlers
-  ------------------------------------------------------------------*/
-  // handleAvatarUpload: for user to upload a new avatar
+  ----------------------------------------------------------------*/
+  // handleAvatarUpload
   const handleAvatarUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -304,7 +288,7 @@ export default function ProfileCard({ data = {} }) {
     reader.readAsDataURL(file);
   };
 
-  // handleSave: POST to /api/save-profile with DB-based fields
+  // handleSave
   const handleSave = async () => {
     try {
       const res = await fetch('/api/save-profile', {
@@ -331,8 +315,8 @@ export default function ProfileCard({ data = {} }) {
         })
       });
       if (!res.ok) {
-        const errorMsg = (await res.json()).error || 'Unknown error';
-        throw new Error(errorMsg);
+        const errMsg = (await res.json()).error || 'Unknown error';
+        throw new Error(errMsg);
       }
       setEditing(false);
       setJustSaved(true);
@@ -383,9 +367,9 @@ export default function ProfileCard({ data = {} }) {
     setEditExp((prev) => prev.filter((_, idx) => idx !== i));
   };
 
-  /* ------------------------------------------------------------------
-     Derived Data
-  ------------------------------------------------------------------*/
+  /* ----------------------------------------------------------------
+     Derived
+  ----------------------------------------------------------------*/
   // POAP display
   const poapsToShow = Array.isArray(poapData)
     ? showAllPoaps
@@ -393,18 +377,17 @@ export default function ProfileCard({ data = {} }) {
       : poapData.slice(0, 4)
     : [];
 
-  // NFTs
+  // NFT display
   const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : [];
 
-  // EFP-based social data: { twitter: "...", farcaster: "...", ... }
-  // We'll display them in View mode if not in DB, or we can show them all.
+  // EFP social data
   const efpSocialEntries = Object.entries(efpSocialData).filter(
     ([k, v]) => typeof v === 'string' && v.trim()
   );
 
-  /* ------------------------------------------------------------------
+  /* ----------------------------------------------------------------
      Render
-  ------------------------------------------------------------------*/
+  ----------------------------------------------------------------*/
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -457,13 +440,13 @@ export default function ProfileCard({ data = {} }) {
           </p>
         )}
 
-        {/* EFP Followers (only if > 0, otherwise hidden or show "0") */}
+        {/* EFP followers line (only if > 0) */}
         {followersCount !== null && followersCount > 0 && (
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
             {followersCount} Follower{followersCount === 1 ? '' : 's'}
           </p>
         )}
-
+        
         {/* Bio */}
         {editing ? (
           <textarea
@@ -485,10 +468,10 @@ export default function ProfileCard({ data = {} }) {
           )
         )}
 
-        {/* Socials & Tag */}
+        {/* Socials (DB-based + EFP-based) */}
         <div className="mt-6">
           {editing ? (
-            // DB-based fields in editing mode
+            /* Edit mode => DB fields only (EFP is read-only, so we skip them) */
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
               <input
                 placeholder="Twitter handle"
@@ -516,11 +499,10 @@ export default function ProfileCard({ data = {} }) {
                 <option value="">Select a Tag</option>
                 <option value="Active Builder">Active Builder</option>
                 <option value="Looking for Work">Looking for Work</option>
-                {/* etc. or your old TAG_OPTIONS array */}
               </select>
             </div>
           ) : (
-            // View mode
+            /* View mode => show DB-based fields + EFP-based data */
             <div className="flex flex-col gap-2 items-center justify-center mt-2">
               {/* DB-based fields */}
               <div className="flex flex-wrap gap-3 justify-center">
@@ -560,13 +542,10 @@ export default function ProfileCard({ data = {} }) {
                 )}
               </div>
 
-              {/* EFP-based social data 
-                  e.g. { twitter: "somehandle", farcaster: "farc", github: "somegit", ... }
-                  Omit or keep duplicates as you prefer
-              */}
-              <div className="flex flex-wrap gap-3 justify-center mt-2">
-                {Object.entries(efpSocialData)
-                  .map(([platform, handle]) => {
+              {/* EFP-based data => read-only icons/links */}
+              {efpSocialData && (
+                <div className="flex flex-wrap gap-3 justify-center mt-2">
+                  {Object.entries(efpSocialData).map(([platform, handle]) => {
                     if (!handle || typeof handle !== 'string' || !handle.trim()) return null;
                     return (
                       <DisplaySocial
@@ -576,7 +555,8 @@ export default function ProfileCard({ data = {} }) {
                       />
                     );
                   })}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -762,7 +742,7 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* OpenSea link if we have an address */}
+        {/* OpenSea link if address is present */}
         {address && (
           <div className="mt-6 text-center">
             <a
@@ -776,7 +756,7 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Edit / Save / Cancel if user is owner */}
+        {/* Edit / Save / Cancel (if user is owner) */}
         {isOwner && (
           <div className="mt-8 flex justify-center gap-3">
             {editing ? (
