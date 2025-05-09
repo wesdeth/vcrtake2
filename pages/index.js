@@ -12,18 +12,20 @@ export default function Home() {
   // For user input (ENS or 0x wallet)
   const [input, setInput] = useState('');
 
-  // Floating profiles
+  // Floating profiles data
   const [floatingProfiles, setFloatingProfiles] = useState([]);
   // 5-card rotation
   const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2, 3, 4]);
   const [fade, setFade] = useState(true);
   const timerRef = useRef(null);
 
-  // Badge count
+  // Badge count for “onchain resumes created”
   const [resumeCount, setResumeCount] = useState(12380);
 
-  /** ----------------------------------------------
-   * 1) Randomly Increase Badge Count 1x per 24hrs
+  /**
+   * ----------------------------------------------------------------
+   * 1) Randomly Increase Badge Count once every 24hrs (localStorage)
+   * ----------------------------------------------------------------
    */
   useEffect(() => {
     const storageKey = 'resumeCountData';
@@ -36,11 +38,9 @@ export default function Home() {
       const { count, lastUpdate } = parsed;
 
       if (now - lastUpdate > oneDay) {
-        // 5–10 increment
-        const randomIncrement = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
+        const randomIncrement = Math.floor(Math.random() * (10 - 5 + 1)) + 5; // 5-10
         const newCount = count + randomIncrement;
         setResumeCount(newCount);
-
         localStorage.setItem(
           storageKey,
           JSON.stringify({ count: newCount, lastUpdate: now })
@@ -49,7 +49,7 @@ export default function Home() {
         setResumeCount(parsed.count);
       }
     } else {
-      // initialize in localStorage
+      // initialize
       localStorage.setItem(
         storageKey,
         JSON.stringify({ count: 12380, lastUpdate: now })
@@ -57,8 +57,11 @@ export default function Home() {
     }
   }, []);
 
-  /** ----------------------------------------------
-   * 2) Fetch recent updates + POAP + ENS
+  /**
+   * ----------------------------------------------------------------
+   * 2) Fetch recent updates + POAP + ENS name
+   *    (Honors the `lookingForWork` boolean from the DB)
+   * ----------------------------------------------------------------
    */
   useEffect(() => {
     const fetchRecentUpdates = async () => {
@@ -67,12 +70,21 @@ export default function Home() {
         const data = await res.json();
         let updatedData = data || [];
 
+        // Enrich each profile
         const enrichedData = await Promise.all(
           updatedData.map(async (profile) => {
-            let hasPoaps = false;
+            // Some default tag logic
             let tagColor = 'text-[#635BFF]';
             let borderColor = 'border-[#A5B4FC]';
-            let tag = profile.tag || 'Active Builder';
+            let finalTag = profile.tag || 'Active Builder';
+
+            // Check if they are "Looking for Work" from DB
+            // (assuming your backend returns a boolean profile.lookingForWork)
+            if (profile.lookingForWork) {
+              finalTag = 'Looking for Work';
+              tagColor = 'text-[#FFC542]';
+              borderColor = 'border-[#FDE68A]';
+            }
 
             // POAP fetch
             try {
@@ -84,14 +96,14 @@ export default function Home() {
                   }
                 }
               );
-              hasPoaps = (poapRes.data || []).length > 0;
-              if (hasPoaps) {
-                tag = 'POAP Verified';
+              const hasPoaps = (poapRes.data || []).length > 0;
+              if (hasPoaps && !profile.lookingForWork) {
+                finalTag = 'POAP Verified';
                 tagColor = 'text-[#A259FF]';
                 borderColor = 'border-[#D8B4FE]';
               }
             } catch {
-              // fallback
+              // fallback to whatever finalTag was
             }
 
             // ENS name fetch
@@ -110,14 +122,14 @@ export default function Home() {
             return {
               ...profile,
               name: resolvedEns,
-              tag,
+              tag: finalTag,
               color: tagColor,
               border: borderColor
             };
           })
         );
 
-        // placeholders if no real data
+        // If we have <5 real profiles, fill with placeholders
         const placeholders = [
           {
             address: '0xPLACEHOLDER1',
@@ -161,20 +173,11 @@ export default function Home() {
           finalData = [...finalData, ...placeholders].slice(0, 5);
         }
 
-        // ensure at least one “Looking for Work”
-        const noneTagged = finalData.every((p) => p.tag !== 'Looking for Work');
-        if (finalData.length > 0 && noneTagged) {
-          const index = Math.floor(Math.random() * finalData.length);
-          finalData[index].tag = 'Looking for Work';
-          finalData[index].color = 'text-[#FFC542]';
-          finalData[index].border = 'border-[#FDE68A]';
-        }
-
         setFloatingProfiles(finalData);
       } catch (err) {
         console.error('Failed to fetch recent updates:', err);
 
-        // fallback to placeholders
+        // fallback: placeholders only
         setFloatingProfiles([
           {
             address: '0xPLACEHOLDER1',
@@ -218,8 +221,10 @@ export default function Home() {
     fetchRecentUpdates();
   }, []);
 
-  /** ----------------------------------------------
+  /**
+   * ----------------------------------------------------------------
    * 3) Rotate the "floating profiles" every 7s
+   * ----------------------------------------------------------------
    */
   useEffect(() => {
     if (!floatingProfiles.length) return;
@@ -250,8 +255,10 @@ export default function Home() {
     }, 7000);
   };
 
-  /** ----------------------------------------------
-   * 4) Form Handler
+  /**
+   * ----------------------------------------------------------------
+   * 4) Search Form Handler
+   * ----------------------------------------------------------------
    */
   const handleSearch = (e) => {
     e.preventDefault();
@@ -260,7 +267,7 @@ export default function Home() {
     }
   };
 
-  // current set of profiles to show
+  // current set of profiles in rotation
   const currentProfiles = currentIndexes
     .map((i) => floatingProfiles[i])
     .filter(Boolean);
@@ -289,7 +296,7 @@ export default function Home() {
         />
       </Head>
 
-      {/** MAIN WRAPPER */}
+      {/* MAIN WRAPPER */}
       <div
         className="
           min-h-screen 
@@ -302,7 +309,7 @@ export default function Home() {
           overflow-hidden
         "
       >
-        {/** Badge: # of onchain resumes */}
+        {/* Badge: # of onchain resumes */}
         <div
           className="
             absolute top-10 left-6 
@@ -318,7 +325,7 @@ export default function Home() {
           {resumeCount.toLocaleString()} onchain resumes created
         </div>
 
-        {/** FLOATING PROFILES */}
+        {/* FLOATING PROFILES */}
         <div
           className="
             absolute top-28 right-6
@@ -327,7 +334,6 @@ export default function Home() {
             hidden sm:block
             z-[9999]
             pointer-events-auto
-            /* remove overflow-hidden if it's clipping cards or interfering with clicks */
           "
           onMouseEnter={pauseRotation}
           onMouseLeave={resumeRotation}
@@ -369,7 +375,7 @@ export default function Home() {
           })}
         </div>
 
-        {/** HERO CONTENT */}
+        {/* HERO CONTENT */}
         <div className="flex flex-col items-center justify-center px-4 sm:px-6 py-16 z-10 relative">
           <div
             className="
@@ -407,7 +413,7 @@ export default function Home() {
               Enter your ENS or wallet to preview a Web3 resume.
             </p>
 
-            {/** Search Form */}
+            {/* Search Form */}
             <form
               onSubmit={handleSearch}
               className="flex flex-col sm:flex-row gap-3 justify-center mt-2"
@@ -453,7 +459,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/** FOOTER */}
+        {/* FOOTER */}
         <footer
           className="
             text-center 
