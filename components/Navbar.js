@@ -15,21 +15,48 @@ export default function Navbar() {
   ];
 
   return (
-    // Outer container with a vibrant rainbow gradient
-    <header className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-400 p-4 shadow-sm">
-      {/* Inner wrapper ensures content is centered, with optional max-width for bigger screens */}
-      <div className="max-w-7xl mx-auto">
-        {/* The "pill" nav bar itself: white background, subtle ring, rounded-full shape */}
-        <nav className="flex items-center justify-center gap-6 sm:gap-8 bg-white text-gray-800 px-8 py-3 rounded-full ring-1 ring-white/40 shadow-xl font-semibold">
+    <header
+      className="
+        sticky top-0 z-50 
+        w-full 
+        bg-white/50 
+        dark:bg-gray-900/30 
+        backdrop-blur-sm 
+        shadow-sm
+      "
+    >
+      <div className="max-w-7xl mx-auto py-4 px-4">
+        {/* Center the nav with a “pill” shape */}
+        <nav
+          className="
+            mx-auto 
+            flex items-center justify-center 
+            gap-8
+            px-6 py-2 
+            rounded-full 
+            border border-gray-200 dark:border-gray-700 
+            bg-white dark:bg-gray-800 
+            text-gray-700 dark:text-gray-300
+            font-semibold 
+            shadow-md
+          "
+        >
           {navItems.map(({ label, href }) => {
             const isActive = router.pathname === href;
             return (
               <Link key={href} href={href}>
                 <span
-                  className={`cursor-pointer transition-all duration-200 ease-in-out transform hover:scale-110 hover:text-purple-600 px-2 sm:px-3
+                  className={`
+                    relative 
+                    cursor-pointer 
+                    px-3 py-1 
+                    rounded 
+                    transition-all duration-200 
+                    hover:scale-105
+                    hover:text-indigo-600 dark:hover:text-indigo-400
                     ${
                       isActive
-                        ? 'text-purple-600 underline decoration-2 underline-offset-4 scale-105'
+                        ? 'text-indigo-600 dark:text-indigo-400 font-bold underline decoration-2'
                         : ''
                     }
                   `}
