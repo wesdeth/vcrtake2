@@ -26,19 +26,16 @@ import axios from 'axios';
 
    Displays / edits a user's profile:
      - Name, Address, Avatar, Bio
-     - Social Links (Twitter, Warpcast, Website) from:
-       1) DB fields
-       2) ENS text records (com.twitter, io.farcaster, url) if name ends with .eth
+     - Social Links (Twitter, Warpcast, Website)
+       (fetched from DB, optionally overridden by ENS text records)
      - "Looking for Work" checkbox
      - Work Experience
      - POAPs
      - NFTs
-     - EFP Followers fetch
+     - EFP Followers fetch w/ fallback (ens => address)
 
    Usage:
      <ProfileCard data={profileData} />
-
-   Make sure your /api/save-profile supports any new fields (like lookingForWork).
 ------------------------------------------------------------------------------------------------*/
 
 /* ------------------------------------------------------------------
@@ -58,7 +55,7 @@ const parseDate = (d) => {
   return Number.isNaN(p) ? null : new Date(p);
 };
 
-/** Format a date range with optional "current" check, e.g. "May 2023 – Present". */
+/** Format a date range, e.g. "May 2023 – Present" if current is true. */
 const formatRange = (s, e, current) => {
   if (!s) return '';
   const start = parseDate(s)?.toLocaleDateString(undefined, {
@@ -110,7 +107,7 @@ const TAG_OPTIONS = [
   'Founder / Co-Founder'
 ];
 
-/** Renders a small social link with an icon. */
+/** Small social link with icon. */
 function SocialLink({ href, icon: Icon, label }) {
   if (!href) return null;
   return (
@@ -130,14 +127,13 @@ function SocialLink({ href, icon: Icon, label }) {
    Main ProfileCard Component
 -------------------------------------------------------------------*/
 export default function ProfileCard({ data = {} }) {
-  // Destructure fields from data
   const {
-    name,             // e.g. "brantly.eth"
+    name,             // e.g. "validator.eth"
     address,          // 0x address
     avatar,           // custom or fallback
     twitter,          // from DB
     website,          // from DB
-    warpcast,         // from DB (Farcaster handle)
+    warpcast,         // from DB (Farcaster)
     tag,              // e.g. "Active Builder"
     poaps = [],
     nfts = [],
@@ -148,7 +144,7 @@ export default function ProfileCard({ data = {} }) {
     ownsProfile = false
   } = data;
 
-  // Wagmi hook to see if connected user is the profile owner
+  // Wagmi hook
   const { address: connected } = useAccount();
   const isOwner =
     ownsProfile ||
@@ -162,13 +158,13 @@ export default function ProfileCard({ data = {} }) {
   const [editing, setEditing] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 
-  // "Looking for Work" local state for editing
+  // "Looking for Work"
   const [editLookingForWork, setEditLookingForWork] = useState(lookingForWork);
 
   // Avatar
   const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png');
 
-  // Social fields for editing (initially from DB, can be overridden by ENS if found)
+  // Social fields for editing
   const [editTwitter, setEditTwitter] = useState(twitter || '');
   const [editWebsite, setEditWebsite] = useState(website || '');
   const [editWarpcast, setEditWarpcast] = useState(warpcast || '');
@@ -188,6 +184,7 @@ export default function ProfileCard({ data = {} }) {
   /* ------------------------------------------------------------------
      Effects
   ------------------------------------------------------------------*/
+
   // 1) Fetch POAPs & fallback Avatar
   useEffect(() => {
     const fetchPoaps = async () => {
@@ -211,7 +208,7 @@ export default function ProfileCard({ data = {} }) {
         const img = r.data?.account?.profile_img_url || r.data?.profile_img_url;
         if (img) setUploadedAvatar(img);
       } catch {
-        // fallback already set
+        // fallback
       }
     };
 
@@ -219,27 +216,38 @@ export default function ProfileCard({ data = {} }) {
     fetchAvatar();
   }, [address, avatar]);
 
-  // 2) Possibly fetch ENS text records for social handles (com.twitter, io.farcaster, url)
-  //    Only do this if user has a .eth name. (We won't override if user already has DB values?)
-  //    For simplicity, we do override if we see an ENS record. Adjust logic if you prefer otherwise.
+  // 2) Possibly fetch ENS text records for social handles
+  //    We'll only override if the record is non-empty.
   useEffect(() => {
-    if (!name || !name.endsWith('.eth')) return;
-
     const fetchEnsRecords = async () => {
+      if (!name || !name.endsWith('.eth')) return;
+
       try {
-        const res = await axios.get(`https://api.ensideas.com/ens/resolve/${name.toLowerCase()}`);
+        const res = await axios.get(
+          `https://api.ensideas.com/ens/resolve/${name.toLowerCase()}`
+        );
         if (res.data?.records) {
           const { records } = res.data;
-          // If an ENS text record is found, let's override the local state
-          // If you prefer not to override if user has DB data, add checks
-          if (records['com.twitter']) {
+
+          // For com.twitter
+          if (
+            typeof records['com.twitter'] === 'string' &&
+            records['com.twitter'].trim() !== ''
+          ) {
             setEditTwitter(records['com.twitter']);
           }
-          if (records['io.farcaster']) {
+
+          // For io.farcaster (Farcaster handle)
+          if (
+            typeof records['io.farcaster'] === 'string' &&
+            records['io.farcaster'].trim() !== ''
+          ) {
             setEditWarpcast(records['io.farcaster']);
           }
-          if (records.url) {
-            setEditWebsite(records.url);
+
+          // For url
+          if (typeof records['url'] === 'string' && records['url'].trim() !== '') {
+            setEditWebsite(records['url']);
           }
         }
       } catch (err) {
@@ -250,35 +258,43 @@ export default function ProfileCard({ data = {} }) {
     fetchEnsRecords();
   }, [name]);
 
-  // 3) EFP (Ethereum Follow Protocol) fetch for followers
+  // 3) EFP fetch w/ fallback
   useEffect(() => {
     const fetchEfpFollowers = async () => {
-      try {
-        if (name && name.endsWith('.eth')) {
-          // If user’s .eth name, use ?ens=
-          const efpUrl = `https://api.ethfollow.xyz/api/v1/followers?ens=${name.toLowerCase()}`;
+      if (!address && !name) return;
+
+      // First try ?ens= if name ends with .eth
+      if (name && name.endsWith('.eth')) {
+        const efpUrl = `https://api.ethfollow.xyz/api/v1/followers?ens=${name.toLowerCase()}`;
+        try {
           const res = await axios.get(efpUrl);
           setFollowersCount(res.data?.count ?? 0);
-        } else if (address) {
-          // Fallback to ?address=
-          const efpUrl = `https://api.ethfollow.xyz/api/v1/followers?address=${address}`;
-          const res = await axios.get(efpUrl);
-          setFollowersCount(res.data?.count ?? 0);
+          return; // success, we can exit
+        } catch (err1) {
+          console.warn(`EFP by ENS failed for ${name}, trying address fallback...`);
         }
-      } catch (err) {
-        console.error('Failed fetching EFP followers', err);
-        setFollowersCount(0);
+      }
+
+      // If that fails or no .eth name, fallback to ?address
+      if (address) {
+        try {
+          const efpUrl2 = `https://api.ethfollow.xyz/api/v1/followers?address=${address}`;
+          const res2 = await axios.get(efpUrl2);
+          setFollowersCount(res2.data?.count ?? 0);
+        } catch (err2) {
+          console.error('EFP fallback by address also failed', err2);
+          setFollowersCount(0);
+        }
       }
     };
 
-    if (address || (name && name.endsWith('.eth'))) {
-      fetchEfpFollowers();
-    }
+    fetchEfpFollowers();
   }, [address, name]);
 
   /* ------------------------------------------------------------------
      Handlers
   ------------------------------------------------------------------*/
+
   const handleAvatarUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -325,14 +341,13 @@ export default function ProfileCard({ data = {} }) {
     }
   };
 
-  /** Update experience fields. */
+  // Work experience handlers
   const updateExp = (i, field, val) => {
     setEditExp((prev) =>
       prev.map((expItem, idx) => (idx === i ? { ...expItem, [field]: val } : expItem))
     );
   };
 
-  /** Toggle "currentlyWorking" checkbox for an experience item. */
   const toggleCurrent = (i) => {
     setEditExp((prev) =>
       prev.map((expItem, idx) => {
@@ -351,7 +366,15 @@ export default function ProfileCard({ data = {} }) {
   const addExp = () => {
     setEditExp((prev) => [
       ...prev,
-      { title: '', company: '', startDate: '', endDate: '', location: '', description: '', currentlyWorking: false }
+      {
+        title: '',
+        company: '',
+        startDate: '',
+        endDate: '',
+        location: '',
+        description: '',
+        currentlyWorking: false
+      }
     ]);
   };
 
@@ -438,7 +461,11 @@ export default function ProfileCard({ data = {} }) {
             value={editBio}
             onChange={(e) => setEditBio(e.target.value)}
             rows={4}
-            className="mt-4 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-sm placeholder-gray-400"
+            className="
+              mt-4 w-full bg-white dark:bg-gray-900 
+              border border-gray-200 dark:border-gray-700 
+              rounded-lg p-3 text-sm placeholder-gray-400
+            "
             placeholder="Add a short bio..."
           />
         ) : (
@@ -738,14 +765,19 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Edit / Save / Cancel buttons if user is owner */}
+        {/* Edit / Save / Cancel (if user is owner) */}
         {isOwner && (
           <div className="mt-8 flex justify-center gap-3">
             {editing ? (
               <>
                 <button
                   onClick={handleSave}
-                  className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+                  className="
+                    inline-flex items-center gap-1 px-4 py-2 
+                    bg-indigo-600 hover:bg-indigo-700 
+                    text-white text-sm font-medium 
+                    rounded-lg shadow-sm transition-colors
+                  "
                 >
                   <Save size={16} /> Save
                 </button>
@@ -761,7 +793,12 @@ export default function ProfileCard({ data = {} }) {
                     setEditWebsite(website || '');
                     setEditLookingForWork(lookingForWork);
                   }}
-                  className="inline-flex items-center gap-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg shadow-sm transition-colors"
+                  className="
+                    inline-flex items-center gap-1 px-4 py-2 
+                    bg-gray-300 hover:bg-gray-400 
+                    text-gray-800 text-sm font-medium 
+                    rounded-lg shadow-sm transition-colors
+                  "
                 >
                   <X size={16} /> Cancel
                 </button>
@@ -769,7 +806,12 @@ export default function ProfileCard({ data = {} }) {
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+                className="
+                  inline-flex items-center gap-1 px-4 py-2 
+                  bg-indigo-600 hover:bg-indigo-700 
+                  text-white text-sm font-medium 
+                  rounded-lg shadow-sm transition-colors
+                "
               >
                 <Edit size={16} /> Edit Profile
               </button>
