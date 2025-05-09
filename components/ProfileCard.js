@@ -1,11 +1,7 @@
 // components/ProfileCard.js
-
 import { useState, useEffect } from 'react';
 import {
   Copy,
-  Twitter,
-  Link as LinkIcon,
-  UserPlus2,
   ChevronDown,
   ChevronUp,
   Edit,
@@ -15,24 +11,20 @@ import {
   PlusCircle,
   Trash2,
   CheckCircle,
-  X,
-  Github,
-  MessageCircle
-} from 'lucide-react';
+  X
+} from 'lucide-react'; // using only a few Lucide icons
 import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import axios from 'axios';
 
 /* ------------------------------------------------------------------
    ProfileCard
-
-   - Calls EFP /users/[ensOrAddress]/details for “ens.records” + address
-   - Extracts social handles from records, e.g. "com.twitter" => "twitter"
-   - Also calls /followers?limit=9999&cache=fresh to get follower count
-   - DB fields (twitter, website, warpcast) remain editable if user is owner
+   - Fetches from EFP /details?cache=fresh => “ens.records”, “followers”
+   - DB fields for "twitter","warpcast","website" remain editable
+   - Renders social logos as round images that link out
 ------------------------------------------------------------------*/
 
-/** Shorten "0x1234...ABCD". */
+/** Shorten an address like "0x1234...ABCD". */
 function shortenAddress(addr = '') {
   return addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '';
 }
@@ -61,76 +53,90 @@ function formatRange(s, e, current) {
 }
 
 /**
- * Map simplified platform => (label, icon, prefix).
- * We'll do "twitter", "github", "discord", etc.
- * If we see "com.twitter" from EFP, we map it to "twitter" below.
+ * Social platform => brand image path + link prefix
+ * e.g. "x" => "/social-logos/x.png", prefix = "https://twitter.com/"
  */
-const SOCIAL_KEY_MAP = {
-  twitter: {
-    label: 'Twitter',
-    icon: Twitter,
+const SOCIAL_IMAGE_MAP = {
+  x: {
+    label: 'X (Twitter)',
+    image: '/social-logos/x.png',
     prefix: 'https://twitter.com/'
-  },
-  farcaster: {
-    label: 'Farcaster',
-    icon: UserPlus2,
-    prefix: 'https://warpcast.com/'
   },
   github: {
     label: 'GitHub',
-    icon: Github,
+    image: '/social-logos/github.png',
     prefix: 'https://github.com/'
   },
   discord: {
     label: 'Discord',
-    icon: MessageCircle,
-    prefix: null
+    image: '/social-logos/discord.png',
+    prefix: null // can't link
   },
   telegram: {
     label: 'Telegram',
-    icon: MessageCircle,
+    image: '/social-logos/telegram.png',
     prefix: 'https://t.me/'
   },
-  url: {
+  etherscan: {
+    label: 'Etherscan',
+    image: '/social-logos/etherscan.png',
+    prefix: 'https://etherscan.io/address/'
+  },
+  website: {
     label: 'Website',
-    icon: LinkIcon,
+    image: '/social-logos/link.png',
     prefix: ''
-  }
+  },
+  // etc...
 };
 
 /**
- * A small helper that shows a recognized platform with an icon + link or fallback text.
+ * Renders a circular social logo. If `prefix` is null, 
+ * we just show text. Otherwise we link out.
  */
-function DisplaySocial({ platform, handle }) {
-  const map = SOCIAL_KEY_MAP[platform];
-  if (!map) {
-    // fallback if we don't have a known key
+function RoundSocialLogo({ platform, handle }) {
+  const entry = SOCIAL_IMAGE_MAP[platform] || null;
+  if (!entry) {
+    // fallback: link.png
     return (
-      <div className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
-        <LinkIcon size={16} />
+      <div className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
+        <img
+          src="/social-logos/link.png"
+          alt={platform}
+          className="w-6 h-6 rounded-full object-cover"
+        />
         {platform}: {handle}
       </div>
     );
   }
-  const { label, icon: Icon, prefix } = map;
+
+  const { label, image, prefix } = entry;
   if (!prefix) {
-    // e.g. Discord => no direct link
+    // e.g. discord -> no direct link
     return (
-      <div className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
-        <Icon size={16} />
+      <div className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
+        <img
+          src={image}
+          alt={label}
+          className="w-6 h-6 rounded-full object-cover"
+        />
         {label}: {handle}
       </div>
     );
   } else {
-    // clickable link
+    // clickable
     return (
       <a
         href={prefix + handle.replace(/^@/, '')}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+        className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
       >
-        <Icon size={16} />
+        <img
+          src={image}
+          alt={label}
+          className="w-6 h-6 rounded-full object-cover"
+        />
         {label}
       </a>
     );
@@ -138,18 +144,24 @@ function DisplaySocial({ platform, handle }) {
 }
 
 /**
- * DB-based link for Twitter, Website, Warpcast.
+ * DB-based social link for editing (Twitter, Warpcast, Website).
+ * We'll also show them as round logos if you prefer,
+ * but let's keep them text links for now. 
  */
-function SocialLink({ href, icon: Icon, label }) {
+function DbSocialLink({ href, imageSrc, label }) {
   if (!href) return null;
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline transition-colors"
+      className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
     >
-      <Icon size={16} />
+      <img
+        src={imageSrc}
+        alt={label}
+        className="w-6 h-6 rounded-full object-cover"
+      />
       {label}
     </a>
   );
@@ -160,9 +172,9 @@ export default function ProfileCard({ data = {} }) {
     name,
     address,
     avatar,
-    twitter,     
-    website,     
-    warpcast,    
+    twitter,
+    website,
+    warpcast,
     tag,
     poaps = [],
     nfts = [],
@@ -173,13 +185,12 @@ export default function ProfileCard({ data = {} }) {
     ownsProfile = false
   } = data;
 
-  // wagmi
   const { address: connected } = useAccount();
   const isOwner =
     ownsProfile ||
     (connected && address && connected.toLowerCase() === address.toLowerCase());
 
-  /* -------------- state -------------- */
+  // local states
   const [showAllPoaps, setShowAllPoaps] = useState(false);
   const [poapData, setPoapData] = useState(poaps);
   const [editing, setEditing] = useState(false);
@@ -191,7 +202,7 @@ export default function ProfileCard({ data = {} }) {
   // avatar
   const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png');
 
-  // DB-based fields
+  // DB-based social fields
   const [editTwitter, setEditTwitter] = useState(twitter || '');
   const [editWebsite, setEditWebsite] = useState(website || '');
   const [editWarpcast, setEditWarpcast] = useState(warpcast || '');
@@ -201,11 +212,11 @@ export default function ProfileCard({ data = {} }) {
 
   // EFP data
   const [followersCount, setFollowersCount] = useState(null);
-  // We'll store EFP "records" as a { key -> value } for recognized social keys
   const [efpRecords, setEfpRecords] = useState({});
 
-  /* -------------- effects -------------- */
-
+  /* ----------------------------------------------------------------
+     Effects
+  ----------------------------------------------------------------*/
   // 1) POAP & fallback avatar
   useEffect(() => {
     if (!address) return;
@@ -213,16 +224,10 @@ export default function ProfileCard({ data = {} }) {
     // fetch POAP
     axios
       .get(`https://api.poap.tech/actions/scan/${address}`, {
-        headers: {
-          'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo'
-        }
+        headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' }
       })
-      .then((r) => {
-        setPoapData(r.data || []);
-      })
-      .catch(() => {
-        setPoapData([]);
-      });
+      .then((r) => setPoapData(r.data || []))
+      .catch(() => setPoapData([]));
 
     // fallback avatar from OpenSea
     if (!avatar) {
@@ -232,13 +237,11 @@ export default function ProfileCard({ data = {} }) {
           const img = r.data?.account?.profile_img_url || r.data?.profile_img_url;
           if (img) setUploadedAvatar(img);
         })
-        .catch(() => {
-          // fallback is default
-        });
+        .catch(() => {/* fallback */});
     }
   }, [address, avatar]);
 
-  // 2) EFP fetch using /details => gets "ens.records"
+  // 2) EFP /details => "ens.records", also /followers
   useEffect(() => {
     const fetchEfpDetails = async () => {
       let userKey = null;
@@ -250,43 +253,49 @@ export default function ProfileCard({ data = {} }) {
       if (!userKey) return;
 
       try {
-        // 1) get details (ens records + address, ranks, etc.)
-        const detailsRes = await axios.get(
+        // /details
+        const details = await axios.get(
           `https://api.ethfollow.xyz/api/v1/users/${userKey}/details?cache=fresh`
         );
-        console.log('🔹 EFP details for', userKey, detailsRes.data);
+        console.log('🔹 EFP details for', userKey, details.data);
 
-        // `ens.records` is where we find e.g. "com.twitter", "com.github"
-        const records = detailsRes.data?.ens?.records || {};
-
-        // We'll parse each "com.twitter" => "twitter", "com.github" => "github" ...
+        const records = details.data?.ens?.records || {};
+        // Map EFP keys to simpler ones: "com.twitter" => "x", "com.discord" => "discord"
+        // Also "org.telegram" => "telegram", "com.github" => "github", etc.
         const mapped = {};
-        for (const [k, v] of Object.entries(records)) {
-          if (typeof v !== 'string' || !v.trim()) continue;
-          // example k: "com.twitter", "com.github", "url", ...
-          // We'll try to parse out the final label
-          // e.g. "com.twitter" => "twitter", "com.github" => "github"
-          // remove leading "com." or "org." or "net." if it exists
-          let normKey = k.replace(/^com\./, '').replace(/^org\./, '').replace(/^net\./, '');
-          // or if it's "com.discord", normKey => "discord"
-          if (normKey === 'telegram') normKey = 'telegram';
-          // handle "url" => "url", "avatar" => skip, "description" => skip, etc.
-          // but let's keep "url" => "url"
-          if (normKey === 'avatar' || normKey === 'name' || normKey === 'description') {
-            // skip or handle differently
-            continue;
+        Object.entries(records).forEach(([k, v]) => {
+          if (typeof v !== 'string' || !v.trim()) return;
+          // e.g. k="com.twitter", we want => "x"
+          // or k="com.discord" => "discord"
+          // or k="org.telegram" => "telegram"
+          // or k="url" => "website"
+          // handle special cases
+          if (k === 'com.twitter') {
+            mapped['x'] = v; 
+          } else if (k === 'com.discord') {
+            mapped['discord'] = v;
+          } else if (k === 'org.telegram') {
+            mapped['telegram'] = v;
+          } else if (k === 'com.github') {
+            mapped['github'] = v;
+          } else if (k === 'url') {
+            mapped['website'] = v;
+          } else if (k === 'avatar' || k === 'description') {
+            // skip
+          } else {
+            // fallback key e.g. "com.???" => remove "com."
+            let norm = k.replace(/^com\./, '').replace(/^org\./, '');
+            mapped[norm] = v;
           }
-          mapped[normKey.toLowerCase()] = v;
-        }
-
+        });
         setEfpRecords(mapped);
 
-        // 2) get followers
-        const followersRes = await axios.get(
+        // /followers
+        const foll = await axios.get(
           `https://api.ethfollow.xyz/api/v1/users/${userKey}/followers?limit=9999&cache=fresh`
         );
-        console.log('🔹 EFP followers for', userKey, followersRes.data);
-        const arr = followersRes.data?.followers || [];
+        console.log('🔹 EFP followers for', userKey, foll.data);
+        const arr = foll.data?.followers || [];
         setFollowersCount(arr.length);
       } catch (err) {
         console.warn('❌ EFP fetch error', err);
@@ -297,8 +306,10 @@ export default function ProfileCard({ data = {} }) {
     fetchEfpDetails();
   }, [name, address]);
 
-  /* -------------- handlers -------------- */
-
+  /* ----------------------------------------------------------------
+     Handlers
+  ----------------------------------------------------------------*/
+  // handleAvatarUpload
   const handleAvatarUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -307,6 +318,7 @@ export default function ProfileCard({ data = {} }) {
     reader.readAsDataURL(file);
   };
 
+  // handleSave -> DB
   const handleSave = async () => {
     try {
       const res = await fetch('/api/save-profile', {
@@ -344,7 +356,7 @@ export default function ProfileCard({ data = {} }) {
     }
   };
 
-  // Experience
+  // Experience editing
   const updateExp = (i, field, val) => {
     setEditExp((prev) =>
       prev.map((expItem, idx) => (idx === i ? { ...expItem, [field]: val } : expItem))
@@ -374,7 +386,9 @@ export default function ProfileCard({ data = {} }) {
     setEditExp((prev) => prev.filter((_, idx) => idx !== i));
   };
 
-  /* -------------- derived -------------- */
+  /* ----------------------------------------------------------------
+     Derived
+  ----------------------------------------------------------------*/
   const poapsToShow = Array.isArray(poapData)
     ? showAllPoaps
       ? poapData
@@ -382,10 +396,12 @@ export default function ProfileCard({ data = {} }) {
     : [];
   const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : [];
 
-  // turn efpRecords { "twitter": "...", "github": "...", "discord": "..."} into an array
+  // Convert EFP records => array of [platform, handle]
   const efpSocialEntries = Object.entries(efpRecords).filter(([_, v]) => v && v.trim());
 
-  /* -------------- render -------------- */
+  /* ----------------------------------------------------------------
+     Render
+  ----------------------------------------------------------------*/
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -401,6 +417,7 @@ export default function ProfileCard({ data = {} }) {
       <div className="absolute inset-0 opacity-40 animate-pulse-slow pointer-events-none" />
 
       <div className="relative z-10 p-10 sm:p-12 text-center backdrop-blur-xl">
+        
         {/* Avatar */}
         <div className="relative w-36 h-36 mx-auto -mt-16 mb-4">
           <img
@@ -428,7 +445,8 @@ export default function ProfileCard({ data = {} }) {
             title="Copy address"
             onClick={() => navigator.clipboard.writeText(address)}
           >
-            {shortenAddress(address)} <Copy size={12} />
+            {shortenAddress(address)}
+            <Copy size={12} />
           </p>
         )}
 
@@ -445,11 +463,7 @@ export default function ProfileCard({ data = {} }) {
             value={editBio}
             onChange={(e) => setEditBio(e.target.value)}
             rows={4}
-            className="
-              mt-4 w-full bg-white dark:bg-gray-900 
-              border border-gray-200 dark:border-gray-700 
-              rounded-lg p-3 text-sm placeholder-gray-400
-            "
+            className="mt-4 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-sm placeholder-gray-400"
             placeholder="Add a short bio..."
           />
         ) : (
@@ -463,7 +477,7 @@ export default function ProfileCard({ data = {} }) {
         {/* Socials */}
         <div className="mt-6">
           {editing ? (
-            /* DB fields only if editing */
+            /* If editing, show DB fields only */
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
               <input
                 placeholder="Twitter handle"
@@ -494,39 +508,38 @@ export default function ProfileCard({ data = {} }) {
               </select>
             </div>
           ) : (
-            /* View mode => DB fields + EFP records */
+            /* View mode => DB-based + EFP records as round logos */
             <div className="flex flex-col gap-2 items-center justify-center mt-2">
-              {/* DB-based */}
+              {/* DB-based fields as round logos if you want */}
               <div className="flex flex-wrap gap-3 justify-center">
-                <SocialLink
-                  href={
-                    editTwitter
-                      ? `https://twitter.com/${editTwitter.replace(/^@/, '')}`
-                      : null
-                  }
-                  icon={Twitter}
-                  label="Twitter"
-                />
-                <SocialLink
-                  href={
-                    editWarpcast
-                      ? `https://warpcast.com/${editWarpcast.replace(/^@/, '')}`
-                      : null
-                  }
-                  icon={UserPlus2}
-                  label="Warpcast"
-                />
-                <SocialLink
-                  href={
-                    editWebsite
-                      ? editWebsite.startsWith('http')
+                {/* For "X" (Twitter) */}
+                {editTwitter && (
+                  <RoundSocialLogo
+                    platform="x"
+                    handle={editTwitter.replace(/^@/, '')}
+                  />
+                )}
+
+                {/* Warpcast => treat as "farcaster"? */}
+                {editWarpcast && (
+                  <RoundSocialLogo
+                    platform="farcaster"
+                    handle={editWarpcast.replace(/^@/, '')}
+                  />
+                )}
+
+                {/* Website => treat as "website" */}
+                {editWebsite && (
+                  <RoundSocialLogo
+                    platform="website"
+                    handle={
+                      editWebsite.startsWith('http')
                         ? editWebsite
                         : `https://${editWebsite}`
-                      : null
-                  }
-                  icon={LinkIcon}
-                  label="Website"
-                />
+                    }
+                  />
+                )}
+
                 {editTag && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-800/20 dark:text-indigo-200">
                     {editTag}
@@ -535,11 +548,13 @@ export default function ProfileCard({ data = {} }) {
               </div>
 
               {/* EFP-based => read-only */}
-              <div className="flex flex-wrap gap-3 justify-center mt-2">
-                {efpSocialEntries.map(([key, val]) => (
-                  <DisplaySocial key={key} platform={key} handle={val} />
-                ))}
-              </div>
+              {Object.entries(efpRecords).length > 0 && (
+                <div className="flex flex-wrap gap-3 justify-center mt-2">
+                  {Object.entries(efpRecords).map(([k, v]) => (
+                    <RoundSocialLogo key={k} platform={k} handle={v} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -725,7 +740,7 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* OpenSea link if address present */}
+        {/* OpenSea link if address is present */}
         {address && (
           <div className="mt-6 text-center">
             <a
@@ -739,25 +754,20 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Action buttons (Edit / Save / Cancel) if user is owner */}
+        {/* Edit / Save / Cancel */}
         {isOwner && (
           <div className="mt-8 flex justify-center gap-3">
             {editing ? (
               <>
                 <button
                   onClick={handleSave}
-                  className="
-                    inline-flex items-center gap-1 px-4 py-2 
-                    bg-indigo-600 hover:bg-indigo-700 
-                    text-white text-sm font-medium 
-                    rounded-lg shadow-sm transition-colors
-                  "
+                  className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
                 >
                   <Save size={16} /> Save
                 </button>
                 <button
                   onClick={() => {
-                    // revert changes
+                    // revert
                     setEditing(false);
                     setEditBio(bio || ensBio);
                     setEditExp(workExperience);
@@ -767,12 +777,7 @@ export default function ProfileCard({ data = {} }) {
                     setEditWebsite(website || '');
                     setEditLookingForWork(lookingForWork);
                   }}
-                  className="
-                    inline-flex items-center gap-1 px-4 py-2 
-                    bg-gray-300 hover:bg-gray-400 
-                    text-gray-800 text-sm font-medium 
-                    rounded-lg shadow-sm transition-colors
-                  "
+                  className="inline-flex items-center gap-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg shadow-sm transition-colors"
                 >
                   <X size={16} /> Cancel
                 </button>
@@ -780,12 +785,7 @@ export default function ProfileCard({ data = {} }) {
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                className="
-                  inline-flex items-center gap-1 px-4 py-2 
-                  bg-indigo-600 hover:bg-indigo-700 
-                  text-white text-sm font-medium 
-                  rounded-lg shadow-sm transition-colors
-                "
+                className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
               >
                 <Edit size={16} /> Edit Profile
               </button>
@@ -793,7 +793,6 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Save confirmation */}
         {justSaved && (
           <div className="mt-4 flex justify-center items-center text-green-600 text-sm">
             <CheckCircle size={16} className="mr-1" /> Profile saved!
