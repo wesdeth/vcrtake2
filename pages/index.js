@@ -1,7 +1,7 @@
 // pages/index.js
 
 import Head from 'next/head';
-import Link from 'next/link';     // <--- IMPORTANT: import Link from next/link
+import Link from 'next/link'; // <-- IMPORTANT
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
@@ -14,7 +14,8 @@ export default function Home() {
 
   // Floating profiles data
   const [floatingProfiles, setFloatingProfiles] = useState([]);
-  const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2, 3, 4]);  // 5-card rotation
+  // 5-card rotation
+  const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2, 3, 4]); 
   const [fade, setFade] = useState(true);
   const timerRef = useRef(null);
 
@@ -34,7 +35,7 @@ export default function Home() {
       const parsed = JSON.parse(stored);
       const { count, lastUpdate } = parsed;
 
-      // If it’s been more than 24 hrs, increment by 5–10
+      // If >24 hrs, increment by 5–10
       if (now - lastUpdate > oneDay) {
         const randomIncrement = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
         const newCount = count + randomIncrement;
@@ -48,7 +49,7 @@ export default function Home() {
         setResumeCount(count);
       }
     } else {
-      // Nothing in localStorage, store initial
+      // Store initial
       localStorage.setItem(
         storageKey,
         JSON.stringify({ count: 12380, lastUpdate: now })
@@ -117,7 +118,7 @@ export default function Home() {
           })
         );
 
-        // 5 placeholders in case no real data
+        // 5 placeholders if no real data
         const placeholders = [
           {
             address: '0xPLACEHOLDER1',
@@ -156,13 +157,12 @@ export default function Home() {
           }
         ];
 
-        // Ensure at least 5 items
         let finalData = enrichedData;
         if (finalData.length < 5) {
           finalData = [...finalData, ...placeholders].slice(0, 5);
         }
 
-        // Ensure at least one “Looking for Work”
+        // Ensure at least 1 “Looking for Work”
         const noneTagged = finalData.every((p) => p.tag !== 'Looking for Work');
         if (finalData.length > 0 && noneTagged) {
           const index = Math.floor(Math.random() * finalData.length);
@@ -174,7 +174,8 @@ export default function Home() {
         setFloatingProfiles(finalData);
       } catch (err) {
         console.error('Failed to fetch recent updates:', err);
-        // If fetch fails, just show placeholders
+
+        // If fetch fails, placeholders only
         setFloatingProfiles([
           {
             address: '0xPLACEHOLDER1',
@@ -227,7 +228,6 @@ export default function Home() {
     timerRef.current = setInterval(() => {
       setFade(false);
       setTimeout(() => {
-        // shift indexes by 5
         setCurrentIndexes((prev) =>
           prev.map((i) => (i + 5) % floatingProfiles.length)
         );
@@ -327,14 +327,14 @@ export default function Home() {
           onMouseLeave={resumeRotation}
         >
           {currentProfiles.map((profile, index) => {
-            const gotoSlug = profile.name && profile.name.trim() 
-              ? profile.name 
-              : profile.address;
+            // If no valid name, fallback to address
+            const gotoSlug = profile.name?.trim() ? profile.name : profile.address;
 
             return (
-              <Link key={index} href={`/preview/${gotoSlug}`}>
-                <div
+              <Link key={index} href={`/preview/${gotoSlug}`} passHref>
+                <a
                   className={`
+                    block
                     cursor-pointer
                     w-44
                     bg-white/80
@@ -357,7 +357,7 @@ export default function Home() {
                     {profile.name}
                   </p>
                   <p className={`text-xs ${profile.color}`}>{profile.tag}</p>
-                </div>
+                </a>
               </Link>
             );
           })}
