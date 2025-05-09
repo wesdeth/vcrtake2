@@ -13,17 +13,16 @@ export default function Home() {
 
   // Floating profiles data
   const [floatingProfiles, setFloatingProfiles] = useState([]);
-  // Now track 5 indexes instead of 3
-  const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2, 3, 4]);
+  const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2, 3, 4]); // 5 cards
   const [fade, setFade] = useState(true);
   const timerRef = useRef(null);
 
   // Badge count for “onchain resumes created”
   const [resumeCount, setResumeCount] = useState(12380);
 
-  /* ------------------------------------------------------------------
-   *  1) Randomly Increase Badge Count in localStorage once every 24hrs
-   * ------------------------------------------------------------------*/
+  /*
+    1) Randomly Increase Badge Count in localStorage once every 24hrs
+  */
   useEffect(() => {
     const storageKey = 'resumeCountData';
     const now = Date.now();
@@ -34,22 +33,15 @@ export default function Home() {
       const parsed = JSON.parse(stored);
       const { count, lastUpdate } = parsed;
 
-      // If it's been more than 24 hrs, increment by 5–10
       if (now - lastUpdate > oneDay) {
-        const randomIncrement = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
+        const randomIncrement = Math.floor(Math.random() * 6) + 5; // 5–10
         const newCount = count + randomIncrement;
         setResumeCount(newCount);
-
-        localStorage.setItem(
-          storageKey,
-          JSON.stringify({ count: newCount, lastUpdate: now })
-        );
+        localStorage.setItem(storageKey, JSON.stringify({ count: newCount, lastUpdate: now }));
       } else {
-        // Not yet 24 hours; use the stored value
-        setResumeCount(count);
+        setResumeCount(parsed.count);
       }
     } else {
-      // Nothing in localStorage, store initial
       localStorage.setItem(
         storageKey,
         JSON.stringify({ count: 12380, lastUpdate: now })
@@ -57,15 +49,14 @@ export default function Home() {
     }
   }, []);
 
-  /* ------------------------------------------------------------------
-   *  2) Fetch recent updates & also fetch POAP data + ENS name
-   * ------------------------------------------------------------------*/
+  /*
+    2) Fetch recent updates & also fetch POAP data + ENS name
+  */
   useEffect(() => {
     const fetchRecentUpdates = async () => {
       try {
         const res = await fetch('/api/recent-updates?limit=15');
         const data = await res.json();
-
         let updatedData = data || [];
 
         const enrichedData = await Promise.all(
@@ -91,22 +82,16 @@ export default function Home() {
                 tagColor = 'text-[#A259FF]';
                 borderColor = 'border-[#D8B4FE]';
               }
-            } catch {
-              // fallback
-            }
+            } catch {/* fallback */}
 
             // Fetch ENS
             let resolvedEns = profile.name; 
             try {
-              const ensRes = await axios.get(
-                `https://api.ensideas.com/ens/resolve/${profile.address}`
-              );
+              const ensRes = await axios.get(`https://api.ensideas.com/ens/resolve/${profile.address}`);
               if (ensRes.data?.name) {
                 resolvedEns = ensRes.data.name;
               }
-            } catch {
-              // fallback
-            }
+            } catch {/* fallback */}
 
             return {
               ...profile,
@@ -118,48 +103,18 @@ export default function Home() {
           })
         );
 
-        // 5 placeholders (instead of 3)
+        // 5 placeholders
         const placeholders = [
-          {
-            address: '0xPLACEHOLDER1',
-            name: 'validator.eth',
-            tag: 'Active Builder',
-            color: 'text-[#635BFF]',
-            border: 'border-[#A5B4FC]'
-          },
-          {
-            address: '0xPLACEHOLDER2',
-            name: 'evanmoyer.eth',
-            tag: 'Active Builder',
-            color: 'text-[#635BFF]',
-            border: 'border-[#A5B4FC]'
-          },
-          {
-            address: '0xPLACEHOLDER3',
-            name: 'brantly.eth',
-            tag: 'Active Builder',
-            color: 'text-[#635BFF]',
-            border: 'border-[#A5B4FC]'
-          },
-          {
-            address: '0xPLACEHOLDER4',
-            name: 'dragonmaster.eth',
-            tag: 'Active Builder',
-            color: 'text-[#635BFF]',
-            border: 'border-[#A5B4FC]'
-          },
-          {
-            address: '0xPLACEHOLDER5',
-            name: 'rainbowlover.eth',
-            tag: 'Active Builder',
-            color: 'text-[#635BFF]',
-            border: 'border-[#A5B4FC]'
-          }
+          { address: '0xPLACEHOLDER1', name: 'validator.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
+          { address: '0xPLACEHOLDER2', name: 'evanmoyer.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
+          { address: '0xPLACEHOLDER3', name: 'brantly.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
+          { address: '0xPLACEHOLDER4', name: 'dragonmaster.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
+          { address: '0xPLACEHOLDER5', name: 'rainbowlover.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' }
         ];
 
         let finalData = enrichedData;
 
-        // Ensure at least 5 items in rotation
+        // Ensure at least 5 items
         if (finalData.length < 5) {
           finalData = [...finalData, ...placeholders].slice(0, 5);
         }
@@ -179,41 +134,11 @@ export default function Home() {
 
         // If fetch fails, show 5 placeholders
         setFloatingProfiles([
-          {
-            address: '0xPLACEHOLDER1',
-            name: 'validator.eth',
-            tag: 'Active Builder',
-            color: 'text-[#635BFF]',
-            border: 'border-[#A5B4FC]'
-          },
-          {
-            address: '0xPLACEHOLDER2',
-            name: 'evanmoyer.eth',
-            tag: 'Active Builder',
-            color: 'text-[#635BFF]',
-            border: 'border-[#A5B4FC]'
-          },
-          {
-            address: '0xPLACEHOLDER3',
-            name: 'brantly.eth',
-            tag: 'Active Builder',
-            color: 'text-[#635BFF]',
-            border: 'border-[#A5B4FC]'
-          },
-          {
-            address: '0xPLACEHOLDER4',
-            name: 'dragonmaster.eth',
-            tag: 'Active Builder',
-            color: 'text-[#635BFF]',
-            border: 'border-[#A5B4FC]'
-          },
-          {
-            address: '0xPLACEHOLDER5',
-            name: 'rainbowlover.eth',
-            tag: 'Active Builder',
-            color: 'text-[#635BFF]',
-            border: 'border-[#A5B4FC]'
-          }
+          { address: '0xPLACEHOLDER1', name: 'validator.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
+          { address: '0xPLACEHOLDER2', name: 'evanmoyer.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
+          { address: '0xPLACEHOLDER3', name: 'brantly.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
+          { address: '0xPLACEHOLDER4', name: 'dragonmaster.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
+          { address: '0xPLACEHOLDER5', name: 'rainbowlover.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' }
         ]);
       }
     };
@@ -221,17 +146,17 @@ export default function Home() {
     fetchRecentUpdates();
   }, []);
 
-  /* ------------------------------------------------------------------
-   *  3) Rotate the "floating profiles" every 7 seconds
-   * ------------------------------------------------------------------*/
+  /*
+    3) Rotate the "floating profiles" every 7 seconds
+  */
   useEffect(() => {
     if (!floatingProfiles.length) return;
 
     timerRef.current = setInterval(() => {
       setFade(false);
       setTimeout(() => {
-        // Now add 5 instead of 3
         setCurrentIndexes((prev) =>
+          // shift by 5
           prev.map((i) => (i + 5) % floatingProfiles.length)
         );
         setFade(true);
@@ -246,17 +171,15 @@ export default function Home() {
     timerRef.current = setInterval(() => {
       setFade(false);
       setTimeout(() => {
-        setCurrentIndexes((prev) =>
-          prev.map((i) => (i + 5) % floatingProfiles.length)
-        );
+        setCurrentIndexes((prev) => prev.map((i) => (i + 5) % floatingProfiles.length));
         setFade(true);
       }, 400);
     }, 7000);
   };
 
-  /* ------------------------------------------------------------------
-   *  4) Form Handler
-   * ------------------------------------------------------------------*/
+  /*
+    4) Form Handler
+  */
   const handleSearch = (e) => {
     e.preventDefault();
     if (input.endsWith('.eth') || input.startsWith('0x')) {
@@ -269,36 +192,14 @@ export default function Home() {
     .map((i) => floatingProfiles[i])
     .filter(Boolean);
 
-  /* 
-   * =======================
-   * Render the home page
-   * =======================
-   */
   return (
     <>
       <Head>
         <title>Verified Chain Resume</title>
-        <meta
-          name="description"
-          content="Web3 resumes powered by ENS, POAPs, and DAOs."
-        />
-        <meta property="og:title" content="Verified Chain Resume" />
-        <meta
-          property="og:description"
-          content="Build your onchain identity into a polished Web3 resume."
-        />
-        <meta property="og:image" content="/social-preview.png" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:image" content="/social-preview.png" />
-        <meta name="twitter:title" content="Verified Chain Resume" />
-        <link rel="icon" href="/favicon.ico" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap"
-          rel="stylesheet"
-        />
+        {/* ... meta tags ... */}
       </Head>
 
-      {/* Main container: subtle gradient background */}
+      {/* Main container */}
       <div
         className="
           min-h-screen 
@@ -311,10 +212,7 @@ export default function Home() {
           overflow-hidden
         "
       >
-        {/*
-          Floating Badge (top-left), increments daily 
-          to show the updated 'resumeCount'
-        */}
+        {/* Top-left Badge */}
         <div
           className="
             absolute top-10 left-6 
@@ -330,9 +228,7 @@ export default function Home() {
           {resumeCount.toLocaleString()} onchain resumes created
         </div>
 
-        {/*
-          Floating profile cards on the right
-        */}
+        {/* Floating profile cards on the right */}
         <div
           className="
             absolute top-28 right-6
@@ -345,41 +241,47 @@ export default function Home() {
           onMouseEnter={pauseRotation}
           onMouseLeave={resumeRotation}
         >
-          {currentProfiles.map((profile, index) => (
-            <div
-              key={index}
-              onClick={() => router.push(`/preview/${profile.name}`)}
-              className={`
-                cursor-pointer 
-                w-44 
-                bg-white/80 
-                backdrop-blur-md 
-                border ${profile.border}
-                rounded-xl 
-                shadow-md 
-                hover:shadow-lg 
-                p-3 
-                transition-all 
-                duration-500 
-                ease-in-out 
-                transform 
-                hover:scale-105
-                ${fade ? 'opacity-100' : 'opacity-0'}
-              `}
-              style={{ transitionDelay: `${index * 150}ms` }}
-            >
-              <p className="font-semibold text-sm truncate text-black">
-                {profile.name}
-              </p>
-              <p className={`text-xs ${profile.color}`}>{profile.tag}</p>
-            </div>
-          ))}
+          {currentProfiles.map((profile, index) => {
+            // Fallback to address if no "name"
+            const gotoSlug = profile.name && profile.name !== ''
+              ? profile.name
+              : profile.address;
+
+            return (
+              <div
+                key={index}
+                onClick={() => router.push(`/preview/${gotoSlug}`)}
+                className={`
+                  cursor-pointer 
+                  w-44 
+                  bg-white/80 
+                  backdrop-blur-md 
+                  border ${profile.border}
+                  rounded-xl 
+                  shadow-md 
+                  hover:shadow-lg 
+                  p-3 
+                  transition-all 
+                  duration-500 
+                  ease-in-out 
+                  transform 
+                  hover:scale-105
+                  ${fade ? 'opacity-100' : 'opacity-0'}
+                `}
+                style={{ transitionDelay: `${index * 150}ms` }}
+              >
+                <p className="font-semibold text-sm truncate text-black">
+                  {profile.name}
+                </p>
+                <p className={`text-xs ${profile.color}`}>{profile.tag}</p>
+              </div>
+            );
+          })}
         </div>
 
-        {/*
-          Hero / Main content
-        */}
+        {/* Hero / Main content */}
         <div className="flex flex-col items-center justify-center px-4 sm:px-6 py-16 z-10 relative">
+          {/* ... the central "hero" box ... */}
           <div
             className="
               max-w-2xl w-full 
@@ -394,6 +296,7 @@ export default function Home() {
               text-[#1F2937]
             "
           >
+            {/* Heading */}
             <h1
               className="
                 text-4xl sm:text-5xl 
@@ -462,9 +365,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/*
-          Footer
-        */}
+        {/* Footer */}
         <footer
           className="
             text-center 
@@ -477,9 +378,7 @@ export default function Home() {
         >
           © {new Date().getFullYear()} Verified Chain Resume — Built with ❤️ for the Web3 community.
           <br />
-          <span className="text-[#6B7280]">
-            Created by wesd.eth
-          </span>
+          <span className="text-[#6B7280]">Created by wesd.eth</span>
         </footer>
       </div>
     </>
