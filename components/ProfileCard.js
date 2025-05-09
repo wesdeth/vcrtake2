@@ -212,21 +212,34 @@ export default function ProfileCard({ data = {} }) {
     fetchAvatar();
   }, [address, avatar]);
 
-  // EFP "Followers" fetch
-  useEffect(() => {
-    if (!address) return;
-    const fetchEfpFollowers = async () => {
-      try {
-        const res = await axios.get(`https://api.ethfollow.xyz/api/v1/followers?address=${address}`);
-        // Suppose the API returns { count: number, followers: [...] }
-        setFollowersCount(res.data?.count ?? 0);
-      } catch (err) {
-        console.error('Failed fetching EFP followers', err);
-        setFollowersCount(0);
+ // EFP fetch snippet, inside ProfileCard.js
+useEffect(() => {
+  const fetchEfpFollowers = async () => {
+    try {
+      let efpUrl;
+
+      // If the user’s `name` ends with .eth, we’ll fetch by `ens=` param.
+      if (name && name.endsWith('.eth')) {
+        efpUrl = `https://api.ethfollow.xyz/api/v1/followers?ens=${name.toLowerCase()}`;
+      } else if (address) {
+        // Otherwise, fall back to `address=`.
+        efpUrl = `https://api.ethfollow.xyz/api/v1/followers?address=${address}`;
+      } else {
+        // No name or address? Nothing to fetch
+        return;
       }
-    };
-    fetchEfpFollowers();
-  }, [address]);
+
+      const res = await axios.get(efpUrl);
+      // Suppose the API returns { count, followers: [...]}.
+      setFollowersCount(res.data?.count ?? 0);
+    } catch (err) {
+      console.error('Failed fetching EFP followers', err);
+      setFollowersCount(0);
+    }
+  };
+
+  fetchEfpFollowers();
+}, [address, name]);
 
   /* ------------------------------------------------------------------
      Handlers
