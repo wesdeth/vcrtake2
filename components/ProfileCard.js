@@ -1,5 +1,4 @@
 // components/ProfileCard.js
-
 import { useState, useEffect } from 'react';
 import {
   Copy,
@@ -15,47 +14,40 @@ import {
   PlusCircle,
   Trash2,
   CheckCircle,
-  X
-} from 'lucide-react';
+  X,
+  Github,
+  MessageCircle
+} from 'lucide-react'; // add any icons you need
 import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import axios from 'axios';
 
 /* -----------------------------------------------------------------------------------------------
-   ProfileCard Component
+   ProfileCard
 
-   Displays / edits a user's profile:
-     - Name, Address, Avatar, Bio
-     - Social Links (Twitter, Warpcast, Website)
-       (fetched from DB, optionally overridden by ENS text records)
-     - "Looking for Work" checkbox
-     - Work Experience
-     - POAPs
-     - NFTs
-     - EFP Followers fetch w/ fallback (ens => address)
-
-   Usage:
-     <ProfileCard data={profileData} />
+   - Pulls DB fields for Twitter, website, warpcast, etc.
+   - Also fetches all ENS text records for .eth names, merges them into "ensSocials".
+   - Shows expanded social links for known platforms.
+   - POAP & NFT display
+   - EFP (Ethereum Follow Protocol) fallback (ens => address)
 ------------------------------------------------------------------------------------------------*/
 
 /* ------------------------------------------------------------------
    Utility Helpers
 -------------------------------------------------------------------*/
 
-/** Shorten an Ethereum address for display, e.g. "0x1234...ABCD". */
-const shortenAddress = (addr = '') => {
-  if (!addr) return '';
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
-};
+/** Shorten an Ethereum address for display, e.g. "0x1234…ABCD". */
+const shortenAddress = (addr = '') =>
+  addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '';
 
-/** Parse a date string for "MM/DD/YYYY" or "YYYY-MM-DD", return Date or null. */
+/** Parse possible "MM/DD/YYYY" or "YYYY-MM-DD", returns Date or null. */
 const parseDate = (d) => {
   if (!d) return null;
   const p = Date.parse(d.replace(/\//g, '-'));
   return Number.isNaN(p) ? null : new Date(p);
 };
 
-/** Format a date range, e.g. "May 2023 – Present" if current is true. */
+/** Format "May 2023 – Present" for start/end, with a "current" check. */
 const formatRange = (s, e, current) => {
   if (!s) return '';
   const start = parseDate(s)?.toLocaleDateString(undefined, {
@@ -71,43 +63,83 @@ const formatRange = (s, e, current) => {
   return `${start} – ${end}`;
 };
 
-/** Tag options for editing. */
-const TAG_OPTIONS = [
-  'Front-End Developer',
-  'Back-End Developer',
-  'Full-Stack Engineer',
-  'Smart Contract Engineer',
-  'Solidity Auditor',
-  'Protocol Researcher',
-  'DevOps & Infra',
-  'Security Engineer',
-  'Product Manager',
-  'Designer / UX',
-  'Technical Writer',
-  'Growth Lead',
-  'Marketing Manager',
-  'Social Media Strategist',
-  'Community Manager',
-  'Developer Relations',
-  'DAO Governor',
-  'Governance Analyst',
-  'Tokenomics Designer',
-  'Partnerships Lead',
-  'Business Development',
-  'Support',
-  'Discord',
-  'Memecoins',
-  'Trader',
-  'Ecosystem',
-  'Legal',
-  'Protocol',
-  'CEO',
-  'COO',
-  'CFO',
-  'Founder / Co-Founder'
-];
+/** Known social record keys → (label, icon, prefix or null if we can't link). */
+const SOCIAL_KEY_MAP = {
+  'com.twitter': {
+    label: 'Twitter',
+    icon: Twitter,
+    prefix: 'https://twitter.com/'
+  },
+  'io.farcaster': {
+    label: 'Farcaster',
+    icon: UserPlus2,
+    prefix: 'https://warpcast.com/'
+  },
+  'com.github': {
+    label: 'GitHub',
+    icon: Github,
+    prefix: 'https://github.com/'
+  },
+  'com.discord': {
+    label: 'Discord',
+    icon: MessageCircle,
+    prefix: null // can't make a direct link
+  },
+  'com.telegram': {
+    label: 'Telegram',
+    icon: MessageCircle,
+    prefix: 'https://t.me/'
+  },
+  'url': {
+    label: 'Website',
+    icon: LinkIcon,
+    prefix: '' // direct link to the record itself
+  }
+};
 
-/** Small social link with icon. */
+/**
+ * Simple wrapper for a single social link
+ * If prefix is null, we show text. If prefix is non-empty, we build a link.
+ */
+function DisplaySocial({ recordKey, recordValue }) {
+  const mapping = SOCIAL_KEY_MAP[recordKey];
+  if (!mapping) {
+    // Unknown record, fallback
+    return (
+      <div className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
+        <LinkIcon size={16} />
+        {recordKey}: {recordValue}
+      </div>
+    );
+  }
+
+  const { label, icon: Icon, prefix } = mapping;
+
+  if (!prefix) {
+    // e.g. Discord "username#1234" can't be a link
+    return (
+      <div className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
+        <Icon size={16} />
+        {label}: {recordValue}
+      </div>
+    );
+  } else {
+    // clickable link
+    return (
+      <a
+        href={prefix + recordValue.replace(/^@/, '')}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+      >
+        <Icon size={16} />
+        {label}
+      </a>
+    );
+  }
+}
+
+/** A small link helper for the DB or fallback social link. */
 function SocialLink({ href, icon: Icon, label }) {
   if (!href) return null;
   return (
@@ -124,17 +156,17 @@ function SocialLink({ href, icon: Icon, label }) {
 }
 
 /* ------------------------------------------------------------------
-   Main ProfileCard Component
+   Main ProfileCard
 -------------------------------------------------------------------*/
 export default function ProfileCard({ data = {} }) {
   const {
-    name,             // e.g. "validator.eth"
-    address,          // 0x address
-    avatar,           // custom or fallback
-    twitter,          // from DB
-    website,          // from DB
-    warpcast,         // from DB (Farcaster)
-    tag,              // e.g. "Active Builder"
+    name,
+    address,
+    avatar,
+    twitter,
+    website,
+    warpcast,
+    tag,
     poaps = [],
     nfts = [],
     bio = '',
@@ -144,7 +176,7 @@ export default function ProfileCard({ data = {} }) {
     ownsProfile = false
   } = data;
 
-  // Wagmi hook
+  // Wagmi
   const { address: connected } = useAccount();
   const isOwner =
     ownsProfile ||
@@ -164,7 +196,7 @@ export default function ProfileCard({ data = {} }) {
   // Avatar
   const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png');
 
-  // Social fields for editing
+  // Social fields from DB ( fallback ), possibly overridden by ENS text records
   const [editTwitter, setEditTwitter] = useState(twitter || '');
   const [editWebsite, setEditWebsite] = useState(website || '');
   const [editWarpcast, setEditWarpcast] = useState(warpcast || '');
@@ -178,8 +210,12 @@ export default function ProfileCard({ data = {} }) {
   // Work Experience
   const [editExp, setEditExp] = useState(workExperience);
 
-  // EFP (Ethereum Follow Protocol) followers
+  // EFP
   const [followersCount, setFollowersCount] = useState(null);
+
+  // We'll store the full ENS record map here, so we can display all known keys.
+  // e.g. { 'com.twitter': '...', 'com.github': '...', 'com.discord': '...', url: '...' }
+  const [ensSocialRecords, setEnsSocialRecords] = useState({});
 
   /* ------------------------------------------------------------------
      Effects
@@ -216,66 +252,55 @@ export default function ProfileCard({ data = {} }) {
     fetchAvatar();
   }, [address, avatar]);
 
-  // 2) Possibly fetch ENS text records for social handles
-  //    We'll only override if the record is non-empty.
+  // 2) Fetch **all** ENS text records if name ends with .eth
+  //    We'll store them in `ensSocialRecords` to display everything.
+  //    We'll also optionally override DB fields if record is non-empty
   useEffect(() => {
     const fetchEnsRecords = async () => {
       if (!name || !name.endsWith('.eth')) return;
 
       try {
-        const res = await axios.get(
-          `https://api.ensideas.com/ens/resolve/${name.toLowerCase()}`
-        );
-        if (res.data?.records) {
-          const { records } = res.data;
+        const res = await axios.get(`https://api.ensideas.com/ens/resolve/${name.toLowerCase()}`);
+        const allRecords = res.data?.records || {};
+        // Store them for display
+        setEnsSocialRecords(allRecords);
 
-          // For com.twitter
-          if (
-            typeof records['com.twitter'] === 'string' &&
-            records['com.twitter'].trim() !== ''
-          ) {
-            setEditTwitter(records['com.twitter']);
-          }
-
-          // For io.farcaster (Farcaster handle)
-          if (
-            typeof records['io.farcaster'] === 'string' &&
-            records['io.farcaster'].trim() !== ''
-          ) {
-            setEditWarpcast(records['io.farcaster']);
-          }
-
-          // For url
-          if (typeof records['url'] === 'string' && records['url'].trim() !== '') {
-            setEditWebsite(records['url']);
-          }
+        // Optionally override DB fields if non-empty
+        if (allRecords['com.twitter']?.trim()) {
+          setEditTwitter(allRecords['com.twitter']);
+        }
+        if (allRecords['io.farcaster']?.trim()) {
+          setEditWarpcast(allRecords['io.farcaster']);
+        }
+        if (allRecords['url']?.trim()) {
+          setEditWebsite(allRecords['url']);
         }
       } catch (err) {
-        console.error('Failed to fetch ENS text records', err);
+        console.error('Failed to fetch full ENS text records', err);
       }
     };
 
     fetchEnsRecords();
   }, [name]);
 
-  // 3) EFP fetch w/ fallback
+  // 3) EFP fetch w/ fallback (ens => address)
   useEffect(() => {
     const fetchEfpFollowers = async () => {
-      if (!address && !name) return;
+      if (!address && (!name || !name.endsWith('.eth'))) return;
 
-      // First try ?ens= if name ends with .eth
+      // If .eth name, try EFP by ens first
       if (name && name.endsWith('.eth')) {
         const efpUrl = `https://api.ethfollow.xyz/api/v1/followers?ens=${name.toLowerCase()}`;
         try {
           const res = await axios.get(efpUrl);
           setFollowersCount(res.data?.count ?? 0);
-          return; // success, we can exit
+          return; // success
         } catch (err1) {
           console.warn(`EFP by ENS failed for ${name}, trying address fallback...`);
         }
       }
 
-      // If that fails or no .eth name, fallback to ?address
+      // fallback by address
       if (address) {
         try {
           const efpUrl2 = `https://api.ethfollow.xyz/api/v1/followers?address=${address}`;
@@ -294,7 +319,6 @@ export default function ProfileCard({ data = {} }) {
   /* ------------------------------------------------------------------
      Handlers
   ------------------------------------------------------------------*/
-
   const handleAvatarUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -328,7 +352,6 @@ export default function ProfileCard({ data = {} }) {
           }))
         })
       });
-
       if (!res.ok) {
         const errorMsg = (await res.json()).error || 'Unknown error';
         throw new Error(errorMsg);
@@ -341,7 +364,7 @@ export default function ProfileCard({ data = {} }) {
     }
   };
 
-  // Work experience handlers
+  // Work Experience
   const updateExp = (i, field, val) => {
     setEditExp((prev) =>
       prev.map((expItem, idx) => (idx === i ? { ...expItem, [field]: val } : expItem))
@@ -352,11 +375,11 @@ export default function ProfileCard({ data = {} }) {
     setEditExp((prev) =>
       prev.map((expItem, idx) => {
         if (idx === i) {
-          if (expItem.currentlyWorking) {
-            return { ...expItem, currentlyWorking: false };
-          } else {
-            return { ...expItem, currentlyWorking: true, endDate: '' };
-          }
+          return {
+            ...expItem,
+            currentlyWorking: !expItem.currentlyWorking,
+            endDate: expItem.currentlyWorking ? expItem.endDate : ''
+          };
         }
         return expItem;
       })
@@ -392,6 +415,15 @@ export default function ProfileCard({ data = {} }) {
     : [];
   const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : [];
 
+  // We'll build an array of "all ENS socials" from `ensSocialRecords`.
+  // This can include Twitter, GitHub, Discord, etc.
+  const allEnsSocialEntries = Object.entries(ensSocialRecords).filter(([key, val]) => {
+    // Only keep if val is non-empty string
+    if (typeof val !== 'string' || !val.trim()) return false;
+    // e.g. key = 'com.twitter', val = 'brantlymillegan'
+    return true;
+  });
+
   /* ------------------------------------------------------------------
      Render
   ------------------------------------------------------------------*/
@@ -410,7 +442,6 @@ export default function ProfileCard({ data = {} }) {
       {/* Subtle background behind content */}
       <div className="absolute inset-0 opacity-40 animate-pulse-slow pointer-events-none" />
 
-      {/* Main content */}
       <div className="relative z-10 p-10 sm:p-12 text-center backdrop-blur-xl">
         {/* Avatar */}
         <div className="relative w-36 h-36 mx-auto -mt-16 mb-4">
@@ -422,17 +453,12 @@ export default function ProfileCard({ data = {} }) {
           {isOwner && editing && (
             <label className="absolute bottom-2 right-2 p-1 bg-gray-800/80 rounded-full cursor-pointer hover:bg-gray-700/80 transition-colors">
               <Upload size={14} className="text-white" />
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={handleAvatarUpload}
-              />
+              <input type="file" accept="image/*" hidden onChange={handleAvatarUpload} />
             </label>
           )}
         </div>
 
-        {/* Name or fallback address */}
+        {/* Name or fallback */}
         <h2 className="text-4xl font-bold tracking-tight text-gray-800 dark:text-gray-100">
           {name || shortenAddress(address)}
         </h2>
@@ -476,51 +502,33 @@ export default function ProfileCard({ data = {} }) {
           )
         )}
 
-        {/* Socials & Tag */}
+        {/* Socials & Tag in "View" mode or "Edit" mode */}
         <div className="mt-6">
           {editing ? (
+            /* If editing, show input fields for DB-based Twitter, Warpcast, Website, Tag */
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
               <input
                 placeholder="Twitter handle"
                 value={editTwitter}
                 onChange={(e) => setEditTwitter(e.target.value)}
-                className="
-                  bg-white dark:bg-gray-900 border 
-                  border-gray-200 dark:border-gray-700 
-                  rounded-lg p-2 text-sm w-full 
-                  placeholder-gray-400
-                "
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
               />
               <input
                 placeholder="Warpcast handle"
                 value={editWarpcast}
                 onChange={(e) => setEditWarpcast(e.target.value)}
-                className="
-                  bg-white dark:bg-gray-900 border 
-                  border-gray-200 dark:border-gray-700 
-                  rounded-lg p-2 text-sm w-full 
-                  placeholder-gray-400
-                "
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
               />
               <input
                 placeholder="Website"
                 value={editWebsite}
                 onChange={(e) => setEditWebsite(e.target.value)}
-                className="
-                  bg-white dark:bg-gray-900 border 
-                  border-gray-200 dark:border-gray-700 
-                  rounded-lg p-2 text-sm w-full 
-                  placeholder-gray-400
-                "
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
               />
               <select
                 value={editTag}
                 onChange={(e) => setEditTag(e.target.value)}
-                className="
-                  bg-white dark:bg-gray-900 border 
-                  border-gray-200 dark:border-gray-700
-                  rounded-lg p-2 text-sm w-full
-                "
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
               >
                 <option value="">Select a Tag</option>
                 {TAG_OPTIONS.map((option) => (
@@ -531,41 +539,56 @@ export default function ProfileCard({ data = {} }) {
               </select>
             </div>
           ) : (
-            <div className="flex flex-wrap justify-center gap-3">
-              <SocialLink
-                href={
-                  editTwitter
-                    ? `https://twitter.com/${editTwitter.replace(/^@/, '')}`
-                    : null
-                }
-                icon={Twitter}
-                label="Twitter"
-              />
-              <SocialLink
-                href={
-                  editWarpcast
-                    ? `https://warpcast.com/${editWarpcast.replace(/^@/, '')}`
-                    : null
-                }
-                icon={UserPlus2}
-                label="Warpcast"
-              />
-              <SocialLink
-                href={
-                  editWebsite
-                    ? editWebsite.startsWith('http')
-                      ? editWebsite
-                      : `https://${editWebsite}`
-                    : null
-                }
-                icon={LinkIcon}
-                label="Website"
-              />
-              {editTag && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-800/20 dark:text-indigo-200">
-                  {editTag}
-                </span>
-              )}
+            /* If viewing, display DB or ENS-based main socials plus Tag. 
+               Then also display any "extra" ENS records we found. */
+            <div className="flex flex-col gap-2 items-center justify-center mt-2">
+              {/* The "Primary" DB fields (Twitter, Warpcast, Website) */}
+              <div className="flex flex-wrap gap-3 justify-center">
+                <SocialLink
+                  href={
+                    editTwitter
+                      ? `https://twitter.com/${editTwitter.replace(/^@/, '')}`
+                      : null
+                  }
+                  icon={Twitter}
+                  label="Twitter"
+                />
+                <SocialLink
+                  href={
+                    editWarpcast
+                      ? `https://warpcast.com/${editWarpcast.replace(/^@/, '')}`
+                      : null
+                  }
+                  icon={UserPlus2}
+                  label="Warpcast"
+                />
+                <SocialLink
+                  href={
+                    editWebsite
+                      ? editWebsite.startsWith('http')
+                        ? editWebsite
+                        : `https://${editWebsite}`
+                      : null
+                  }
+                  icon={LinkIcon}
+                  label="Website"
+                />
+                {editTag && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-800/20 dark:text-indigo-200">
+                    {editTag}
+                  </span>
+                )}
+              </div>
+
+              {/* Additional ENS text records not covered by DB fields */}
+              <div className="flex flex-wrap gap-3 justify-center mt-2">
+                {Object.entries(ensSocialRecords)
+                  .filter(([key]) => !['com.twitter', 'io.farcaster', 'url'].includes(key))
+                  .map(([key, val]) => {
+                    if (!val?.trim()) return null;
+                    return <DisplaySocial key={key} recordKey={key} recordValue={val} />;
+                  })}
+              </div>
             </div>
           )}
         </div>
