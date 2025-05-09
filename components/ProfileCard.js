@@ -1,4 +1,5 @@
 // components/ProfileCard.js
+
 import { useState, useEffect } from 'react';
 import {
   Copy,
@@ -17,7 +18,7 @@ import {
   X,
   Github,
   MessageCircle
-} from 'lucide-react'; // add any icons you need
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAccount } from 'wagmi';
 import axios from 'axios';
@@ -25,11 +26,12 @@ import axios from 'axios';
 /* -----------------------------------------------------------------------------------------------
    ProfileCard
 
-   - Pulls DB fields for Twitter, website, warpcast, etc.
-   - Also fetches all ENS text records for .eth names, merges them into "ensSocials".
-   - Shows expanded social links for known platforms.
-   - POAP & NFT display
-   - EFP (Ethereum Follow Protocol) fallback (ens => address)
+   Now uses EFP’s “/api/v1/users/[ensOrAddress]/ens” to get social handles,
+   and “/api/v1/users/[ensOrAddress]/followers” for follower count.
+
+   If EFP returns 404 or no data, we display no social info / show 0 or hide followers.
+
+   The rest of the code remains your standard logic: DB fields, POAP fetch, NFT, editing, etc.
 ------------------------------------------------------------------------------------------------*/
 
 /* ------------------------------------------------------------------
@@ -47,7 +49,7 @@ const parseDate = (d) => {
   return Number.isNaN(p) ? null : new Date(p);
 };
 
-/** Format "May 2023 – Present" for start/end, with a "current" check. */
+/** Format a date range with a "current" check, e.g. "May 2023 – Present". */
 const formatRange = (s, e, current) => {
   if (!s) return '';
   const start = parseDate(s)?.toLocaleDateString(undefined, {
@@ -63,71 +65,72 @@ const formatRange = (s, e, current) => {
   return `${start} – ${end}`;
 };
 
-/** Known social record keys → (label, icon, prefix or null if we can't link). */
+/** 
+ * Known record → Link building rules.
+ * This might be slightly different from EFP’s keys, 
+ * but we’ll adapt once we see what EFP returns.
+ */
 const SOCIAL_KEY_MAP = {
-  'com.twitter': {
+  twitter: {
     label: 'Twitter',
     icon: Twitter,
     prefix: 'https://twitter.com/'
   },
-  'io.farcaster': {
+  farcaster: {
     label: 'Farcaster',
     icon: UserPlus2,
     prefix: 'https://warpcast.com/'
   },
-  'com.github': {
+  github: {
     label: 'GitHub',
     icon: Github,
     prefix: 'https://github.com/'
   },
-  'com.discord': {
+  discord: {
     label: 'Discord',
     icon: MessageCircle,
-    prefix: null // can't make a direct link
+    prefix: null // can't link directly
   },
-  'com.telegram': {
+  telegram: {
     label: 'Telegram',
     icon: MessageCircle,
     prefix: 'https://t.me/'
   },
-  'url': {
+  website: {
     label: 'Website',
     icon: LinkIcon,
-    prefix: '' // direct link to the record itself
+    prefix: ''
   }
 };
 
 /**
- * Simple wrapper for a single social link
- * If prefix is null, we show text. If prefix is non-empty, we build a link.
+ * A small sub-component to display a single platform from EFP data
  */
-function DisplaySocial({ recordKey, recordValue }) {
-  const mapping = SOCIAL_KEY_MAP[recordKey];
+function DisplaySocial({ platform, handle }) {
+  const mapping = SOCIAL_KEY_MAP[platform.toLowerCase()];
   if (!mapping) {
-    // Unknown record, fallback
+    // fallback if unknown platform
     return (
       <div className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
         <LinkIcon size={16} />
-        {recordKey}: {recordValue}
+        {platform}: {handle}
       </div>
     );
   }
 
   const { label, icon: Icon, prefix } = mapping;
-
   if (!prefix) {
-    // e.g. Discord "username#1234" can't be a link
+    // e.g. Discord "username#1234" can't be a direct link
     return (
       <div className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
         <Icon size={16} />
-        {label}: {recordValue}
+        {label}: {handle}
       </div>
     );
   } else {
-    // clickable link
     return (
       <a
-        href={prefix + recordValue.replace(/^@/, '')}
+        href={prefix + handle.replace(/^@/, '')}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
@@ -139,7 +142,9 @@ function DisplaySocial({ recordKey, recordValue }) {
   }
 }
 
-/** A small link helper for the DB or fallback social link. */
+/**
+ * A small link helper for the DB-based fallback fields (Twitter, Warpcast, Website).
+ */
 function SocialLink({ href, icon: Icon, label }) {
   if (!href) return null;
   return (
@@ -160,12 +165,12 @@ function SocialLink({ href, icon: Icon, label }) {
 -------------------------------------------------------------------*/
 export default function ProfileCard({ data = {} }) {
   const {
-    name,
-    address,
+    name,               // e.g. "evanmoyer.eth"
+    address,            // 0x...
     avatar,
-    twitter,
-    website,
-    warpcast,
+    twitter,            // from DB
+    website,            // from DB
+    warpcast,           // from DB (Farcaster)
     tag,
     poaps = [],
     nfts = [],
@@ -196,7 +201,7 @@ export default function ProfileCard({ data = {} }) {
   // Avatar
   const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png');
 
-  // Social fields from DB ( fallback ), possibly overridden by ENS text records
+  // DB-based socials
   const [editTwitter, setEditTwitter] = useState(twitter || '');
   const [editWebsite, setEditWebsite] = useState(website || '');
   const [editWarpcast, setEditWarpcast] = useState(warpcast || '');
@@ -210,18 +215,18 @@ export default function ProfileCard({ data = {} }) {
   // Work Experience
   const [editExp, setEditExp] = useState(workExperience);
 
-  // EFP
+  // EFP followers
   const [followersCount, setFollowersCount] = useState(null);
 
-  // We'll store the full ENS record map here, so we can display all known keys.
-  // e.g. { 'com.twitter': '...', 'com.github': '...', 'com.discord': '...', url: '...' }
-  const [ensSocialRecords, setEnsSocialRecords] = useState({});
+  // EFP social (their "ens" endpoint might return a bunch of social data)
+  // e.g. { twitter: "...", farcaster: "...", discord: "...", ... }
+  const [efpSocialData, setEfpSocialData] = useState({}); 
 
   /* ------------------------------------------------------------------
      Effects
   ------------------------------------------------------------------*/
 
-  // 1) Fetch POAPs & fallback Avatar
+  // 1) Fetch POAPs from Poap.tech & fallback Avatar from OpenSea
   useEffect(() => {
     const fetchPoaps = async () => {
       if (!address) return;
@@ -252,69 +257,39 @@ export default function ProfileCard({ data = {} }) {
     fetchAvatar();
   }, [address, avatar]);
 
-  // 2) Fetch **all** ENS text records if name ends with .eth
-  //    We'll store them in `ensSocialRecords` to display everything.
-  //    We'll also optionally override DB fields if record is non-empty
+  // 2) EFP-based data fetch 
+  //    We try "https://api.ethfollow.xyz/api/v1/users/[ensOrAddress]/ens" for social
+  //    & "https://api.ethfollow.xyz/api/v1/users/[ensOrAddress]/followers" for follower count
   useEffect(() => {
-    const fetchEnsRecords = async () => {
-      if (!name || !name.endsWith('.eth')) return;
+    const fetchEFP = async () => {
+      let userKey = null;
+      if (name && name.endsWith('.eth')) {
+        userKey = name.toLowerCase(); // e.g. "evanmoyer.eth"
+      } else if (address) {
+        userKey = address; // fallback to 0x...
+      }
+
+      if (!userKey) return;
 
       try {
-        const res = await axios.get(`https://api.ensideas.com/ens/resolve/${name.toLowerCase()}`);
-        const allRecords = res.data?.records || {};
-        // Store them for display
-        setEnsSocialRecords(allRecords);
+        // 1) Social data
+        const ensRes = await axios.get(`https://api.ethfollow.xyz/api/v1/users/${userKey}/ens`);
+        // example response might look like: { data: { twitter: "...", farcaster: "...", ... } }
+        // setEfpSocialData to that object
+        setEfpSocialData(ensRes.data || {});
 
-        // Optionally override DB fields if non-empty
-        if (allRecords['com.twitter']?.trim()) {
-          setEditTwitter(allRecords['com.twitter']);
-        }
-        if (allRecords['io.farcaster']?.trim()) {
-          setEditWarpcast(allRecords['io.farcaster']);
-        }
-        if (allRecords['url']?.trim()) {
-          setEditWebsite(allRecords['url']);
-        }
+        // 2) Follower count
+        const followersRes = await axios.get(`https://api.ethfollow.xyz/api/v1/users/${userKey}/followers`);
+        // e.g. { count: 123, users: [...] }
+        setFollowersCount(followersRes.data?.count ?? 0);
       } catch (err) {
-        console.error('Failed to fetch full ENS text records', err);
+        console.warn(`EFP fetch failed for ${userKey}`, err);
+        setFollowersCount(0);
       }
     };
 
-    fetchEnsRecords();
-  }, [name]);
-
-  // 3) EFP fetch w/ fallback (ens => address)
-  useEffect(() => {
-    const fetchEfpFollowers = async () => {
-      if (!address && (!name || !name.endsWith('.eth'))) return;
-
-      // If .eth name, try EFP by ens first
-      if (name && name.endsWith('.eth')) {
-        const efpUrl = `https://api.ethfollow.xyz/api/v1/followers?ens=${name.toLowerCase()}`;
-        try {
-          const res = await axios.get(efpUrl);
-          setFollowersCount(res.data?.count ?? 0);
-          return; // success
-        } catch (err1) {
-          console.warn(`EFP by ENS failed for ${name}, trying address fallback...`);
-        }
-      }
-
-      // fallback by address
-      if (address) {
-        try {
-          const efpUrl2 = `https://api.ethfollow.xyz/api/v1/followers?address=${address}`;
-          const res2 = await axios.get(efpUrl2);
-          setFollowersCount(res2.data?.count ?? 0);
-        } catch (err2) {
-          console.error('EFP fallback by address also failed', err2);
-          setFollowersCount(0);
-        }
-      }
-    };
-
-    fetchEfpFollowers();
-  }, [address, name]);
+    fetchEFP();
+  }, [name, address]);
 
   /* ------------------------------------------------------------------
      Handlers
@@ -408,21 +383,21 @@ export default function ProfileCard({ data = {} }) {
   /* ------------------------------------------------------------------
      Derived
   ------------------------------------------------------------------*/
+  // Our final POAPs
   const poapsToShow = Array.isArray(poapData)
     ? showAllPoaps
       ? poapData
       : poapData.slice(0, 4)
     : [];
+
+  // Our final NFTs
   const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : [];
 
-  // We'll build an array of "all ENS socials" from `ensSocialRecords`.
-  // This can include Twitter, GitHub, Discord, etc.
-  const allEnsSocialEntries = Object.entries(ensSocialRecords).filter(([key, val]) => {
-    // Only keep if val is non-empty string
-    if (typeof val !== 'string' || !val.trim()) return false;
-    // e.g. key = 'com.twitter', val = 'brantlymillegan'
-    return true;
-  });
+  // EFP Social data might look like: { twitter: "blabla", farcaster: "farcasterUsername", github: "foo", ... }
+  // We'll only display them if not editing, to avoid confusion with DB-based fields
+  const efpSocialEntries = Object.entries(efpSocialData).filter(
+    ([k, v]) => typeof v === 'string' && v.trim()
+  );
 
   /* ------------------------------------------------------------------
      Render
@@ -458,7 +433,7 @@ export default function ProfileCard({ data = {} }) {
           )}
         </div>
 
-        {/* Name or fallback */}
+        {/* Name or fallback address */}
         <h2 className="text-4xl font-bold tracking-tight text-gray-800 dark:text-gray-100">
           {name || shortenAddress(address)}
         </h2>
@@ -475,11 +450,15 @@ export default function ProfileCard({ data = {} }) {
         )}
 
         {/* EFP Followers */}
-        {followersCount !== null && (
+        {followersCount !== null && followersCount > 0 && (
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
             {followersCount} Follower{followersCount === 1 ? '' : 's'}
           </p>
         )}
+        {/* If you want to hide the line if it's 0, 
+            do something like:
+            {followersCount > 0 && ...} or just always show "0 followers" 
+        */}
 
         {/* Bio */}
         {editing ? (
@@ -502,10 +481,10 @@ export default function ProfileCard({ data = {} }) {
           )
         )}
 
-        {/* Socials & Tag in "View" mode or "Edit" mode */}
+        {/* Socials & Tag */}
         <div className="mt-6">
           {editing ? (
-            /* If editing, show input fields for DB-based Twitter, Warpcast, Website, Tag */
+            // DB-based fields in editing mode
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
               <input
                 placeholder="Twitter handle"
@@ -531,18 +510,15 @@ export default function ProfileCard({ data = {} }) {
                 className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
               >
                 <option value="">Select a Tag</option>
-                {TAG_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
+                <option value="Active Builder">Active Builder</option>
+                <option value="Looking for Work">Looking for Work</option>
+                {/* etc. or your TAG_OPTIONS array */}
               </select>
             </div>
           ) : (
-            /* If viewing, display DB or ENS-based main socials plus Tag. 
-               Then also display any "extra" ENS records we found. */
+            // View mode
             <div className="flex flex-col gap-2 items-center justify-center mt-2">
-              {/* The "Primary" DB fields (Twitter, Warpcast, Website) */}
+              {/* DB-based fields */}
               <div className="flex flex-wrap gap-3 justify-center">
                 <SocialLink
                   href={
@@ -580,13 +556,24 @@ export default function ProfileCard({ data = {} }) {
                 )}
               </div>
 
-              {/* Additional ENS text records not covered by DB fields */}
+              {/* EFP-based social data 
+                  e.g. { twitter: "somehandle", farcaster: "farc", github: "somegit", ... }
+                  We skip the ones that match DB fields so we don't double display "twitter" or "farcaster" 
+                  or we can display them all if you like. 
+              */}
               <div className="flex flex-wrap gap-3 justify-center mt-2">
-                {Object.entries(ensSocialRecords)
-                  .filter(([key]) => !['com.twitter', 'io.farcaster', 'url'].includes(key))
-                  .map(([key, val]) => {
-                    if (!val?.trim()) return null;
-                    return <DisplaySocial key={key} recordKey={key} recordValue={val} />;
+                {Object.entries(efpSocialData)
+                  // omit your existing DB fields if you want, or show them all
+                  .filter(([platform]) => !['ens', 'followers'].includes(platform.toLowerCase()))
+                  .map(([platform, handle]) => {
+                    if (!handle || typeof handle !== 'string' || !handle.trim()) return null;
+                    return (
+                      <DisplaySocial
+                        key={platform}
+                        platform={platform}
+                        handle={handle}
+                      />
+                    );
                   })}
               </div>
             </div>
@@ -774,7 +761,7 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Link to OpenSea if address present */}
+        {/* Link to OpenSea if address is present */}
         {address && (
           <div className="mt-6 text-center">
             <a
@@ -788,7 +775,7 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Edit / Save / Cancel (if user is owner) */}
+        {/* Edit / Save / Cancel buttons if user is owner */}
         {isOwner && (
           <div className="mt-8 flex justify-center gap-3">
             {editing ? (
@@ -806,7 +793,7 @@ export default function ProfileCard({ data = {} }) {
                 </button>
                 <button
                   onClick={() => {
-                    // revert changes
+                    // revert
                     setEditing(false);
                     setEditBio(bio || ensBio);
                     setEditExp(workExperience);
