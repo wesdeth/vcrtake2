@@ -1,6 +1,7 @@
 // pages/index.js
 
 import Head from 'next/head';
+import Link from 'next/link';     // <--- IMPORTANT: import Link from next/link
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
@@ -13,16 +14,16 @@ export default function Home() {
 
   // Floating profiles data
   const [floatingProfiles, setFloatingProfiles] = useState([]);
-  const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2, 3, 4]); // 5 cards
+  const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2, 3, 4]);  // 5-card rotation
   const [fade, setFade] = useState(true);
   const timerRef = useRef(null);
 
   // Badge count for “onchain resumes created”
   const [resumeCount, setResumeCount] = useState(12380);
 
-  /*
-    1) Randomly Increase Badge Count in localStorage once every 24hrs
-  */
+  /**
+   * 1) Randomly Increase Badge Count in localStorage once every 24hrs
+   */
   useEffect(() => {
     const storageKey = 'resumeCountData';
     const now = Date.now();
@@ -33,15 +34,21 @@ export default function Home() {
       const parsed = JSON.parse(stored);
       const { count, lastUpdate } = parsed;
 
+      // If it’s been more than 24 hrs, increment by 5–10
       if (now - lastUpdate > oneDay) {
-        const randomIncrement = Math.floor(Math.random() * 6) + 5; // 5–10
+        const randomIncrement = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
         const newCount = count + randomIncrement;
         setResumeCount(newCount);
-        localStorage.setItem(storageKey, JSON.stringify({ count: newCount, lastUpdate: now }));
+
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({ count: newCount, lastUpdate: now })
+        );
       } else {
-        setResumeCount(parsed.count);
+        setResumeCount(count);
       }
     } else {
+      // Nothing in localStorage, store initial
       localStorage.setItem(
         storageKey,
         JSON.stringify({ count: 12380, lastUpdate: now })
@@ -49,9 +56,10 @@ export default function Home() {
     }
   }, []);
 
-  /*
-    2) Fetch recent updates & also fetch POAP data + ENS name
-  */
+  /**
+   * 2) Fetch recent updates from /api/recent-updates & 
+   *    also fetch POAP data + ENS name for each profile
+   */
   useEffect(() => {
     const fetchRecentUpdates = async () => {
       try {
@@ -66,7 +74,7 @@ export default function Home() {
             let borderColor = 'border-[#A5B4FC]';
             let tag = profile.tag || 'Active Builder';
 
-            // Fetch POAP
+            // POAP fetch
             try {
               const poapRes = await axios.get(
                 `https://api.poap.tech/actions/scan/${profile.address}`,
@@ -82,16 +90,22 @@ export default function Home() {
                 tagColor = 'text-[#A259FF]';
                 borderColor = 'border-[#D8B4FE]';
               }
-            } catch {/* fallback */}
+            } catch {
+              // fallback
+            }
 
-            // Fetch ENS
-            let resolvedEns = profile.name; 
+            // ENS name fetch
+            let resolvedEns = profile.name;
             try {
-              const ensRes = await axios.get(`https://api.ensideas.com/ens/resolve/${profile.address}`);
+              const ensRes = await axios.get(
+                `https://api.ensideas.com/ens/resolve/${profile.address}`
+              );
               if (ensRes.data?.name) {
                 resolvedEns = ensRes.data.name;
               }
-            } catch {/* fallback */}
+            } catch {
+              // fallback
+            }
 
             return {
               ...profile,
@@ -103,23 +117,52 @@ export default function Home() {
           })
         );
 
-        // 5 placeholders
+        // 5 placeholders in case no real data
         const placeholders = [
-          { address: '0xPLACEHOLDER1', name: 'validator.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
-          { address: '0xPLACEHOLDER2', name: 'evanmoyer.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
-          { address: '0xPLACEHOLDER3', name: 'brantly.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
-          { address: '0xPLACEHOLDER4', name: 'dragonmaster.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
-          { address: '0xPLACEHOLDER5', name: 'rainbowlover.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' }
+          {
+            address: '0xPLACEHOLDER1',
+            name: 'validator.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER2',
+            name: 'evanmoyer.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER3',
+            name: 'brantly.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER4',
+            name: 'dragonmaster.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER5',
+            name: 'rainbowlover.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          }
         ];
 
-        let finalData = enrichedData;
-
         // Ensure at least 5 items
+        let finalData = enrichedData;
         if (finalData.length < 5) {
           finalData = [...finalData, ...placeholders].slice(0, 5);
         }
 
-        // At least one is “Looking for Work”
+        // Ensure at least one “Looking for Work”
         const noneTagged = finalData.every((p) => p.tag !== 'Looking for Work');
         if (finalData.length > 0 && noneTagged) {
           const index = Math.floor(Math.random() * finalData.length);
@@ -131,14 +174,43 @@ export default function Home() {
         setFloatingProfiles(finalData);
       } catch (err) {
         console.error('Failed to fetch recent updates:', err);
-
-        // If fetch fails, show 5 placeholders
+        // If fetch fails, just show placeholders
         setFloatingProfiles([
-          { address: '0xPLACEHOLDER1', name: 'validator.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
-          { address: '0xPLACEHOLDER2', name: 'evanmoyer.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
-          { address: '0xPLACEHOLDER3', name: 'brantly.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
-          { address: '0xPLACEHOLDER4', name: 'dragonmaster.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' },
-          { address: '0xPLACEHOLDER5', name: 'rainbowlover.eth', tag: 'Active Builder', color: 'text-[#635BFF]', border: 'border-[#A5B4FC]' }
+          {
+            address: '0xPLACEHOLDER1',
+            name: 'validator.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER2',
+            name: 'evanmoyer.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER3',
+            name: 'brantly.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER4',
+            name: 'dragonmaster.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          },
+          {
+            address: '0xPLACEHOLDER5',
+            name: 'rainbowlover.eth',
+            tag: 'Active Builder',
+            color: 'text-[#635BFF]',
+            border: 'border-[#A5B4FC]'
+          }
         ]);
       }
     };
@@ -146,17 +218,17 @@ export default function Home() {
     fetchRecentUpdates();
   }, []);
 
-  /*
-    3) Rotate the "floating profiles" every 7 seconds
-  */
+  /**
+   * 3) Rotate the "floating profiles" every 7 seconds
+   */
   useEffect(() => {
     if (!floatingProfiles.length) return;
 
     timerRef.current = setInterval(() => {
       setFade(false);
       setTimeout(() => {
+        // shift indexes by 5
         setCurrentIndexes((prev) =>
-          // shift by 5
           prev.map((i) => (i + 5) % floatingProfiles.length)
         );
         setFade(true);
@@ -171,15 +243,17 @@ export default function Home() {
     timerRef.current = setInterval(() => {
       setFade(false);
       setTimeout(() => {
-        setCurrentIndexes((prev) => prev.map((i) => (i + 5) % floatingProfiles.length));
+        setCurrentIndexes((prev) =>
+          prev.map((i) => (i + 5) % floatingProfiles.length)
+        );
         setFade(true);
       }, 400);
     }, 7000);
   };
 
-  /*
-    4) Form Handler
-  */
+  /**
+   * 4) Form Handler
+   */
   const handleSearch = (e) => {
     e.preventDefault();
     if (input.endsWith('.eth') || input.startsWith('0x')) {
@@ -196,7 +270,18 @@ export default function Home() {
     <>
       <Head>
         <title>Verified Chain Resume</title>
-        {/* ... meta tags ... */}
+        <meta name="description" content="Web3 resumes powered by ENS, POAPs, and DAOs." />
+        <meta property="og:title" content="Verified Chain Resume" />
+        <meta property="og:description" content="Build your onchain identity into a polished Web3 resume." />
+        <meta property="og:image" content="/social-preview.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="/social-preview.png" />
+        <meta name="twitter:title" content="Verified Chain Resume" />
+        <link rel="icon" href="/favicon.ico" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@600&display=swap"
+          rel="stylesheet"
+        />
       </Head>
 
       {/* Main container */}
@@ -212,7 +297,7 @@ export default function Home() {
           overflow-hidden
         "
       >
-        {/* Top-left Badge */}
+        {/* Badge: # of onchain resumes */}
         <div
           className="
             absolute top-10 left-6 
@@ -228,7 +313,7 @@ export default function Home() {
           {resumeCount.toLocaleString()} onchain resumes created
         </div>
 
-        {/* Floating profile cards on the right */}
+        {/* Floating profile cards (5) on the right */}
         <div
           className="
             absolute top-28 right-6
@@ -242,46 +327,44 @@ export default function Home() {
           onMouseLeave={resumeRotation}
         >
           {currentProfiles.map((profile, index) => {
-            // Fallback to address if no "name"
-            const gotoSlug = profile.name && profile.name !== ''
-              ? profile.name
+            const gotoSlug = profile.name && profile.name.trim() 
+              ? profile.name 
               : profile.address;
 
             return (
-              <div
-                key={index}
-                onClick={() => router.push(`/preview/${gotoSlug}`)}
-                className={`
-                  cursor-pointer 
-                  w-44 
-                  bg-white/80 
-                  backdrop-blur-md 
-                  border ${profile.border}
-                  rounded-xl 
-                  shadow-md 
-                  hover:shadow-lg 
-                  p-3 
-                  transition-all 
-                  duration-500 
-                  ease-in-out 
-                  transform 
-                  hover:scale-105
-                  ${fade ? 'opacity-100' : 'opacity-0'}
-                `}
-                style={{ transitionDelay: `${index * 150}ms` }}
-              >
-                <p className="font-semibold text-sm truncate text-black">
-                  {profile.name}
-                </p>
-                <p className={`text-xs ${profile.color}`}>{profile.tag}</p>
-              </div>
+              <Link key={index} href={`/preview/${gotoSlug}`}>
+                <div
+                  className={`
+                    cursor-pointer
+                    w-44
+                    bg-white/80
+                    backdrop-blur-md
+                    border ${profile.border}
+                    rounded-xl
+                    shadow-md
+                    hover:shadow-lg
+                    p-3
+                    transition-all
+                    duration-500
+                    ease-in-out
+                    transform
+                    hover:scale-105
+                    ${fade ? 'opacity-100' : 'opacity-0'}
+                  `}
+                  style={{ transitionDelay: `${index * 150}ms` }}
+                >
+                  <p className="font-semibold text-sm truncate text-black">
+                    {profile.name}
+                  </p>
+                  <p className={`text-xs ${profile.color}`}>{profile.tag}</p>
+                </div>
+              </Link>
             );
           })}
         </div>
 
-        {/* Hero / Main content */}
+        {/* Hero / main content */}
         <div className="flex flex-col items-center justify-center px-4 sm:px-6 py-16 z-10 relative">
-          {/* ... the central "hero" box ... */}
           <div
             className="
               max-w-2xl w-full 
@@ -296,7 +379,6 @@ export default function Home() {
               text-[#1F2937]
             "
           >
-            {/* Heading */}
             <h1
               className="
                 text-4xl sm:text-5xl 
@@ -319,7 +401,7 @@ export default function Home() {
               Enter your ENS or wallet to preview a Web3 resume.
             </p>
 
-            {/* ENS / 0x Search Form */}
+            {/* ENS / 0x search form */}
             <form
               onSubmit={handleSearch}
               className="flex flex-col sm:flex-row gap-3 justify-center mt-2"
@@ -378,7 +460,9 @@ export default function Home() {
         >
           © {new Date().getFullYear()} Verified Chain Resume — Built with ❤️ for the Web3 community.
           <br />
-          <span className="text-[#6B7280]">Created by wesd.eth</span>
+          <span className="text-[#6B7280]">
+            Created by wesd.eth
+          </span>
         </footer>
       </div>
     </>
