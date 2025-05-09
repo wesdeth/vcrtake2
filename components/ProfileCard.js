@@ -450,6 +450,13 @@ export default function ProfileCard({ data = {} }) {
           </p>
         )}
 
+      <button
+          onClick={() => router.push(`/messages?to=${addressOrEns}`)}
+          className="bg-indigo-600 text-white px-4 py-2 rounded-lg"
+          >
+          Message
+      </button>
+
         {/* Followers */}
         {followersCount !== null && followersCount > 0 && (
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
