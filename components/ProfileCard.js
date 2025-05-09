@@ -1,4 +1,5 @@
 // components/ProfileCard.js
+
 import { useState, useEffect } from 'react';
 import {
   Copy,
@@ -25,7 +26,9 @@ import axios from 'axios';
 
    Displays / edits a user's profile:
      - Name, Address, Avatar, Bio
-     - Social Links (Twitter, Warpcast, Website)
+     - Social Links (Twitter, Warpcast, Website) from:
+       1) DB fields
+       2) ENS text records (com.twitter, io.farcaster, url) if name ends with .eth
      - "Looking for Work" checkbox
      - Work Experience
      - POAPs
@@ -41,7 +44,8 @@ import axios from 'axios';
 /* ------------------------------------------------------------------
    Utility Helpers
 -------------------------------------------------------------------*/
-/** Shorten an Ethereum address, e.g. "0x1234...ABCD". */
+
+/** Shorten an Ethereum address for display, e.g. "0x1234...ABCD". */
 const shortenAddress = (addr = '') => {
   if (!addr) return '';
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
@@ -54,7 +58,7 @@ const parseDate = (d) => {
   return Number.isNaN(p) ? null : new Date(p);
 };
 
-/** Format a date range, e.g. "May 2023 – Present" (if current). */
+/** Format a date range with optional "current" check, e.g. "May 2023 – Present". */
 const formatRange = (s, e, current) => {
   if (!s) return '';
   const start = parseDate(s)?.toLocaleDateString(undefined, {
@@ -63,7 +67,10 @@ const formatRange = (s, e, current) => {
   });
   const end = current
     ? 'Present'
-    : parseDate(e)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) || '';
+    : parseDate(e)?.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short'
+      }) || '';
   return `${start} – ${end}`;
 };
 
@@ -123,14 +130,15 @@ function SocialLink({ href, icon: Icon, label }) {
    Main ProfileCard Component
 -------------------------------------------------------------------*/
 export default function ProfileCard({ data = {} }) {
+  // Destructure fields from data
   const {
-    name,
-    address,
-    avatar,
-    twitter,
-    website,
-    warpcast,
-    tag,
+    name,             // e.g. "brantly.eth"
+    address,          // 0x address
+    avatar,           // custom or fallback
+    twitter,          // from DB
+    website,          // from DB
+    warpcast,         // from DB (Farcaster handle)
+    tag,              // e.g. "Active Builder"
     poaps = [],
     nfts = [],
     bio = '',
@@ -140,7 +148,7 @@ export default function ProfileCard({ data = {} }) {
     ownsProfile = false
   } = data;
 
-  /** Wagmi to check if connected user is the owner. */
+  // Wagmi hook to see if connected user is the profile owner
   const { address: connected } = useAccount();
   const isOwner =
     ownsProfile ||
@@ -160,7 +168,7 @@ export default function ProfileCard({ data = {} }) {
   // Avatar
   const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png');
 
-  // Social fields for editing
+  // Social fields for editing (initially from DB, can be overridden by ENS if found)
   const [editTwitter, setEditTwitter] = useState(twitter || '');
   const [editWebsite, setEditWebsite] = useState(website || '');
   const [editWarpcast, setEditWarpcast] = useState(warpcast || '');
@@ -174,14 +182,14 @@ export default function ProfileCard({ data = {} }) {
   // Work Experience
   const [editExp, setEditExp] = useState(workExperience);
 
-  // EFP (Ethereum Follow Protocol) followers count
+  // EFP (Ethereum Follow Protocol) followers
   const [followersCount, setFollowersCount] = useState(null);
 
   /* ------------------------------------------------------------------
      Effects
   ------------------------------------------------------------------*/
+  // 1) Fetch POAPs & fallback Avatar
   useEffect(() => {
-    // 1) Fetch POAPs if address is present
     const fetchPoaps = async () => {
       if (!address) return;
       try {
@@ -196,7 +204,6 @@ export default function ProfileCard({ data = {} }) {
       }
     };
 
-    // 2) Fetch fallback Avatar from OpenSea if not provided
     const fetchAvatar = async () => {
       if (avatar || !address) return;
       try {
@@ -204,7 +211,7 @@ export default function ProfileCard({ data = {} }) {
         const img = r.data?.account?.profile_img_url || r.data?.profile_img_url;
         if (img) setUploadedAvatar(img);
       } catch {
-        // fallback is already set
+        // fallback already set
       }
     };
 
@@ -212,34 +219,62 @@ export default function ProfileCard({ data = {} }) {
     fetchAvatar();
   }, [address, avatar]);
 
- // EFP fetch snippet, inside ProfileCard.js
-useEffect(() => {
-  const fetchEfpFollowers = async () => {
-    try {
-      let efpUrl;
+  // 2) Possibly fetch ENS text records for social handles (com.twitter, io.farcaster, url)
+  //    Only do this if user has a .eth name. (We won't override if user already has DB values?)
+  //    For simplicity, we do override if we see an ENS record. Adjust logic if you prefer otherwise.
+  useEffect(() => {
+    if (!name || !name.endsWith('.eth')) return;
 
-      // If the user’s `name` ends with .eth, we’ll fetch by `ens=` param.
-      if (name && name.endsWith('.eth')) {
-        efpUrl = `https://api.ethfollow.xyz/api/v1/followers?ens=${name.toLowerCase()}`;
-      } else if (address) {
-        // Otherwise, fall back to `address=`.
-        efpUrl = `https://api.ethfollow.xyz/api/v1/followers?address=${address}`;
-      } else {
-        // No name or address? Nothing to fetch
-        return;
+    const fetchEnsRecords = async () => {
+      try {
+        const res = await axios.get(`https://api.ensideas.com/ens/resolve/${name.toLowerCase()}`);
+        if (res.data?.records) {
+          const { records } = res.data;
+          // If an ENS text record is found, let's override the local state
+          // If you prefer not to override if user has DB data, add checks
+          if (records['com.twitter']) {
+            setEditTwitter(records['com.twitter']);
+          }
+          if (records['io.farcaster']) {
+            setEditWarpcast(records['io.farcaster']);
+          }
+          if (records.url) {
+            setEditWebsite(records.url);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch ENS text records', err);
       }
+    };
 
-      const res = await axios.get(efpUrl);
-      // Suppose the API returns { count, followers: [...]}.
-      setFollowersCount(res.data?.count ?? 0);
-    } catch (err) {
-      console.error('Failed fetching EFP followers', err);
-      setFollowersCount(0);
+    fetchEnsRecords();
+  }, [name]);
+
+  // 3) EFP (Ethereum Follow Protocol) fetch for followers
+  useEffect(() => {
+    const fetchEfpFollowers = async () => {
+      try {
+        if (name && name.endsWith('.eth')) {
+          // If user’s .eth name, use ?ens=
+          const efpUrl = `https://api.ethfollow.xyz/api/v1/followers?ens=${name.toLowerCase()}`;
+          const res = await axios.get(efpUrl);
+          setFollowersCount(res.data?.count ?? 0);
+        } else if (address) {
+          // Fallback to ?address=
+          const efpUrl = `https://api.ethfollow.xyz/api/v1/followers?address=${address}`;
+          const res = await axios.get(efpUrl);
+          setFollowersCount(res.data?.count ?? 0);
+        }
+      } catch (err) {
+        console.error('Failed fetching EFP followers', err);
+        setFollowersCount(0);
+      }
+    };
+
+    if (address || (name && name.endsWith('.eth'))) {
+      fetchEfpFollowers();
     }
-  };
-
-  fetchEfpFollowers();
-}, [address, name]);
+  }, [address, name]);
 
   /* ------------------------------------------------------------------
      Handlers
@@ -247,7 +282,6 @@ useEffect(() => {
   const handleAvatarUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onloadend = () => setUploadedAvatar(reader.result);
     reader.readAsDataURL(file);
@@ -291,13 +325,14 @@ useEffect(() => {
     }
   };
 
-  // Work Experience updaters
+  /** Update experience fields. */
   const updateExp = (i, field, val) => {
     setEditExp((prev) =>
       prev.map((expItem, idx) => (idx === i ? { ...expItem, [field]: val } : expItem))
     );
   };
 
+  /** Toggle "currentlyWorking" checkbox for an experience item. */
   const toggleCurrent = (i) => {
     setEditExp((prev) =>
       prev.map((expItem, idx) => {
@@ -316,15 +351,7 @@ useEffect(() => {
   const addExp = () => {
     setEditExp((prev) => [
       ...prev,
-      {
-        title: '',
-        company: '',
-        startDate: '',
-        endDate: '',
-        location: '',
-        description: '',
-        currentlyWorking: false
-      }
+      { title: '', company: '', startDate: '', endDate: '', location: '', description: '', currentlyWorking: false }
     ]);
   };
 
