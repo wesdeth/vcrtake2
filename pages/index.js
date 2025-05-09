@@ -157,18 +157,18 @@ export default function Home() {
           {currentProfiles.map((profile, index) => {
             const gotoSlug = profile.name?.trim() ? profile.name : profile.address;
             return (
-              <Link
-                key={index}
-                href={`/preview/${gotoSlug}`}
-                className={`
-                  block cursor-pointer w-44 bg-white/80 backdrop-blur-md border ${profile.border}
-                  rounded-xl shadow-md hover:shadow-lg p-3 transition-all duration-500 ease-in-out transform hover:scale-105
-                  ${fade ? 'opacity-100' : 'opacity-0'}
-                `}
-                style={{ transitionDelay: `${index * 150}ms` }}
-              >
-                <p className="font-semibold text-sm truncate text-black">{profile.name}</p>
-                <p className={`text-xs ${profile.color}`}>{profile.tag}</p>
+              <Link key={index} href={`/preview/${gotoSlug}`} legacyBehavior>
+                <a
+                  className={`
+                    block cursor-pointer pointer-events-auto w-44 bg-white/80 backdrop-blur-md border ${profile.border}
+                    rounded-xl shadow-md hover:shadow-lg p-3 transition-all duration-500 ease-in-out transform hover:scale-105
+                    ${fade ? 'opacity-100' : 'opacity-0'}
+                  `}
+                  style={{ transitionDelay: `${index * 150}ms` }}
+                >
+                  <p className="font-semibold text-sm truncate text-black">{profile.name}</p>
+                  <p className={`text-xs ${profile.color}`}>{profile.tag}</p>
+                </a>
               </Link>
             );
           })}
