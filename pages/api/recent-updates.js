@@ -1,3 +1,5 @@
+// /api/recent-updates.js
+
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
@@ -14,16 +16,16 @@ const querySchema = z.object({
 export default async function handler(req, res) {
   try {
     const parseResult = querySchema.safeParse(req.query);
-
     if (!parseResult.success) {
       return res.status(400).json({ error: 'Invalid query parameters' });
     }
 
     const { limit, tag } = parseResult.data;
 
+    // 1) Updated supabase query to also select 'looking_for_work'
     let query = supabase
       .from('profiles')
-      .select('name, address, tag, updated_at')
+      .select('name, address, tag, updated_at, looking_for_work') 
       .gte('updated_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // last 7 days
       .order('updated_at', { ascending: false });
 
@@ -32,7 +34,6 @@ export default async function handler(req, res) {
     }
 
     const { data, error } = await query;
-
     if (error) {
       console.error('Supabase fetch error:', error);
       return res.status(500).json({ error: 'Failed to fetch data' });
@@ -41,9 +42,14 @@ export default async function handler(req, res) {
     // Shuffle and trim the result
     const shuffled = data.sort(() => 0.5 - Math.random()).slice(0, limit);
 
+    // 2) Map 'looking_for_work' to 'lookingForWork' + timeSince for each
     const enriched = shuffled.map((profile) => {
       const timeAgo = timeSince(new Date(profile.updated_at));
-      return { ...profile, timeAgo };
+      return {
+        ...profile,
+        lookingForWork: !!profile.looking_for_work,
+        timeAgo
+      };
     });
 
     return res.status(200).json(enriched);
@@ -53,6 +59,7 @@ export default async function handler(req, res) {
   }
 }
 
+/** timeSince helper */
 function timeSince(date) {
   const seconds = Math.floor((new Date() - date) / 1000);
   const intervals = [
