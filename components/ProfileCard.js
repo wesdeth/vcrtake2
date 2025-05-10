@@ -1,152 +1,49 @@
 // components/ProfileCard.js
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router'; // <-- so we can push to /messages?to=
-import {
-  Copy,
-  ChevronDown,
-  ChevronUp,
-  Edit,
-  Save,
-  Upload,
-  ExternalLink,
-  PlusCircle,
-  Trash2,
-  CheckCircle,
-  X
-} from 'lucide-react';
+import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { useAccount } from 'wagmi';
 import axios from 'axios';
 
-/* ------------------------------------------------------------------
-   ProfileCard
-   - Fetches from EFP /details?cache=fresh => “ens.records” + followers
-   - DB fields for "twitter","warpcast","website" remain editable
-   - Renders social logos as round images
-   - Adds a “Message” button that links to /messages?to=<ensOrAddress>
-------------------------------------------------------------------*/
+// Example icons from lucide-react
+import {
+  Copy, Upload, Edit, Save, X, CheckCircle, ChevronDown, ChevronUp,
+  ExternalLink, PlusCircle, Trash2
+} from 'lucide-react';
 
-/** Helper to shorten "0x1234...ABCD". */
+/**
+ * Helper: shorten "0xabc123...def" addresses
+ */
 function shortenAddress(addr = '') {
-  return addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '';
+  return addr ? addr.slice(0, 6) + '…' + addr.slice(-4) : '';
 }
 
-/** Parse date from "YYYY-MM-DD" or "MM/DD/YYYY". */
+/**
+ * For date-like strings: "YYYY-MM-DD" => parse to JS Date (v5 safe)
+ */
 function parseDate(d) {
   if (!d) return null;
   const p = Date.parse(d.replace(/\//g, '-'));
   return Number.isNaN(p) ? null : new Date(p);
 }
 
-/** Format a date range, e.g. "May 2023 – Present". */
+/**
+ * Format range "May 2023 – Present" if currentlyWorking
+ */
 function formatRange(s, e, current) {
   if (!s) return '';
-  const start = parseDate(s)?.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short'
-  });
+  const start = parseDate(s)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
   const end = current
     ? 'Present'
-    : parseDate(e)?.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short'
-      }) || '';
+    : parseDate(e)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) || '';
   return `${start} – ${end}`;
 }
 
-/** Social platform => brand image path + link prefix. */
-const SOCIAL_IMAGE_MAP = {
-  x: {
-    label: 'X (Twitter)',
-    image: '/social-logos/x.png',
-    prefix: 'https://twitter.com/'
-  },
-  github: {
-    label: 'GitHub',
-    image: '/social-logos/github.png',
-    prefix: 'https://github.com/'
-  },
-  discord: {
-    label: 'Discord',
-    image: '/social-logos/discord.png',
-    prefix: null // no direct link
-  },
-  telegram: {
-    label: 'Telegram',
-    image: '/social-logos/telegram.png',
-    prefix: 'https://t.me/'
-  },
-  etherscan: {
-    label: 'Etherscan',
-    image: '/social-logos/etherscan.png',
-    prefix: 'https://etherscan.io/address/'
-  },
-  website: {
-    label: 'Website',
-    image: '/social-logos/link.png',
-    prefix: ''
-  }
-};
-
-/**
- * Renders a circular social logo + handle as a link if prefix is present.
- */
-function RoundSocialLogo({ platform, handle }) {
-  const entry = SOCIAL_IMAGE_MAP[platform] || null;
-  if (!entry) {
-    // fallback to generic link icon
-    return (
-      <div className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
-        <img
-          src="/social-logos/link.png"
-          alt={platform}
-          className="w-6 h-6 rounded-full object-cover"
-        />
-        {platform}: {handle}
-      </div>
-    );
-  }
-
-  const { label, image, prefix } = entry;
-  if (!prefix) {
-    // e.g. Discord => no direct link
-    return (
-      <div className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
-        <img
-          src={image}
-          alt={label}
-          className="w-6 h-6 rounded-full object-cover"
-        />
-        {label}: {handle}
-      </div>
-    );
-  }
-
-  // clickable link
-  return (
-    <a
-      href={prefix + handle.replace(/^@/, '')}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-    >
-      <img
-        src={image}
-        alt={label}
-        className="w-6 h-6 rounded-full object-cover"
-      />
-      {label}
-    </a>
-  );
-}
-
 export default function ProfileCard({ data = {} }) {
-  const router = useRouter();
-
   const {
     name,
     address,
     avatar,
+    // Possibly some social fields from your DB or from getEnsData
     twitter,
     website,
     warpcast,
@@ -157,13 +54,11 @@ export default function ProfileCard({ data = {} }) {
     ensBio = '',
     workExperience = [],
     lookingForWork = false,
+    // If the connected user is the owner
     ownsProfile = false
   } = data;
 
-  const { address: connected } = useAccount();
-  const isOwner =
-    ownsProfile ||
-    (connected && address && connected.toLowerCase() === address.toLowerCase());
+  const router = useRouter();
 
   // local states
   const [showAllPoaps, setShowAllPoaps] = useState(false);
@@ -171,12 +66,13 @@ export default function ProfileCard({ data = {} }) {
   const [editing, setEditing] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 
+  // "Looking for Work"
   const [editLookingForWork, setEditLookingForWork] = useState(lookingForWork);
 
-  // avatar
+  // Avatar
   const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png');
 
-  // DB-based socials
+  // Social fields
   const [editTwitter, setEditTwitter] = useState(twitter || '');
   const [editWebsite, setEditWebsite] = useState(website || '');
   const [editWarpcast, setEditWarpcast] = useState(warpcast || '');
@@ -184,18 +80,9 @@ export default function ProfileCard({ data = {} }) {
   const [editBio, setEditBio] = useState(bio || ensBio);
   const [editExp, setEditExp] = useState(workExperience);
 
-  // EFP data
-  const [followersCount, setFollowersCount] = useState(null);
-  const [efpRecords, setEfpRecords] = useState({});
-
-  /* ----------------------------------------------------------------
-     Effects
-  ----------------------------------------------------------------*/
-  // 1) POAP + fallback avatar
+  // 1) fetch POAPs if address
   useEffect(() => {
     if (!address) return;
-
-    // POAP
     axios
       .get(`https://api.poap.tech/actions/scan/${address}`, {
         headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' }
@@ -203,7 +90,7 @@ export default function ProfileCard({ data = {} }) {
       .then((r) => setPoapData(r.data || []))
       .catch(() => setPoapData([]));
 
-    // fallback avatar from OpenSea
+    // fallback avatar from OpenSea if none
     if (!avatar) {
       axios
         .get(`https://api.opensea.io/api/v1/user/${address}`)
@@ -211,67 +98,11 @@ export default function ProfileCard({ data = {} }) {
           const img = r.data?.account?.profile_img_url || r.data?.profile_img_url;
           if (img) setUploadedAvatar(img);
         })
-        .catch(() => {/* ignore */});
+        .catch(() => {/* fallback */});
     }
   }, [address, avatar]);
 
-  // 2) EFP /details => "ens.records" + followers
-  useEffect(() => {
-    const fetchEfpDetails = async () => {
-      let userKey = null;
-      if (name && name.endsWith('.eth')) {
-        userKey = name.toLowerCase();
-      } else if (address) {
-        userKey = address;
-      }
-      if (!userKey) return;
-
-      try {
-        const details = await axios.get(
-          `https://api.ethfollow.xyz/api/v1/users/${userKey}/details?cache=fresh`
-        );
-        const records = details.data?.ens?.records || {};
-
-        // Map "com.twitter" => "x", etc.
-        const mapped = {};
-        Object.entries(records).forEach(([k, v]) => {
-          if (typeof v !== 'string' || !v.trim()) return;
-          if (k === 'com.twitter') {
-            mapped['x'] = v;
-          } else if (k === 'com.discord') {
-            mapped['discord'] = v;
-          } else if (k === 'org.telegram') {
-            mapped['telegram'] = v;
-          } else if (k === 'com.github') {
-            mapped['github'] = v;
-          } else if (k === 'url') {
-            mapped['website'] = v;
-          } else if (k === 'avatar' || k === 'description') {
-            // skip
-          } else {
-            let norm = k.replace(/^com\./, '').replace(/^org\./, '');
-            mapped[norm] = v;
-          }
-        });
-        setEfpRecords(mapped);
-
-        // fetch followers
-        const foll = await axios.get(
-          `https://api.ethfollow.xyz/api/v1/users/${userKey}/followers?limit=9999&cache=fresh`
-        );
-        const arr = foll.data?.followers || [];
-        setFollowersCount(arr.length);
-      } catch (err) {
-        console.warn('❌ EFP fetch error', err);
-        setFollowersCount(0);
-      }
-    };
-    fetchEfpDetails();
-  }, [name, address]);
-
-  /* ----------------------------------------------------------------
-     Handlers
-  ----------------------------------------------------------------*/
+  // handle upload
   const handleAvatarUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -280,6 +111,7 @@ export default function ProfileCard({ data = {} }) {
     reader.readAsDataURL(file);
   };
 
+  // handle Save (POST to /api/save-profile or similar)
   const handleSave = async () => {
     try {
       const res = await fetch('/api/save-profile', {
@@ -305,73 +137,62 @@ export default function ProfileCard({ data = {} }) {
           }))
         })
       });
-      if (!res.ok) {
-        const msg = (await res.json()).error || 'Unknown error';
-        throw new Error(msg);
-      }
+      if (!res.ok) throw new Error('Failed saving profile');
       setEditing(false);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2500);
     } catch (err) {
-      console.error('save-profile error', err);
+      console.error('Save error:', err);
     }
   };
 
-  // Experience
+  // Experience updaters
   const updateExp = (i, field, val) => {
-    setEditExp((prev) =>
-      prev.map((expItem, idx) => (idx === i ? { ...expItem, [field]: val } : expItem))
-    );
+    setEditExp((prev) => prev.map((item, idx) => (idx === i ? { ...item, [field]: val } : item)));
   };
   const toggleCurrent = (i) => {
     setEditExp((prev) =>
-      prev.map((expItem, idx) => {
+      prev.map((item, idx) => {
         if (idx === i) {
           return {
-            ...expItem,
-            currentlyWorking: !expItem.currentlyWorking,
-            endDate: expItem.currentlyWorking ? expItem.endDate : ''
+            ...item,
+            currentlyWorking: !item.currentlyWorking,
+            endDate: item.currentlyWorking ? item.endDate : ''
           };
         }
-        return expItem;
+        return item;
       })
     );
   };
   const addExp = () => {
-    setEditExp((prev) => [
-      ...prev,
-      { title: '', company: '', startDate: '', endDate: '', location: '', description: '', currentlyWorking: false }
-    ]);
+    setEditExp((prev) => [...prev, {
+      title: '', company: '', startDate: '',
+      endDate: '', location: '', description: '',
+      currentlyWorking: false
+    }]);
   };
   const removeExp = (i) => {
     setEditExp((prev) => prev.filter((_, idx) => idx !== i));
   };
 
-  /* ----------------------------------------------------------------
-     Derived
-  ----------------------------------------------------------------*/
+  // derived
   const poapsToShow = Array.isArray(poapData)
-    ? (showAllPoaps ? poapData : poapData.slice(0, 4))
+    ? showAllPoaps ? poapData : poapData.slice(0, 4)
     : [];
   const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : [];
-  const efpSocialEntries = Object.entries(efpRecords).filter(([_, v]) => v && v.trim());
 
-  /* ----------------------------------------------------------------
-     Render
-  ----------------------------------------------------------------*/
+  // if user is owner
+  const isOwner = ownsProfile; // or do your own check with wagmi if needed
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="
-        relative w-full max-w-3xl mx-auto 
-        rounded-3xl overflow-visible
-        shadow-xl border border-gray-100 ring-1 ring-gray-200/70
-        bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800
-      "
+      className="relative w-full max-w-3xl mx-auto rounded-3xl overflow-visible
+                 shadow-xl border border-gray-100 ring-1 ring-gray-200/70
+                 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800"
     >
-      {/* Subtle animated background behind content */}
       <div className="absolute inset-0 opacity-40 animate-pulse-slow pointer-events-none" />
 
       <div className="relative z-10 p-10 sm:p-12 text-center backdrop-blur-xl">
@@ -384,7 +205,7 @@ export default function ProfileCard({ data = {} }) {
             className="w-36 h-36 rounded-full border-4 border-white dark:border-gray-700 shadow-md object-cover"
           />
           {isOwner && editing && (
-            <label className="absolute bottom-2 right-2 p-1 bg-gray-800/80 rounded-full cursor-pointer hover:bg-gray-700/80 transition-colors">
+            <label className="absolute bottom-2 right-2 p-1 bg-gray-800/80 rounded-full cursor-pointer hover:bg-gray-700/80">
               <Upload size={14} className="text-white" />
               <input
                 type="file"
@@ -396,45 +217,31 @@ export default function ProfileCard({ data = {} }) {
           )}
         </div>
 
-        {/* Name / Address */}
+        {/* Name */}
         <h2 className="text-4xl font-bold tracking-tight text-gray-800 dark:text-gray-100">
           {name || shortenAddress(address)}
         </h2>
+
+        {/* Address copy */}
         {address && (
           <p
-            className="inline-flex items-center gap-1 text-xs sm:text-sm mx-auto text-indigo-600 dark:text-indigo-300 mt-1 cursor-pointer justify-center hover:text-indigo-500 transition-colors"
-            title="Copy address"
+            className="inline-flex items-center gap-1 text-xs sm:text-sm mx-auto text-indigo-600 dark:text-indigo-300 mt-1 cursor-pointer justify-center"
             onClick={() => navigator.clipboard.writeText(address)}
           >
-            {shortenAddress(address)}
-            <Copy size={12} />
+            {shortenAddress(address)} <Copy size={12} />
           </p>
         )}
 
-        {/* "Message" button - only show if there is an address & 
-            if we want to let others message (maybe hide if isOwner).
-        */}
+        {/* Message button => /messages?to=... */}
         {address && !isOwner && (
-          <div className="mt-3 flex justify-center">
+          <div className="mt-3">
             <button
               onClick={() => router.push(`/messages?to=${address}`)}
-              className="
-                bg-indigo-600 hover:bg-indigo-700 
-                text-white text-sm font-medium 
-                px-4 py-2 rounded-lg shadow 
-                transition-colors
-              "
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-sm rounded-lg shadow-sm"
             >
               Message
             </button>
           </div>
-        )}
-
-        {/* Followers */}
-        {followersCount !== null && followersCount > 0 && (
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-            {followersCount} Follower{followersCount === 1 ? '' : 's'}
-          </p>
         )}
 
         {/* Bio */}
@@ -443,11 +250,7 @@ export default function ProfileCard({ data = {} }) {
             value={editBio}
             onChange={(e) => setEditBio(e.target.value)}
             rows={4}
-            className="
-              mt-4 w-full bg-white dark:bg-gray-900 
-              border border-gray-200 dark:border-gray-700 
-              rounded-lg p-3 text-sm placeholder-gray-400
-            "
+            className="mt-4 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-sm placeholder-gray-400"
             placeholder="Add a short bio..."
           />
         ) : (
@@ -458,7 +261,7 @@ export default function ProfileCard({ data = {} }) {
           )
         )}
 
-        {/* Socials */}
+        {/* Social / Tag */}
         <div className="mt-6">
           {editing ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
@@ -466,94 +269,44 @@ export default function ProfileCard({ data = {} }) {
                 placeholder="Twitter handle"
                 value={editTwitter}
                 onChange={(e) => setEditTwitter(e.target.value)}
-                className="
-                  bg-white dark:bg-gray-900
-                  border border-gray-200 dark:border-gray-700
-                  rounded-lg p-2 text-sm w-full
-                  placeholder-gray-400
-                "
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
               />
               <input
                 placeholder="Warpcast handle"
                 value={editWarpcast}
                 onChange={(e) => setEditWarpcast(e.target.value)}
-                className="
-                  bg-white dark:bg-gray-900
-                  border border-gray-200 dark:border-gray-700
-                  rounded-lg p-2 text-sm w-full
-                  placeholder-gray-400
-                "
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
               />
               <input
                 placeholder="Website"
                 value={editWebsite}
                 onChange={(e) => setEditWebsite(e.target.value)}
-                className="
-                  bg-white dark:bg-gray-900
-                  border border-gray-200 dark:border-gray-700
-                  rounded-lg p-2 text-sm w-full
-                  placeholder-gray-400
-                "
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
               />
-              <select
+              <input
+                placeholder="Custom Tag"
                 value={editTag}
                 onChange={(e) => setEditTag(e.target.value)}
-                className="
-                  bg-white dark:bg-gray-900
-                  border border-gray-200 dark:border-gray-700
-                  rounded-lg p-2 text-sm w-full
-                "
-              >
-                <option value="">Select a Tag</option>
-                <option value="Active Builder">Active Builder</option>
-                <option value="Looking for Work">Looking for Work</option>
-              </select>
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
+              />
             </div>
           ) : (
-            <div className="flex flex-col gap-2 items-center justify-center mt-2">
-              {/* DB-based fields as round logos (X, farcaster, website) */}
-              <div className="flex flex-wrap gap-3 justify-center">
-                {editTwitter && (
-                  <RoundSocialLogo
-                    platform="x"
-                    handle={editTwitter.replace(/^@/, '')}
-                  />
-                )}
-                {editWarpcast && (
-                  <RoundSocialLogo
-                    platform="farcaster"
-                    handle={editWarpcast.replace(/^@/, '')}
-                  />
-                )}
-                {editWebsite && (
-                  <RoundSocialLogo
-                    platform="website"
-                    handle={
-                      editWebsite.startsWith('http')
-                        ? editWebsite
-                        : `https://${editWebsite}`
-                    }
-                  />
-                )}
-                {editTag && (
-                  <span className="
-                    inline-flex items-center px-3 py-1 
-                    rounded-full text-xs font-medium 
-                    bg-indigo-100 text-indigo-800 
-                    dark:bg-indigo-800/20 dark:text-indigo-200
-                  ">
-                    {editTag}
-                  </span>
-                )}
-              </div>
-
-              {/* EFP-based read-only records */}
-              {efpSocialEntries.length > 0 && (
-                <div className="flex flex-wrap gap-3 justify-center mt-2">
-                  {efpSocialEntries.map(([k, v]) => (
-                    <RoundSocialLogo key={k} platform={k} handle={v} />
-                  ))}
-                </div>
+            <div className="flex flex-wrap gap-3 justify-center">
+              {editTwitter && <p className="text-sm text-blue-600">@{editTwitter}</p>}
+              {editWarpcast && <p className="text-sm text-blue-600">Warpcast: {editWarpcast}</p>}
+              {editWebsite && (
+                <a
+                  href={editWebsite.startsWith('http') ? editWebsite : `https://${editWebsite}`}
+                  className="text-sm text-blue-600 underline"
+                  target="_blank" rel="noopener noreferrer"
+                >
+                  {editWebsite}
+                </a>
+              )}
+              {editTag && (
+                <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full">
+                  {editTag}
+                </span>
               )}
             </div>
           )}
@@ -562,7 +315,7 @@ export default function ProfileCard({ data = {} }) {
         {/* Looking for Work */}
         <div className="mt-4">
           {editing ? (
-            <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+            <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
               <input
                 type="checkbox"
                 checked={editLookingForWork}
@@ -589,117 +342,85 @@ export default function ProfileCard({ data = {} }) {
             {editing && (
               <button
                 onClick={addExp}
-                className="ml-2 inline-flex items-center text-xs text-blue-600 hover:underline transition-colors"
+                className="ml-2 inline-flex items-center text-xs text-blue-600 hover:underline"
               >
-                <PlusCircle size={14} className="mr-0.5" /> Add
+                <PlusCircle size={14} /> Add
               </button>
             )}
           </h3>
-
           {editExp.length === 0 && !editing && (
             <p className="text-sm text-gray-500">No experience added yet.</p>
           )}
-
           {editExp.map((exp, i) => (
-            <div key={i} className="mb-6 last:mb-0">
+            <div key={i} className="mb-6">
               {editing ? (
                 <>
                   <div className="grid sm:grid-cols-2 gap-2">
                     <input
-                      className="
-                        bg-white dark:bg-gray-900 
-                        border border-gray-200 dark:border-gray-700 
-                        rounded-lg p-2 text-sm placeholder-gray-400
-                      "
-                      placeholder="Job title"
                       value={exp.title}
                       onChange={(e) => updateExp(i, 'title', e.target.value)}
+                      className="bg-white border border-gray-200 rounded-lg p-2 text-sm"
+                      placeholder="Job Title"
                     />
                     <input
-                      className="
-                        bg-white dark:bg-gray-900
-                        border border-gray-200 dark:border-gray-700
-                        rounded-lg p-2 text-sm placeholder-gray-400
-                      "
-                      placeholder="Company"
                       value={exp.company}
                       onChange={(e) => updateExp(i, 'company', e.target.value)}
+                      className="bg-white border border-gray-200 rounded-lg p-2 text-sm"
+                      placeholder="Company"
                     />
                   </div>
-
-                  <div className="grid sm:grid-cols-2 gap-2 mt-3">
+                  <div className="grid sm:grid-cols-2 gap-2 mt-2">
                     <input
                       type="date"
-                      className="
-                        bg-white dark:bg-gray-900
-                        border border-gray-200 dark:border-gray-700
-                        rounded-lg p-2 text-sm placeholder-gray-400
-                      "
                       value={exp.startDate}
                       onChange={(e) => updateExp(i, 'startDate', e.target.value)}
+                      className="bg-white border border-gray-200 rounded-lg p-2 text-sm"
                     />
-
                     {!exp.currentlyWorking && (
                       <input
                         type="date"
-                        className="
-                          bg-white dark:bg-gray-900
-                          border border-gray-200 dark:border-gray-700
-                          rounded-lg p-2 text-sm placeholder-gray-400
-                        "
                         value={exp.endDate}
                         onChange={(e) => updateExp(i, 'endDate', e.target.value)}
+                        className="bg-white border border-gray-200 rounded-lg p-2 text-sm"
                       />
                     )}
                   </div>
-
-                  <div className="flex items-center gap-2 mt-3">
-                    <label className="
-                      flex items-center text-xs gap-1 
-                      cursor-pointer select-none 
-                      text-gray-600 dark:text-gray-300
-                    ">
+                  <div className="mt-2 flex items-center gap-2">
+                    <label className="text-xs flex items-center gap-1 cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={exp.currentlyWorking}
                         onChange={() => toggleCurrent(i)}
-                        className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500"
+                        className="h-4 w-4 text-indigo-600 rounded"
                       />
-                      Currently working here
+                      Currently here
                     </label>
-
                     <button
                       onClick={() => removeExp(i)}
-                      className="ml-auto text-red-500 hover:text-red-700 transition-colors"
+                      className="ml-auto text-red-500 hover:text-red-700"
                     >
                       <Trash2 size={14} />
                     </button>
                   </div>
-
                   <textarea
                     rows={3}
-                    placeholder="Role description"
                     value={exp.description}
                     onChange={(e) => updateExp(i, 'description', e.target.value)}
-                    className="
-                      w-full mt-3 bg-white dark:bg-gray-900
-                      border border-gray-200 dark:border-gray-700
-                      rounded-lg p-2 text-sm placeholder-gray-400
-                    "
+                    className="mt-2 w-full bg-white border border-gray-200 rounded-lg p-2 text-sm"
+                    placeholder="Describe your role..."
                   />
                 </>
               ) : (
                 <>
-                  <p className="font-semibold text-md text-gray-800 dark:text-gray-100">
+                  <p className="font-semibold text-md">
                     {exp.title}
                     {exp.company && ` • ${exp.company}`}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-gray-500 mt-1">
                     {formatRange(exp.startDate, exp.endDate, exp.currentlyWorking)}
-                    {exp.location && ` • ${exp.location}`}
                   </p>
                   {exp.description && (
-                    <p className="text-sm mt-2 text-gray-600 dark:text-gray-300 whitespace-pre-line leading-relaxed">
+                    <p className="text-sm mt-2 text-gray-600 whitespace-pre-line">
                       {exp.description}
                     </p>
                   )}
@@ -716,16 +437,8 @@ export default function ProfileCard({ data = {} }) {
               POAPs
             </h3>
             <div className="grid grid-cols-2 gap-2">
-              {poapsToShow.map((poap, i) => (
-                <div
-                  key={i}
-                  className="
-                    flex items-center gap-2 
-                    bg-white dark:bg-gray-900
-                    rounded-lg shadow-sm p-2 text-sm 
-                    text-gray-700 dark:text-gray-300
-                  "
-                >
+              {poapsToShow.map((poap, idx) => (
+                <div key={idx} className="flex items-center gap-2 bg-white rounded-lg p-2 text-sm">
                   <img
                     src={poap.event?.image_url || '/default-poap.png'}
                     alt={poap.event?.name || 'POAP'}
@@ -735,17 +448,14 @@ export default function ProfileCard({ data = {} }) {
                 </div>
               ))}
             </div>
-
             {poapData.length > 4 && (
-              <div className="flex justify-end mt-2">
-                <button
-                  onClick={() => setShowAllPoaps(!showAllPoaps)}
-                  className="flex items-center text-xs text-blue-600 hover:underline transition-colors"
-                >
-                  {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                  {showAllPoaps ? 'View Less' : 'View All'}
-                </button>
-              </div>
+              <button
+                onClick={() => setShowAllPoaps(!showAllPoaps)}
+                className="mt-2 text-xs text-blue-600 hover:underline flex items-center"
+              >
+                {showAllPoaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                {showAllPoaps ? 'Hide' : 'View all'}
+              </button>
             )}
           </div>
         )}
@@ -757,11 +467,11 @@ export default function ProfileCard({ data = {} }) {
               NFTs (recent)
             </h3>
             <div className="grid grid-cols-3 gap-3">
-              {nftsToShow.map((nft, i) => (
+              {nftsToShow.map((nft, idx) => (
                 <img
-                  key={i}
+                  key={idx}
                   src={nft.image || nft.image_url || '/nft-placeholder.png'}
-                  alt={nft.name || `NFT ${i}`}
+                  alt={nft.name || `NFT ${idx}`}
                   className="w-full h-24 object-cover rounded-lg shadow-sm"
                 />
               ))}
@@ -769,41 +479,32 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* OpenSea link if address is present */}
+        {/* Link to OpenSea */}
         {address && (
           <div className="mt-6 text-center">
             <a
               href={`https://opensea.io/${address}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="
-                inline-flex items-center gap-1 
-                text-sm font-medium 
-                text-blue-600 hover:text-blue-500 
-                transition-colors
-              "
+              className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-500"
             >
-              <ExternalLink size={14} /> View full collection on OpenSea
+              <ExternalLink size={14} />
+              View full collection on OpenSea
             </a>
           </div>
         )}
 
-        {/* Edit / Save / Cancel */}
+        {/* Action Buttons */}
         {isOwner && (
           <div className="mt-8 flex justify-center gap-3">
             {editing ? (
               <>
                 <button
                   onClick={handleSave}
-                  className="
-                    inline-flex items-center gap-1 
-                    px-4 py-2 
-                    bg-indigo-600 hover:bg-indigo-700 
-                    text-white text-sm font-medium 
-                    rounded-lg shadow-sm transition-colors
-                  "
+                  className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg shadow-sm hover:bg-indigo-700"
                 >
-                  <Save size={16} /> Save
+                  <Save size={16} />
+                  Save
                 </button>
                 <button
                   onClick={() => {
@@ -817,37 +518,28 @@ export default function ProfileCard({ data = {} }) {
                     setEditWebsite(website || '');
                     setEditLookingForWork(lookingForWork);
                   }}
-                  className="
-                    inline-flex items-center gap-1 
-                    px-4 py-2 
-                    bg-gray-300 hover:bg-gray-400 
-                    text-gray-800 text-sm font-medium 
-                    rounded-lg shadow-sm transition-colors
-                  "
+                  className="inline-flex items-center gap-1 px-4 py-2 bg-gray-300 text-gray-800 text-sm rounded-lg shadow-sm hover:bg-gray-400"
                 >
-                  <X size={16} /> Cancel
+                  <X size={16} />
+                  Cancel
                 </button>
               </>
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                className="
-                  inline-flex items-center gap-1 
-                  px-4 py-2 
-                  bg-indigo-600 hover:bg-indigo-700 
-                  text-white text-sm font-medium 
-                  rounded-lg shadow-sm transition-colors
-                "
+                className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg shadow-sm hover:bg-indigo-700"
               >
-                <Edit size={16} /> Edit Profile
+                <Edit size={16} />
+                Edit Profile
               </button>
             )}
           </div>
         )}
 
         {justSaved && (
-          <div className="mt-4 flex justify-center items-center text-green-600 text-sm">
-            <CheckCircle size={16} className="mr-1" /> Profile saved!
+          <div className="mt-4 text-sm text-green-600 flex justify-center items-center">
+            <CheckCircle size={16} className="mr-1" />
+            Profile saved!
           </div>
         )}
       </div>
