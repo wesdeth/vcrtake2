@@ -3,8 +3,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import axios from 'axios'
 import { motion } from 'framer-motion'
-
-// Example icons from lucide-react; you can remove or replace as needed
 import {
   Copy,
   ChevronDown,
@@ -16,7 +14,7 @@ import {
   PlusCircle,
   Trash2,
   CheckCircle,
-  X,
+  X
 } from 'lucide-react'
 
 /**
@@ -28,7 +26,7 @@ function shortenAddress(addr = '') {
 }
 
 /**
- * Simple date parse that handles either "YYYY-MM-DD" or "MM/DD/YYYY"
+ * Simple date parser that handles "YYYY-MM-DD" or "MM/DD/YYYY"
  */
 function parseDate(d) {
   if (!d) return null
@@ -37,26 +35,26 @@ function parseDate(d) {
 }
 
 /**
- * Format "May 2023 – Present" if currentlyWorking is true
+ * Format a date range, e.g. "May 2023 – Present" if currentlyWorking is true
  */
 function formatRange(s, e, currentlyWorking) {
   if (!s) return ''
   const start = parseDate(s)?.toLocaleDateString(undefined, {
     year: 'numeric',
-    month: 'short',
+    month: 'short'
   })
   const end = currentlyWorking
     ? 'Present'
     : parseDate(e)?.toLocaleDateString(undefined, {
         year: 'numeric',
-        month: 'short',
+        month: 'short'
       }) || ''
   return `${start} – ${end}`
 }
 
 export default function ProfileCard({ data = {} }) {
   const {
-    // Basic fields
+    // Basic profile fields
     name,
     address,
     avatar,
@@ -69,22 +67,22 @@ export default function ProfileCard({ data = {} }) {
     workExperience = [],
     // Additional booleans
     lookingForWork = false,
-    ownsProfile = false, // pass from parent if user is the owner
+    ownsProfile = false, // parent sets if user can edit
     // Arrays
     poaps = [],
-    nfts = [],
+    nfts = []
   } = data
 
   const router = useRouter()
 
-  // 1) Local state for editing
+  // Is user the owner?
+  const isOwner = ownsProfile
+
+  // ------------------- local state for editing -------------------
   const [editing, setEditing] = useState(false)
   const [justSaved, setJustSaved] = useState(false)
 
-  // "Looking for Work" checkbox
   const [editLookingForWork, setEditLookingForWork] = useState(lookingForWork)
-
-  // Avatar (allow user to upload if owner)
   const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png')
 
   // Social fields
@@ -92,40 +90,42 @@ export default function ProfileCard({ data = {} }) {
   const [editWebsite, setEditWebsite] = useState(website)
   const [editWarpcast, setEditWarpcast] = useState(warpcast)
 
-  // Tag
+  // Tag + Bio
   const [editTag, setEditTag] = useState(tag)
-
-  // Bio
   const [editBio, setEditBio] = useState(bio || ensBio)
 
   // Experience
   const [editExp, setEditExp] = useState(workExperience)
 
-  // 2) POAP data in local state
+  // ------------------- POAPs in local state -------------------
   const [poapData, setPoapData] = useState(poaps)
   const [showAllPoaps, setShowAllPoaps] = useState(false)
 
-  // 3) Are we the owner
-  const isOwner = ownsProfile
-
-  /**
-   * On mount or address change, optionally fetch fresh POAP data
-   * + fallback avatar from OpenSea.
-   */
+  // ------------------- effect: fetch POAP + fallback avatar -------------------
   useEffect(() => {
     if (!address) return
 
-    // POAP
+    // 1) Attempt POAP fetch from POAP.tech
     axios
       .get(`https://api.poap.tech/actions/scan/${address}`, {
-        headers: {
-          'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo',
-        },
+        headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' }
       })
-      .then((r) => setPoapData(r.data || []))
-      .catch(() => setPoapData([]))
+      .then((r) => {
+        if (Array.isArray(r.data)) {
+          setPoapData(r.data)
+        } else {
+          // If the response is not an array, fallback to empty
+          console.warn('POAP fetch: response not an array', r.data)
+          setPoapData([])
+        }
+      })
+      .catch((err) => {
+        console.error('/api/poap fetch error:', err?.response?.status || err)
+        // fallback to empty on error
+        setPoapData([])
+      })
 
-    // fallback avatar if none provided
+    // 2) Fallback avatar from OpenSea if none provided
     if (!avatar) {
       axios
         .get(`https://api.opensea.io/api/v1/user/${address}`)
@@ -134,14 +134,12 @@ export default function ProfileCard({ data = {} }) {
           if (img) setUploadedAvatar(img)
         })
         .catch(() => {
-          // fallback
+          // ignore
         })
     }
   }, [address, avatar])
 
-  /**
-   * handleAvatarUpload – read as DataURL and store
-   */
+  // ------------------- handlers -------------------
   function handleAvatarUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -150,9 +148,6 @@ export default function ProfileCard({ data = {} }) {
     reader.readAsDataURL(file)
   }
 
-  /**
-   * handleSave – post to /api/save-profile
-   */
   async function handleSave() {
     try {
       const res = await fetch('/api/save-profile', {
@@ -168,20 +163,20 @@ export default function ProfileCard({ data = {} }) {
           bio: editBio,
           custom_avatar: uploadedAvatar,
           lookingForWork: editLookingForWork,
-          // map experience properly
           experience: editExp.map((exp) => ({
             ...exp,
             startDate: exp.startDate || '',
             endDate: exp.currentlyWorking ? null : exp.endDate || '',
             currentlyWorking: !!exp.currentlyWorking,
             location: exp.location || '',
-            description: exp.description || '',
-          })),
-        }),
+            description: exp.description || ''
+          }))
+        })
       })
       if (!res.ok) {
         throw new Error('Profile save failed')
       }
+      // success
       setEditing(false)
       setJustSaved(true)
       setTimeout(() => setJustSaved(false), 2500)
@@ -191,22 +186,22 @@ export default function ProfileCard({ data = {} }) {
   }
 
   // Work Experience updaters
-  function updateExp(idx, field, val) {
+  function updateExp(i, field, val) {
     setEditExp((prev) =>
-      prev.map((item, i) => (i === idx ? { ...item, [field]: val } : item))
+      prev.map((ex, idx) => (idx === i ? { ...ex, [field]: val } : ex))
     )
   }
-  function toggleCurrent(idx) {
+  function toggleCurrent(i) {
     setEditExp((prev) =>
-      prev.map((item, i) => {
-        if (i === idx) {
+      prev.map((ex, idx) => {
+        if (idx === i) {
           return {
-            ...item,
-            currentlyWorking: !item.currentlyWorking,
-            endDate: item.currentlyWorking ? item.endDate : '',
+            ...ex,
+            currentlyWorking: !ex.currentlyWorking,
+            endDate: ex.currentlyWorking ? ex.endDate : ''
           }
         }
-        return item
+        return ex
       })
     )
   }
@@ -220,27 +215,26 @@ export default function ProfileCard({ data = {} }) {
         endDate: '',
         location: '',
         description: '',
-        currentlyWorking: false,
-      },
+        currentlyWorking: false
+      }
     ])
   }
-  function removeExp(idx) {
-    setEditExp((prev) => prev.filter((_, i) => i !== idx))
+  function removeExp(i) {
+    setEditExp((prev) => prev.filter((_, idx) => idx !== i))
   }
 
-  // slice POAPs
+  // slice POAP + NFT
   const poapsToShow = showAllPoaps ? poapData : poapData.slice(0, 4)
-
-  // slice NFTs
   const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : []
 
+  // ------------------- render -------------------
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
       className="
-        relative w-full max-w-3xl mx-auto
+        relative w-full max-w-3xl mx-auto 
         rounded-3xl overflow-visible
         shadow-xl border border-gray-100 ring-1 ring-gray-200/70
         bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800
@@ -286,13 +280,11 @@ export default function ProfileCard({ data = {} }) {
           </p>
         )}
 
-        {/* Optional "Message" button if user is not owner */}
-        {address && !isOwner && (
+        {/* Possibly a message button if not owner */}
+        {!isOwner && address && (
           <div className="mt-2">
             <button
-              onClick={() =>
-                router.push(`/messages?to=${address}`)
-              }
+              onClick={() => router.push(`/messages?to=${address}`)}
               className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg"
             >
               Message
@@ -349,9 +341,7 @@ export default function ProfileCard({ data = {} }) {
           ) : (
             <div className="flex flex-wrap justify-center gap-3">
               {editTwitter && (
-                <p className="text-sm text-blue-600 dark:text-blue-400">
-                  Twitter: @{editTwitter}
-                </p>
+                <p className="text-sm text-blue-600 dark:text-blue-400">Twitter: @{editTwitter}</p>
               )}
               {editWarpcast && (
                 <p className="text-sm text-blue-600 dark:text-blue-400">
@@ -394,7 +384,7 @@ export default function ProfileCard({ data = {} }) {
               Looking for Work
             </label>
           ) : (
-            lookingForWork && (
+            editLookingForWork && (
               <div className="mt-1">
                 <span className="inline-block px-2 py-1 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-full">
                   Looking for Work
@@ -404,7 +394,7 @@ export default function ProfileCard({ data = {} }) {
           )}
         </div>
 
-        {/* Experience */}
+        {/* Work Experience */}
         <div className="mt-10 text-left">
           <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-100 flex items-center">
             Experience{' '}
@@ -571,21 +561,26 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Edit / Save / Cancel if isOwner */}
+        {/* If user is owner => Edit / Save / Cancel */}
         {isOwner && (
           <div className="mt-8 flex justify-center gap-3">
             {editing ? (
               <>
                 <button
                   onClick={handleSave}
-                  className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+                  className="
+                    inline-flex items-center gap-1 px-4 py-2 
+                    bg-indigo-600 hover:bg-indigo-700
+                    text-white text-sm font-medium 
+                    rounded-lg shadow-sm transition-colors
+                  "
                 >
                   <Save size={16} /> Save
                 </button>
                 <button
                   onClick={() => {
                     setEditing(false)
-                    // revert changes
+                    // revert
                     setEditBio(bio || ensBio)
                     setEditExp(workExperience)
                     setEditTag(tag)
@@ -594,7 +589,12 @@ export default function ProfileCard({ data = {} }) {
                     setEditWebsite(website)
                     setEditLookingForWork(lookingForWork)
                   }}
-                  className="inline-flex items-center gap-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg shadow-sm transition-colors"
+                  className="
+                    inline-flex items-center gap-1 px-4 py-2 
+                    bg-gray-300 hover:bg-gray-400 
+                    text-gray-800 text-sm font-medium 
+                    rounded-lg shadow-sm transition-colors
+                  "
                 >
                   <X size={16} /> Cancel
                 </button>
@@ -602,7 +602,12 @@ export default function ProfileCard({ data = {} }) {
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+                className="
+                  inline-flex items-center gap-1 px-4 py-2 
+                  bg-indigo-600 hover:bg-indigo-700 
+                  text-white text-sm font-medium 
+                  rounded-lg shadow-sm transition-colors
+                "
               >
                 <Edit size={16} /> Edit Profile
               </button>
@@ -610,10 +615,11 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* “Profile saved!” */}
+        {/* Save confirmation */}
         {justSaved && (
           <div className="mt-4 flex justify-center items-center text-green-600 text-sm">
-            <CheckCircle size={16} className="mr-1" /> Profile saved!
+            <CheckCircle size={16} className="mr-1" />
+            Profile saved!
           </div>
         )}
       </div>
