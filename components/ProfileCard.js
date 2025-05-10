@@ -1,4 +1,5 @@
 // components/ProfileCard.js
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { useAccount } from 'wagmi'
@@ -18,41 +19,76 @@ import {
   PlusCircle,
   Trash2,
   CheckCircle,
-  X
+  X,
 } from 'lucide-react'
 
 /* ------------------------------------------------------------------
-   Helpers
+   Utility Helpers
 -------------------------------------------------------------------*/
 function shortenAddress(addr = '') {
   if (!addr) return ''
-  return addr.slice(0, 6) + '…' + addr.slice(-4)
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
 }
+
 function parseDate(d) {
   if (!d) return null
   const p = Date.parse(d.replace(/\//g, '-'))
   return Number.isNaN(p) ? null : new Date(p)
 }
+
 function formatRange(s, e, current) {
   if (!s) return ''
-  const start = parseDate(s)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' })
+  const start = parseDate(s)?.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+  })
   const end = current
     ? 'Present'
-    : parseDate(e)?.toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) || ''
+    : parseDate(e)?.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+      }) || ''
   return `${start} – ${end}`
 }
 
-/** For recognized EFP record keys -> label/prefix. */
+/**
+ * If you see EFP records like "com.twitter" => "somehandle", we map them to icons/prefix:
+ */
 const EFP_MAP = {
-  'com.twitter': { label: 'Twitter', icon: Twitter, prefix: 'https://twitter.com/' },
-  'com.discord': { label: 'Discord', icon: UserPlus2, prefix: null },
-  'com.github': { label: 'GitHub', icon: UserPlus2, prefix: 'https://github.com/' },
-  'org.telegram': { label: 'Telegram', icon: UserPlus2, prefix: 'https://t.me/' },
-  'url': { label: 'Website', icon: LinkIcon, prefix: '' }
+  'com.twitter': {
+    label: 'Twitter',
+    icon: Twitter,
+    prefix: 'https://twitter.com/',
+  },
+  'com.discord': {
+    label: 'Discord',
+    icon: UserPlus2, // or a Discord icon
+    prefix: null, // no direct link
+  },
+  'com.github': {
+    label: 'GitHub',
+    icon: UserPlus2,
+    prefix: 'https://github.com/',
+  },
+  'org.telegram': {
+    label: 'Telegram',
+    icon: UserPlus2,
+    prefix: 'https://t.me/',
+  },
+  'url': {
+    label: 'Website',
+    icon: LinkIcon,
+    prefix: '',
+  },
 }
+
+/**
+ * Renders a single EFP record as a link or plain text
+ */
 function RenderEfpSocial({ recordKey, recordValue }) {
   const mapping = EFP_MAP[recordKey] || null
   if (!mapping) {
+    // Fallback if unknown
     return (
       <div className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
         <LinkIcon size={16} />
@@ -62,27 +98,31 @@ function RenderEfpSocial({ recordKey, recordValue }) {
   }
   const { label, icon: Icon, prefix } = mapping
   if (!prefix) {
+    // e.g. Discord might be plain text
     return (
       <div className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
         <Icon size={16} />
         {label}: {recordValue}
       </div>
     )
-  } else {
-    return (
-      <a
-        href={prefix + recordValue.replace(/^@/, '')}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-      >
-        <Icon size={16} />
-        {label}
-      </a>
-    )
   }
+  // Otherwise clickable link
+  return (
+    <a
+      href={prefix + recordValue.replace(/^@/, '')}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+    >
+      <Icon size={16} />
+      {label}
+    </a>
+  )
 }
 
+/**
+ * For DB-based (Twitter, Warpcast, Website) fields
+ */
 function DbSocialLink({ href, icon: Icon, label }) {
   if (!href) return null
   return (
@@ -98,15 +138,47 @@ function DbSocialLink({ href, icon: Icon, label }) {
   )
 }
 
+/**
+ * Tag options if you want a dropdown of possible roles
+ */
 const TAG_OPTIONS = [
-  'Front-End Developer','Back-End Developer','Full-Stack Engineer','Smart Contract Engineer',
-  'Solidity Auditor','Protocol Researcher','DevOps & Infra','Security Engineer','Product Manager',
-  'Designer / UX','Technical Writer','Growth Lead','Marketing Manager','Social Media Strategist',
-  'Community Manager','Developer Relations','DAO Governor','Governance Analyst','Tokenomics Designer',
-  'Partnerships Lead','Business Development','Support','Discord','Memecoins','Trader','Ecosystem','Legal',
-  'Protocol','CEO','COO','CFO','Founder / Co-Founder'
+  'Front-End Developer',
+  'Back-End Developer',
+  'Full-Stack Engineer',
+  'Smart Contract Engineer',
+  'Solidity Auditor',
+  'Protocol Researcher',
+  'DevOps & Infra',
+  'Security Engineer',
+  'Product Manager',
+  'Designer / UX',
+  'Technical Writer',
+  'Growth Lead',
+  'Marketing Manager',
+  'Social Media Strategist',
+  'Community Manager',
+  'Developer Relations',
+  'DAO Governor',
+  'Governance Analyst',
+  'Tokenomics Designer',
+  'Partnerships Lead',
+  'Business Development',
+  'Support',
+  'Discord',
+  'Memecoins',
+  'Trader',
+  'Ecosystem',
+  'Legal',
+  'Protocol',
+  'CEO',
+  'COO',
+  'CFO',
+  'Founder / Co-Founder',
 ]
 
+/* ------------------------------------------------------------------
+   Main ProfileCard
+-------------------------------------------------------------------*/
 export default function ProfileCard({ data = {} }) {
   const router = useRouter()
   const { address: connected } = useAccount()
@@ -124,27 +196,33 @@ export default function ProfileCard({ data = {} }) {
     workExperience = [],
     ownsProfile = false,
     poaps = [],
-    nfts = []
+    nfts = [],
   } = data
 
-  // Editing logic
+  // Are we the owner?
   const isOwner =
     ownsProfile ||
     (connected && address && connected.toLowerCase() === address.toLowerCase())
 
+  // Editing
   const [editing, setEditing] = useState(false)
   const [justSaved, setJustSaved] = useState(false)
-  // DB-based social fields
+
+  // Social fields (DB-based)
   const [editTwitter, setEditTwitter] = useState(twitter)
   const [editWebsite, setEditWebsite] = useState(website)
   const [editWarpcast, setEditWarpcast] = useState(warpcast)
+
   // Tag + Bio
   const [editTag, setEditTag] = useState(tag)
   const [editBio, setEditBio] = useState(bio || ensBio)
-  // Experience
+
+  // Work Experience
   const [editExp, setEditExp] = useState(workExperience)
+
   // Avatar
   const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png')
+
   // POAP
   const [poapData, setPoapData] = useState(poaps)
   const [showAllPoaps, setShowAllPoaps] = useState(false)
@@ -153,66 +231,60 @@ export default function ProfileCard({ data = {} }) {
   const [followersCount, setFollowersCount] = useState(null)
   const [efpRecords, setEfpRecords] = useState({})
 
-  /* -------------- Effects -------------- */
+  // On mount / update, fetch EFP + POAP + fallback avatar if needed
   useEffect(() => {
     if (!address) return
 
-    // 1) EFP fetch
     ;(async () => {
+      // 1) EFP
       try {
         const userKey = name?.endsWith('.eth') ? name.toLowerCase() : address
-        if (!userKey) return
+        if (userKey) {
+          // EFP ENS details
+          const ensRes = await axios.get(
+            `https://api.ethfollow.xyz/api/v1/users/${userKey}/ens?cache=fresh`
+          )
+          const efpEns = ensRes.data?.ens || {}
+          const recordsObj = efpEns.records || {}
+          setEfpRecords(recordsObj)
 
-        // EFP ens records
-        const ensRes = await axios.get(
-          `https://api.ethfollow.xyz/api/v1/users/${userKey}/ens?cache=fresh`
-        )
-        const efpEns = ensRes.data?.ens || {}
-        const recordsObj = efpEns.records || {}
-        setEfpRecords(recordsObj)
-
-        // EFP followers
-        const follRes = await axios.get(
-          `https://api.ethfollow.xyz/api/v1/users/${userKey}/followers?limit=9999&cache=fresh`
-        )
-        const arr = follRes.data?.followers || []
-        setFollowersCount(arr.length)
+          // EFP followers
+          const follRes = await axios.get(
+            `https://api.ethfollow.xyz/api/v1/users/${userKey}/followers?limit=9999&cache=fresh`
+          )
+          const arr = follRes.data?.followers || []
+          setFollowersCount(arr.length)
+        }
       } catch (err) {
         console.warn('EFP fetch error:', err)
         setFollowersCount(0)
       }
-    })()
 
-    // 2) POAP
-    ;(async () => {
+      // 2) POAP
       try {
         const r = await axios.get(`https://api.poap.tech/actions/scan/${address}`, {
-          headers: {
-            'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo'
-          }
+          headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' },
         })
         setPoapData(r.data || [])
       } catch {
         setPoapData([])
       }
-    })()
 
-    // 3) fallback avatar from OpenSea if none
-    if (!avatar) {
-      axios
-        .get(`https://api.opensea.io/api/v1/user/${address}`)
-        .then((r) => {
+      // 3) Fallback avatar from OpenSea if none
+      if (!avatar) {
+        try {
+          const r = await axios.get(`https://api.opensea.io/api/v1/user/${address}`)
           const img = r.data?.account?.profile_img_url || r.data?.profile_img_url
           if (img) setUploadedAvatar(img)
-        })
-        .catch(() => {
+        } catch {
           // ignore
-        })
-    }
+        }
+      }
+    })()
   }, [address, avatar, name])
 
-  /* -------------- Handlers -------------- */
-  function handleAvatarUpload(e) {
+  // Handle user uploading an avatar
+  const handleAvatarUpload = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
@@ -220,7 +292,8 @@ export default function ProfileCard({ data = {} }) {
     reader.readAsDataURL(file)
   }
 
-  async function handleSave() {
+  // Save to /api/save-profile
+  const handleSave = async () => {
     try {
       const res = await fetch('/api/save-profile', {
         method: 'POST',
@@ -238,9 +311,9 @@ export default function ProfileCard({ data = {} }) {
             ...ex,
             startDate: ex.startDate || '',
             endDate: ex.currentlyWorking ? null : ex.endDate || '',
-            currentlyWorking: !!ex.currentlyWorking
-          }))
-        })
+            currentlyWorking: !!ex.currentlyWorking,
+          })),
+        }),
       })
       if (!res.ok) throw new Error('Profile save failed')
 
@@ -252,44 +325,53 @@ export default function ProfileCard({ data = {} }) {
     }
   }
 
-  function updateExp(i, field, val) {
+  // Experience updaters
+  const updateExp = (i, field, val) => {
     setEditExp((prev) =>
       prev.map((itm, idx) => (idx === i ? { ...itm, [field]: val } : itm))
     )
   }
-  function toggleCurrent(i) {
+  const toggleCurrent = (i) => {
     setEditExp((prev) =>
       prev.map((itm, idx) => {
         if (idx === i) {
           return {
             ...itm,
             currentlyWorking: !itm.currentlyWorking,
-            endDate: itm.currentlyWorking ? itm.endDate : ''
+            endDate: itm.currentlyWorking ? itm.endDate : '',
           }
         }
         return itm
       })
     )
   }
-  function addExp() {
+  const addExp = () => {
     setEditExp((prev) => [
       ...prev,
-      { title: '', company: '', startDate: '', endDate: '', location: '', description: '', currentlyWorking: false }
+      {
+        title: '',
+        company: '',
+        startDate: '',
+        endDate: '',
+        location: '',
+        description: '',
+        currentlyWorking: false,
+      },
     ])
   }
-  function removeExp(i) {
+  const removeExp = (i) => {
     setEditExp((prev) => prev.filter((_, idx) => idx !== i))
   }
 
-  /* -------------- Derived -------------- */
+  // Show partial or all POAPs
   const poapsToShow = Array.isArray(poapData)
     ? showAllPoaps
       ? poapData
       : poapData.slice(0, 4)
     : []
+  // Show up to 6 NFTs
   const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : []
 
-  /* -------------- Render -------------- */
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -302,8 +384,11 @@ export default function ProfileCard({ data = {} }) {
         bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800
       "
     >
+      {/* Subtle background behind content */}
       <div className="absolute inset-0 opacity-40 animate-pulse-slow pointer-events-none" />
+
       <div className="relative z-10 p-10 sm:p-12 text-center backdrop-blur-xl">
+
         {/* Avatar */}
         <div className="relative w-36 h-36 mx-auto -mt-16 mb-4">
           <img
@@ -336,14 +421,14 @@ export default function ProfileCard({ data = {} }) {
           </p>
         )}
 
-        {/* EFP follower count, if any */}
+        {/* EFP follower count */}
         {followersCount !== null && (
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
             {followersCount} Follower{followersCount === 1 ? '' : 's'}
           </p>
         )}
 
-        {/* Message button if not owner */}
+        {/* If not owner => Message button */}
         {address && !isOwner && (
           <div className="mt-2">
             <button
@@ -372,10 +457,10 @@ export default function ProfileCard({ data = {} }) {
           )
         )}
 
-        {/* DB-based Socials + EFP-based */}
+        {/* Socials & Tag */}
         <div className="mt-6">
           {editing ? (
-            // In edit mode => show input fields for DB-based
+            // Editing state => DB fields in text inputs
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
               <input
                 placeholder="Twitter handle"
@@ -409,7 +494,7 @@ export default function ProfileCard({ data = {} }) {
               </select>
             </div>
           ) : (
-            // View mode => DB-based links + EFP records
+            // View mode => DB fields plus EFP records
             <div className="flex flex-col gap-3 items-center justify-center">
               {/* DB-based */}
               <div className="flex flex-wrap gap-3 justify-center">
@@ -454,6 +539,7 @@ export default function ProfileCard({ data = {} }) {
                 <div className="flex flex-wrap gap-3 justify-center">
                   {Object.entries(efpRecords).map(([rk, rv]) => {
                     if (!rv || typeof rv !== 'string') return null
+                    // skip avatar/description if EFP has them
                     if (rk === 'avatar' || rk === 'description') return null
                     return <RenderEfpSocial key={rk} recordKey={rk} recordValue={rv} />
                   })}
@@ -476,7 +562,6 @@ export default function ProfileCard({ data = {} }) {
               </button>
             )}
           </h3>
-
           {editExp.length === 0 && !editing && (
             <p className="text-sm text-gray-500">No experience added yet.</p>
           )}
@@ -615,7 +700,7 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Link to OpenSea if address */}
+        {/* OpenSea link if address */}
         {address && (
           <div className="mt-6 text-center">
             <a
@@ -668,6 +753,7 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
+        {/* “Profile saved!” confirmation */}
         {justSaved && (
           <div className="mt-4 flex justify-center items-center text-green-600 text-sm">
             <CheckCircle size={16} className="mr-1" /> Profile saved!
