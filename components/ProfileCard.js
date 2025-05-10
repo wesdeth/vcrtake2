@@ -1,10 +1,13 @@
 // components/ProfileCard.js
 import { useState, useEffect } from 'react'
+import { useAccount } from 'wagmi'
 import { useRouter } from 'next/router'
 import axios from 'axios'
-import { motion } from 'framer-motion'
 import {
   Copy,
+  Twitter,
+  Link as LinkIcon,
+  UserPlus2,
   ChevronDown,
   ChevronUp,
   Edit,
@@ -16,9 +19,14 @@ import {
   CheckCircle,
   X
 } from 'lucide-react'
+import { motion } from 'framer-motion'
 
-/**
- * Shorten a "0x" address, e.g. "0x1234...abcd"
+/* ------------------------------------------------------------------
+   Utility Helpers
+-------------------------------------------------------------------*/
+
+/** 
+ * Shorten "0xAddress" to e.g. "0x1234...abcd" 
  */
 function shortenAddress(addr = '') {
   if (!addr) return ''
@@ -26,7 +34,7 @@ function shortenAddress(addr = '') {
 }
 
 /**
- * Simple date parser that handles "YYYY-MM-DD" or "MM/DD/YYYY"
+ * Parse date from "YYYY-MM-DD" or "MM/DD/YYYY"
  */
 function parseDate(d) {
   if (!d) return null
@@ -35,7 +43,7 @@ function parseDate(d) {
 }
 
 /**
- * Format a date range, e.g. "May 2023 – Present" if currentlyWorking is true
+ * Format "May 2023 – Present" if `currentlyWorking` is true
  */
 function formatRange(s, e, currentlyWorking) {
   if (!s) return ''
@@ -52,9 +60,72 @@ function formatRange(s, e, currentlyWorking) {
   return `${start} – ${end}`
 }
 
+/* 
+  Possible Tag options, used if you're letting user pick from a dropdown:
+*/
+const TAG_OPTIONS = [
+  'Front-End Developer',
+  'Back-End Developer',
+  'Full-Stack Engineer',
+  'Smart Contract Engineer',
+  'Solidity Auditor',
+  'Protocol Researcher',
+  'DevOps & Infra',
+  'Security Engineer',
+  'Product Manager',
+  'Designer / UX',
+  'Technical Writer',
+  'Growth Lead',
+  'Marketing Manager',
+  'Social Media Strategist',
+  'Community Manager',
+  'Developer Relations',
+  'DAO Governor',
+  'Governance Analyst',
+  'Tokenomics Designer',
+  'Partnerships Lead',
+  'Business Development',
+  'Support',
+  'Discord',
+  'Memecoins',
+  'Trader',
+  'Ecosystem',
+  'Legal',
+  'Protocol',
+  'CEO',
+  'COO',
+  'CFO',
+  'Founder / Co-Founder'
+]
+
+/** 
+ * Simple sub-component for a clickable link with an icon 
+ */
+function SocialLink({ href, icon: Icon, label }) {
+  if (!href) return null
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline transition-colors"
+    >
+      <Icon size={16} />
+      {label}
+    </a>
+  )
+}
+
+/* ------------------------------------------------------------------
+   Main ProfileCard
+-------------------------------------------------------------------*/
 export default function ProfileCard({ data = {} }) {
+  const router = useRouter()
+  const { address: connectedAddress } = useAccount()
+
+  // Destructure initial data from parent
   const {
-    // Basic profile fields
+    // basic fields
     name,
     address,
     avatar,
@@ -65,67 +136,106 @@ export default function ProfileCard({ data = {} }) {
     bio = '',
     ensBio = '',
     workExperience = [],
-    // Additional booleans
-    lookingForWork = false,
-    ownsProfile = false, // parent sets if user can edit
-    // Arrays
+    ownsProfile = false, // true if we can edit
+    // arrays
     poaps = [],
-    nfts = []
+    nfts = [],
+    // EFP extras might come in, but we'll also fetch them ourselves
   } = data
 
-  const router = useRouter()
+  // Check if viewer can edit
+  const isOwner =
+    ownsProfile ||
+    (connectedAddress &&
+      address &&
+      connectedAddress.toLowerCase() === address.toLowerCase())
 
-  // Is user the owner?
-  const isOwner = ownsProfile
-
-  // ------------------- local state for editing -------------------
+  // ---------- Local state for editing ------------
   const [editing, setEditing] = useState(false)
   const [justSaved, setJustSaved] = useState(false)
 
-  const [editLookingForWork, setEditLookingForWork] = useState(lookingForWork)
-  const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png')
-
-  // Social fields
+  // Social
   const [editTwitter, setEditTwitter] = useState(twitter)
   const [editWebsite, setEditWebsite] = useState(website)
   const [editWarpcast, setEditWarpcast] = useState(warpcast)
 
-  // Tag + Bio
+  // Tag + bio
   const [editTag, setEditTag] = useState(tag)
   const [editBio, setEditBio] = useState(bio || ensBio)
 
-  // Experience
+  // Work experience
   const [editExp, setEditExp] = useState(workExperience)
 
-  // ------------------- POAPs in local state -------------------
+  // Avatar
+  const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png')
+
+  // POAP data
   const [poapData, setPoapData] = useState(poaps)
   const [showAllPoaps, setShowAllPoaps] = useState(false)
 
-  // ------------------- effect: fetch POAP + fallback avatar -------------------
+  // NFT data
+  // We'll just slice what's given in `nfts`
+  const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : []
+
+  // ---------- EFP data (followers & socials) ------------
+  const [followersCount, setFollowersCount] = useState(null)
+  // If you wanted to store EFP "records" for e.g. Discord, Telegram, etc.
+  // you can do so here. If not needed, remove it:
+  const [efpRecords, setEfpRecords] = useState({})
+
+  /* ----------------------------------------------------------------
+     Effects: fetch EFP + POAP + fallback avatar
+  ----------------------------------------------------------------*/
   useEffect(() => {
     if (!address) return
 
-    // 1) Attempt POAP fetch from POAP.tech
-    axios
-      .get(`https://api.poap.tech/actions/scan/${address}`, {
-        headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' }
-      })
-      .then((r) => {
-        if (Array.isArray(r.data)) {
-          setPoapData(r.data)
+    // 1) fetch EFP details & followers
+    ;(async () => {
+      try {
+        // EFP “/details” for social + “/followers” for follower array
+        const userKey = name?.endsWith('.eth') ? name.toLowerCase() : address
+        if (!userKey) return
+
+        // EFP details => social records
+        const detailsRes = await axios.get(
+          `https://api.ethfollow.xyz/api/v1/users/${userKey}/ens?cache=fresh`
+        )
+        // shape: { ens: { name, address, avatar, records: {...} } }
+        const ensData = detailsRes.data?.ens || {}
+        const recs = ensData.records || {}
+        // you can parse recs for e.g. 'com.discord' => 'discord: handle', etc.
+        setEfpRecords(recs)
+
+        // EFP followers => we just want .length
+        const follRes = await axios.get(
+          `https://api.ethfollow.xyz/api/v1/users/${userKey}/followers?limit=9999&cache=fresh`
+        )
+        const arr = follRes.data?.followers || []
+        setFollowersCount(arr.length)
+      } catch (err) {
+        console.warn('EFP fetch error:', err)
+        setFollowersCount(0)
+      }
+    })()
+
+    // 2) fetch POAP data from POAP.tech
+    ;(async () => {
+      try {
+        const poapResp = await axios.get(`https://api.poap.tech/actions/scan/${address}`, {
+          headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' }
+        })
+        if (Array.isArray(poapResp.data)) {
+          setPoapData(poapResp.data)
         } else {
-          // If the response is not an array, fallback to empty
-          console.warn('POAP fetch: response not an array', r.data)
           setPoapData([])
         }
-      })
-      .catch((err) => {
-        console.error('/api/poap fetch error:', err?.response?.status || err)
-        // fallback to empty on error
+      } catch (err) {
+        console.error('POAP fetch error', err)
         setPoapData([])
-      })
+      }
+    })()
 
-    // 2) Fallback avatar from OpenSea if none provided
+    // 3) fallback avatar from OpenSea if no custom avatar
     if (!avatar) {
       axios
         .get(`https://api.opensea.io/api/v1/user/${address}`)
@@ -137,9 +247,9 @@ export default function ProfileCard({ data = {} }) {
           // ignore
         })
     }
-  }, [address, avatar])
+  }, [address, name, avatar])
 
-  // ------------------- handlers -------------------
+  // ---------- handle avatar upload ------------
   function handleAvatarUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -148,6 +258,7 @@ export default function ProfileCard({ data = {} }) {
     reader.readAsDataURL(file)
   }
 
+  // ---------- handle Save ------------
   async function handleSave() {
     try {
       const res = await fetch('/api/save-profile', {
@@ -162,46 +273,45 @@ export default function ProfileCard({ data = {} }) {
           tag: editTag,
           bio: editBio,
           custom_avatar: uploadedAvatar,
-          lookingForWork: editLookingForWork,
-          experience: editExp.map((exp) => ({
-            ...exp,
-            startDate: exp.startDate || '',
-            endDate: exp.currentlyWorking ? null : exp.endDate || '',
-            currentlyWorking: !!exp.currentlyWorking,
-            location: exp.location || '',
-            description: exp.description || ''
+          // map experience properly
+          experience: editExp.map((ex) => ({
+            ...ex,
+            startDate: ex.startDate || '',
+            endDate: ex.currentlyWorking ? null : ex.endDate || '',
+            currentlyWorking: !!ex.currentlyWorking
           }))
         })
       })
       if (!res.ok) {
-        throw new Error('Profile save failed')
+        const msg = (await res.json()).error || 'Unknown error'
+        throw new Error(msg)
       }
       // success
       setEditing(false)
       setJustSaved(true)
       setTimeout(() => setJustSaved(false), 2500)
     } catch (err) {
-      console.error('save-profile error:', err)
+      console.error('save-profile error', err)
     }
   }
 
-  // Work Experience updaters
+  // ---------- experience updaters ------------
   function updateExp(i, field, val) {
     setEditExp((prev) =>
-      prev.map((ex, idx) => (idx === i ? { ...ex, [field]: val } : ex))
+      prev.map((item, idx) => (idx === i ? { ...item, [field]: val } : item))
     )
   }
   function toggleCurrent(i) {
     setEditExp((prev) =>
-      prev.map((ex, idx) => {
+      prev.map((item, idx) => {
         if (idx === i) {
           return {
-            ...ex,
-            currentlyWorking: !ex.currentlyWorking,
-            endDate: ex.currentlyWorking ? ex.endDate : ''
+            ...item,
+            currentlyWorking: !item.currentlyWorking,
+            endDate: item.currentlyWorking ? item.endDate : ''
           }
         }
-        return ex
+        return item
       })
     )
   }
@@ -223,11 +333,15 @@ export default function ProfileCard({ data = {} }) {
     setEditExp((prev) => prev.filter((_, idx) => idx !== i))
   }
 
-  // slice POAP + NFT
-  const poapsToShow = showAllPoaps ? poapData : poapData.slice(0, 4)
-  const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : []
+  // ---------- derived data ------------
+  // POAPs
+  const poapsToShow = Array.isArray(poapData)
+    ? showAllPoaps
+      ? poapData
+      : poapData.slice(0, 4)
+    : []
 
-  // ------------------- render -------------------
+  // ---------- rendering ------------
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -240,7 +354,7 @@ export default function ProfileCard({ data = {} }) {
         bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800
       "
     >
-      {/* subtle background effect */}
+      {/* Subtle background */}
       <div className="absolute inset-0 opacity-40 animate-pulse-slow pointer-events-none" />
 
       <div className="relative z-10 p-10 sm:p-12 text-center backdrop-blur-xl">
@@ -254,12 +368,7 @@ export default function ProfileCard({ data = {} }) {
           {isOwner && editing && (
             <label className="absolute bottom-2 right-2 p-1 bg-gray-800/80 rounded-full cursor-pointer hover:bg-gray-700/80 transition-colors">
               <Upload size={14} className="text-white" />
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={handleAvatarUpload}
-              />
+              <input type="file" accept="image/*" hidden onChange={handleAvatarUpload} />
             </label>
           )}
         </div>
@@ -273,14 +382,22 @@ export default function ProfileCard({ data = {} }) {
         {address && (
           <p
             className="inline-flex items-center gap-1 text-xs sm:text-sm mx-auto text-indigo-600 dark:text-indigo-300 mt-1 cursor-pointer justify-center hover:text-indigo-500 transition-colors"
-            title="Copy address"
             onClick={() => navigator.clipboard.writeText(address)}
+            title="Copy address"
           >
-            {shortenAddress(address)} <Copy size={12} />
+            {shortenAddress(address)}
+            <Copy size={12} />
           </p>
         )}
 
-        {/* Possibly a message button if not owner */}
+        {/* Show EFP follower count if we have it */}
+        {followersCount !== null && followersCount >= 0 && (
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+            {followersCount} Follower{followersCount === 1 ? '' : 's'}
+          </p>
+        )}
+
+        {/* Possibly a "Message" button if not owner */}
         {!isOwner && address && (
           <div className="mt-2">
             <button
@@ -298,7 +415,7 @@ export default function ProfileCard({ data = {} }) {
             value={editBio}
             onChange={(e) => setEditBio(e.target.value)}
             rows={4}
-            className="mt-4 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm"
+            className="mt-4 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm placeholder-gray-400"
             placeholder="Add a short bio..."
           />
         ) : (
@@ -312,85 +429,77 @@ export default function ProfileCard({ data = {} }) {
         {/* Social + Tag */}
         <div className="mt-6">
           {editing ? (
+            // editing mode => inputs
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
               <input
                 placeholder="Twitter handle"
                 value={editTwitter}
                 onChange={(e) => setEditTwitter(e.target.value)}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm"
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
               />
               <input
                 placeholder="Warpcast handle"
                 value={editWarpcast}
                 onChange={(e) => setEditWarpcast(e.target.value)}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm"
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
               />
               <input
                 placeholder="Website"
                 value={editWebsite}
                 onChange={(e) => setEditWebsite(e.target.value)}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm"
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full placeholder-gray-400"
               />
-              <input
-                placeholder="Custom Tag"
+              <select
                 value={editTag}
                 onChange={(e) => setEditTag(e.target.value)}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm"
-              />
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
+              >
+                <option value="">Select a Tag</option>
+                {TAG_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
           ) : (
+            // view mode => clickable or text
             <div className="flex flex-wrap justify-center gap-3">
-              {editTwitter && (
-                <p className="text-sm text-blue-600 dark:text-blue-400">Twitter: @{editTwitter}</p>
-              )}
-              {editWarpcast && (
-                <p className="text-sm text-blue-600 dark:text-blue-400">
-                  Warpcast: {editWarpcast}
-                </p>
-              )}
-              {editWebsite && (
-                <a
-                  href={
-                    editWebsite.startsWith('http')
+              <SocialLink
+                href={
+                  editTwitter
+                    ? `https://twitter.com/${editTwitter.replace(/^@/, '')}`
+                    : null
+                }
+                icon={Twitter}
+                label="Twitter"
+              />
+              <SocialLink
+                href={
+                  editWarpcast
+                    ? `https://warpcast.com/${editWarpcast.replace(/^@/, '')}`
+                    : null
+                }
+                icon={UserPlus2}
+                label="Warpcast"
+              />
+              <SocialLink
+                href={
+                  editWebsite
+                    ? editWebsite.startsWith('http')
                       ? editWebsite
                       : `https://${editWebsite}`
-                  }
-                  className="text-sm text-blue-600 dark:text-blue-400 underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {editWebsite}
-                </a>
-              )}
+                    : null
+                }
+                icon={LinkIcon}
+                label="Website"
+              />
               {editTag && (
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-800/20 dark:text-indigo-200">
                   {editTag}
                 </span>
               )}
             </div>
-          )}
-        </div>
-
-        {/* Looking for Work */}
-        <div className="mt-4">
-          {editing ? (
-            <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={editLookingForWork}
-                onChange={() => setEditLookingForWork(!editLookingForWork)}
-                className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-              />
-              Looking for Work
-            </label>
-          ) : (
-            editLookingForWork && (
-              <div className="mt-1">
-                <span className="inline-block px-2 py-1 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-full">
-                  Looking for Work
-                </span>
-              </div>
-            )
           )}
         </div>
 
@@ -401,7 +510,7 @@ export default function ProfileCard({ data = {} }) {
             {editing && (
               <button
                 onClick={addExp}
-                className="ml-2 inline-flex items-center text-xs text-blue-600 hover:underline"
+                className="ml-2 inline-flex items-center text-xs text-blue-600 hover:underline transition-colors"
               >
                 <PlusCircle size={14} className="mr-0.5" /> Add
               </button>
@@ -411,20 +520,19 @@ export default function ProfileCard({ data = {} }) {
           {editExp.length === 0 && !editing && (
             <p className="text-sm text-gray-500">No experience added yet.</p>
           )}
-
           {editExp.map((exp, i) => (
             <div key={i} className="mb-6 last:mb-0">
               {editing ? (
                 <>
                   <div className="grid sm:grid-cols-2 gap-2">
                     <input
-                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm"
+                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm placeholder-gray-400"
                       placeholder="Job title"
                       value={exp.title}
                       onChange={(e) => updateExp(i, 'title', e.target.value)}
                     />
                     <input
-                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm"
+                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm placeholder-gray-400"
                       placeholder="Company"
                       value={exp.company}
                       onChange={(e) => updateExp(i, 'company', e.target.value)}
@@ -433,14 +541,14 @@ export default function ProfileCard({ data = {} }) {
                   <div className="grid sm:grid-cols-2 gap-2 mt-3">
                     <input
                       type="date"
-                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm"
+                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm placeholder-gray-400"
                       value={exp.startDate}
                       onChange={(e) => updateExp(i, 'startDate', e.target.value)}
                     />
                     {!exp.currentlyWorking && (
                       <input
                         type="date"
-                        className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm"
+                        className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm placeholder-gray-400"
                         value={exp.endDate}
                         onChange={(e) => updateExp(i, 'endDate', e.target.value)}
                       />
@@ -479,7 +587,7 @@ export default function ProfileCard({ data = {} }) {
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {formatRange(exp.startDate, exp.endDate, exp.currentlyWorking)}
-                    {exp.location ? ` • ${exp.location}` : ''}
+                    {exp.location && ` • ${exp.location}`}
                   </p>
                   {exp.description && (
                     <p className="text-sm mt-2 text-gray-600 dark:text-gray-300 whitespace-pre-line leading-relaxed">
@@ -493,15 +601,15 @@ export default function ProfileCard({ data = {} }) {
         </div>
 
         {/* POAPs */}
-        {poapsToShow && poapsToShow.length > 0 && (
+        {poapsToShow.length > 0 && (
           <div className="mt-12 text-left">
             <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-100">
               POAPs
             </h3>
             <div className="grid grid-cols-2 gap-2">
-              {poapsToShow.map((poap, idx) => (
+              {poapsToShow.map((poap, i) => (
                 <div
-                  key={idx}
+                  key={i}
                   className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg shadow-sm p-2 text-sm text-gray-700 dark:text-gray-300"
                 >
                   <img
@@ -528,17 +636,17 @@ export default function ProfileCard({ data = {} }) {
         )}
 
         {/* NFTs */}
-        {nftsToShow && nftsToShow.length > 0 && (
+        {nftsToShow.length > 0 && (
           <div className="mt-12 text-left">
             <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-100">
               NFTs (recent)
             </h3>
             <div className="grid grid-cols-3 gap-3">
-              {nftsToShow.map((nft, idx) => (
+              {nftsToShow.map((nft, i) => (
                 <img
-                  key={idx}
+                  key={i}
                   src={nft.image || nft.image_url || '/nft-placeholder.png'}
-                  alt={nft.name || `NFT ${idx}`}
+                  alt={nft.name || `NFT ${i}`}
                   className="w-full h-24 object-cover rounded-lg shadow-sm"
                 />
               ))}
@@ -546,7 +654,9 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* OpenSea link if address is present */}
+        {/* EFP-based follower count is rendered above by followersCount check. */}
+
+        {/* Link to OpenSea if address present */}
         {address && (
           <div className="mt-6 text-center">
             <a
@@ -561,40 +671,29 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* If user is owner => Edit / Save / Cancel */}
+        {/* If user is owner => Edit/Save/Cancel */}
         {isOwner && (
           <div className="mt-8 flex justify-center gap-3">
             {editing ? (
               <>
                 <button
                   onClick={handleSave}
-                  className="
-                    inline-flex items-center gap-1 px-4 py-2 
-                    bg-indigo-600 hover:bg-indigo-700
-                    text-white text-sm font-medium 
-                    rounded-lg shadow-sm transition-colors
-                  "
+                  className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
                 >
                   <Save size={16} /> Save
                 </button>
                 <button
                   onClick={() => {
+                    // revert changes
                     setEditing(false)
-                    // revert
                     setEditBio(bio || ensBio)
                     setEditExp(workExperience)
                     setEditTag(tag)
                     setEditTwitter(twitter)
                     setEditWarpcast(warpcast)
                     setEditWebsite(website)
-                    setEditLookingForWork(lookingForWork)
                   }}
-                  className="
-                    inline-flex items-center gap-1 px-4 py-2 
-                    bg-gray-300 hover:bg-gray-400 
-                    text-gray-800 text-sm font-medium 
-                    rounded-lg shadow-sm transition-colors
-                  "
+                  className="inline-flex items-center gap-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg shadow-sm transition-colors"
                 >
                   <X size={16} /> Cancel
                 </button>
@@ -602,12 +701,7 @@ export default function ProfileCard({ data = {} }) {
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                className="
-                  inline-flex items-center gap-1 px-4 py-2 
-                  bg-indigo-600 hover:bg-indigo-700 
-                  text-white text-sm font-medium 
-                  rounded-lg shadow-sm transition-colors
-                "
+                className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
               >
                 <Edit size={16} /> Edit Profile
               </button>
@@ -618,8 +712,7 @@ export default function ProfileCard({ data = {} }) {
         {/* Save confirmation */}
         {justSaved && (
           <div className="mt-4 flex justify-center items-center text-green-600 text-sm">
-            <CheckCircle size={16} className="mr-1" />
-            Profile saved!
+            <CheckCircle size={16} className="mr-1" /> Profile saved!
           </div>
         )}
       </div>
