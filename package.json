@@ -26,8 +26,8 @@
     "stripe": "^12.14.0",
     "viem": "1.21.4",
     "ethers": "^5.7.2",
-  "@xmtp/xmtp-js": "^8.0.0",
-    "wagmi": "1.4.5"
+  "wagmi": "1.4.5",
+  "@xmtp/xmtp-js": "^8.0.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.15",
