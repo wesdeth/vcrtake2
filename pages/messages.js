@@ -1,40 +1,45 @@
 // pages/messages.js
+
 import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
 import { ethers } from 'ethers' // v5 style
 import { Client } from '@xmtp/xmtp-js' // core XMTP library
 
-/**
- * Example "messages" page with a basic LinkedIn-like 2‑column UI:
- * - Left column: user search, conversation list
- * - Right column: active conversation
- * - Compose new message with optional subject & body
- * - "Send an onchain message powered by XMTP" at top
- */
+// Example local list of ENS names for demonstration
+const MOCK_ENS_NAMES = [
+  'vitalik.eth',
+  'validator.eth',
+  'evanmoyer.eth',
+  'wesd.eth',
+  'valhalla.eth',
+  'valeri.eth',
+  'valorant.eth',
+  'vitaldow.eth',
+  // add or remove as needed
+]
 
 export default function MessagesPage() {
-  const router = useRouter()
-  
-  // X‑states
+  // XMTP states
   const [loading, setLoading] = useState(false)
-  const [xmtp, setXmtp] = useState(null)      // XMTP client
-  const [allConversations, setAllConversations] = useState([]) // conversation list
-  const [activeConvo, setActiveConvo] = useState(null)          // currently viewed conversation
+  const [xmtp, setXmtp] = useState(null)
+  const [allConversations, setAllConversations] = useState([])
+  const [activeConvo, setActiveConvo] = useState(null)
   const [messages, setMessages] = useState([])
 
-  // For searching/compose
-  const [searchInput, setSearchInput] = useState('')   // for searching ENS/addresses
-  const [recipient, setRecipient] = useState('')       // user chosen from search
+  // Searching + composing
+  const [searchInput, setSearchInput] = useState('')
+  const [searchResults, setSearchResults] = useState([]) // suggestions
   const [subject, setSubject] = useState('')
   const [bodyText, setBodyText] = useState('')
 
-  // If we are streaming or listening for new messages in the active conversation
+  // For streaming new messages in real-time
   const [streaming, setStreaming] = useState(false)
 
-  // On mount, attempt to connect wallet & create XMTP client
+  /* ------------------------------------------------------------------------------
+     1) On mount, connect wallet & create XMTP client
+  -------------------------------------------------------------------------------*/
   useEffect(() => {
-    (async () => {
+    async function initXmtp() {
       if (typeof window === 'undefined') return
       if (!window.ethereum) {
         console.warn('No injected wallet found for XMTP.')
@@ -42,18 +47,15 @@ export default function MessagesPage() {
       }
       try {
         setLoading(true)
-        // Create an ethers v5 provider + signer
         const provider = new ethers.providers.Web3Provider(window.ethereum)
         await provider.send('eth_requestAccounts', [])
         const signer = provider.getSigner()
 
         // Create XMTP client
-        const xmtpClient = await Client.create(signer, {
-          // optional config
-        })
+        const xmtpClient = await Client.create(signer)
         setXmtp(xmtpClient)
 
-        // Fetch existing conversations
+        // Fetch any existing conversations
         const convos = await xmtpClient.conversations.list()
         setAllConversations(convos)
       } catch (err) {
@@ -61,19 +63,23 @@ export default function MessagesPage() {
       } finally {
         setLoading(false)
       }
-    })()
+    }
+    initXmtp()
   }, [])
 
-  // Whenever we pick an existing conversation in left column => load messages
+  /* ------------------------------------------------------------------------------
+     2) Load messages when activeConvo changes
+  -------------------------------------------------------------------------------*/
   useEffect(() => {
     if (!activeConvo || !xmtp) return
-    ;(async () => {
+
+    async function loadMessages() {
       setLoading(true)
       try {
         const msgs = await activeConvo.messages()
         setMessages(msgs)
 
-        // Real-time streaming
+        // Set up streaming for real-time new messages
         if (!streaming) {
           setStreaming(true)
           activeConvo.streamMessages().then(async (stream) => {
@@ -87,33 +93,57 @@ export default function MessagesPage() {
       } finally {
         setLoading(false)
       }
-    })()
+    }
+
+    loadMessages()
   }, [activeConvo, xmtp, streaming])
 
-  /**
-   * Handler: user picks an existing conversation from the left side
-   */
-  const handleSelectConversation = async (c) => {
+  /* ------------------------------------------------------------------------------
+     3) Auto-suggest whenever the user types in searchInput
+  -------------------------------------------------------------------------------*/
+  useEffect(() => {
+    const query = searchInput.trim().toLowerCase()
+    if (!query) {
+      setSearchResults([])
+      return
+    }
+    // Filter local mock array
+    const results = MOCK_ENS_NAMES.filter((name) =>
+      name.toLowerCase().includes(query)
+    ).slice(0, 5) // Show up to 5 matches
+    setSearchResults(results)
+  }, [searchInput])
+
+  /* ------------------------------------------------------------------------------
+     Handlers
+  -------------------------------------------------------------------------------*/
+
+  // User picks a suggestion → fill search input + hide suggestions
+  const handleSelectSuggestion = (ensName) => {
+    setSearchInput(ensName)
+    setSearchResults([])
+  }
+
+  // Left column: pick an existing conversation
+  const handleSelectConversation = (c) => {
     setActiveConvo(c)
-    setSubject('') // subject might apply only to newly composed messages
+    setSubject('')
     setBodyText('')
   }
 
-  /**
-   * Handler: user clicks "Compose" after searching an ENS/wallet => create new conversation
-   */
+  // Compose a new conversation w/ the searchInput
   const handleCompose = async () => {
     if (!xmtp || !searchInput.trim()) return
     try {
       setLoading(true)
-      // For a brand-new conversation with searchInput as recipient
       const newConvo = await xmtp.conversations.newConversation(searchInput.trim())
-      // Add to allConversations if not already present
+
+      // Add to conversation list if not already present
       setAllConversations((prev) => {
         const found = prev.find((c) => c.peerAddress === newConvo.peerAddress)
-        if (found) return prev
-        return [...prev, newConvo]
+        return found ? prev : [...prev, newConvo]
       })
+
       // Switch to it
       setActiveConvo(newConvo)
       setSearchInput('')
@@ -126,21 +156,17 @@ export default function MessagesPage() {
     }
   }
 
-  /**
-   * Handler: send the typed message to the active conversation
-   */
+  // Send a message into the active conversation
   const handleSend = async () => {
     if (!activeConvo || !bodyText.trim()) return
     try {
       setLoading(true)
       let finalContent = bodyText.trim()
       if (subject.trim()) {
-        // Prepend subject in some simple format
         finalContent = `Subject: ${subject.trim()}\n\n${bodyText.trim()}`
       }
       await activeConvo.send(finalContent)
       setBodyText('')
-      // subject typically remains (or you might reset it each time)
       setSubject('')
     } catch (err) {
       console.error('Send message error:', err)
@@ -149,6 +175,9 @@ export default function MessagesPage() {
     }
   }
 
+  /* ------------------------------------------------------------------------------
+     Render
+  -------------------------------------------------------------------------------*/
   return (
     <>
       <Head>
@@ -167,21 +196,37 @@ export default function MessagesPage() {
 
           {/* 2-column layout */}
           <div className="flex flex-col sm:flex-row gap-6">
-            {/* LEFT COLUMN: conversation list + search/compose */}
+            {/* LEFT COLUMN */}
             <div className="flex-shrink-0 sm:w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
               <h2 className="text-md font-semibold mb-3">Conversations</h2>
 
-              {/* Search + Compose */}
-              <div className="mb-4">
+              {/* Search with suggestions + Compose */}
+              <div className="mb-4 relative">
                 <input
                   type="text"
                   placeholder="Search ENS or wallet…"
-                  className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm mb-2"
+                  className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                 />
+
+                {/* Auto-suggest dropdown */}
+                {searchResults.length > 0 && (
+                  <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-md z-10 max-h-40 overflow-auto">
+                    {searchResults.map((ensName) => (
+                      <div
+                        key={ensName}
+                        className="px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                        onClick={() => handleSelectSuggestion(ensName)}
+                      >
+                        {ensName}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <button
-                  className="w-full bg-indigo-600 text-white py-2 rounded-md text-sm hover:bg-indigo-700 transition"
+                  className="w-full mt-2 bg-indigo-600 text-white py-2 rounded-md text-sm hover:bg-indigo-700 transition"
                   onClick={handleCompose}
                   disabled={!xmtp || !searchInput.trim()}
                 >
@@ -191,17 +236,21 @@ export default function MessagesPage() {
 
               {/* Conversation list */}
               <div className="h-64 overflow-auto border-t border-gray-200 dark:border-gray-700 pt-3">
-                {(!allConversations || allConversations.length === 0) ? (
+                {allConversations.length === 0 ? (
                   <p className="text-sm text-gray-500">No conversations yet.</p>
                 ) : (
                   allConversations.map((c) => {
-                    const isActive = activeConvo && (c.peerAddress === activeConvo.peerAddress)
+                    const isActive = activeConvo && c.peerAddress === activeConvo.peerAddress
                     return (
                       <div
                         key={c.peerAddress}
                         onClick={() => handleSelectConversation(c)}
                         className={`px-3 py-2 mb-2 rounded-md cursor-pointer text-sm
-                          ${isActive ? 'bg-indigo-100 dark:bg-indigo-700/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}
+                          ${
+                            isActive
+                              ? 'bg-indigo-100 dark:bg-indigo-700/30'
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                          }`}
                       >
                         {c.peerAddress}
                       </div>
@@ -211,16 +260,16 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            {/* RIGHT COLUMN: active conversation detail */}
+            {/* RIGHT COLUMN */}
             <div className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col">
-              {/* If no active convo */}
+              {/* If no convo selected */}
               {!activeConvo ? (
                 <div className="m-auto text-center text-sm text-gray-500">
                   Select or compose a conversation…
                 </div>
               ) : (
                 <>
-                  {/* top bar: conversation peer + subject (optional) */}
+                  {/* top bar */}
                   <div className="border-b border-gray-200 dark:border-gray-700 pb-3 mb-3">
                     <p className="text-xs text-gray-400 dark:text-gray-500">Chat with</p>
                     <h3 className="text-sm font-semibold break-all">
@@ -246,9 +295,10 @@ export default function MessagesPage() {
                           >
                             <div
                               className={`px-3 py-2 rounded-md text-sm max-w-xs break-words whitespace-pre-line
-                                ${fromMe
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'
+                                ${
+                                  fromMe
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'
                                 }`}
                             >
                               {msg.content}
@@ -259,7 +309,7 @@ export default function MessagesPage() {
                     )}
                   </div>
 
-                  {/* COMPOSE BOX: subject + body => handleSend */}
+                  {/* COMPOSE box */}
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
                     <input
                       type="text"
