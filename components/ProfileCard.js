@@ -1,55 +1,62 @@
 // components/ProfileCard.js
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { motion } from 'framer-motion';
-import axios from 'axios';
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
+import axios from 'axios'
+import { motion } from 'framer-motion'
 
-// Example icons from lucide-react; adjust as needed:
+// Example icons from lucide-react; you can remove or replace as needed
 import {
   Copy,
-  Upload,
-  Edit,
-  Save,
-  X,
-  CheckCircle,
   ChevronDown,
   ChevronUp,
+  Edit,
+  Save,
+  Upload,
   ExternalLink,
   PlusCircle,
   Trash2,
-} from 'lucide-react';
+  CheckCircle,
+  X,
+} from 'lucide-react'
 
-/** Helper to shorten an address, e.g. 0x1234...abcd */
+/**
+ * Shorten a "0x" address, e.g. "0x1234...abcd"
+ */
 function shortenAddress(addr = '') {
-  if (!addr) return '';
-  return addr.slice(0, 6) + '…' + addr.slice(-4);
+  if (!addr) return ''
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
 }
 
-/** Date parse for "YYYY-MM-DD" or "MM/DD/YYYY" => JS Date */
+/**
+ * Simple date parse that handles either "YYYY-MM-DD" or "MM/DD/YYYY"
+ */
 function parseDate(d) {
-  if (!d) return null;
-  const p = Date.parse(d.replace(/\//g, '-'));
-  return Number.isNaN(p) ? null : new Date(p);
+  if (!d) return null
+  const p = Date.parse(d.replace(/\//g, '-'))
+  return Number.isNaN(p) ? null : new Date(p)
 }
 
-/** Format "May 2023 – Present" if currentlyWorking is true */
-function formatRange(start, end, currentlyWorking) {
-  if (!start) return '';
-  const s = parseDate(start)?.toLocaleDateString(undefined, {
+/**
+ * Format "May 2023 – Present" if currentlyWorking is true
+ */
+function formatRange(s, e, currentlyWorking) {
+  if (!s) return ''
+  const start = parseDate(s)?.toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
-  });
-  const e = currentlyWorking
+  })
+  const end = currentlyWorking
     ? 'Present'
-    : parseDate(end)?.toLocaleDateString(undefined, {
+    : parseDate(e)?.toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'short',
-      }) || '';
-  return `${s} – ${e}`;
+      }) || ''
+  return `${start} – ${end}`
 }
 
 export default function ProfileCard({ data = {} }) {
   const {
+    // Basic fields
     name,
     address,
     avatar,
@@ -57,82 +64,96 @@ export default function ProfileCard({ data = {} }) {
     website = '',
     warpcast = '',
     tag = '',
-    poaps = [],
-    nfts = [],
     bio = '',
     ensBio = '',
     workExperience = [],
+    // Additional booleans
     lookingForWork = false,
-    // If user is the owner
-    ownsProfile = false,
-  } = data;
+    ownsProfile = false, // pass from parent if user is the owner
+    // Arrays
+    poaps = [],
+    nfts = [],
+  } = data
 
-  const router = useRouter();
+  const router = useRouter()
 
-  // POAP local
-  const [poapData, setPoapData] = useState(poaps);
-  const [showAllPoaps, setShowAllPoaps] = useState(false);
+  // 1) Local state for editing
+  const [editing, setEditing] = useState(false)
+  const [justSaved, setJustSaved] = useState(false)
 
-  // Editing state
-  const [editing, setEditing] = useState(false);
-  const [justSaved, setJustSaved] = useState(false);
+  // "Looking for Work" checkbox
+  const [editLookingForWork, setEditLookingForWork] = useState(lookingForWork)
 
-  // “Looking for Work” checkbox
-  const [editLookingForWork, setEditLookingForWork] = useState(lookingForWork);
-
-  // Avatar
-  const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png');
+  // Avatar (allow user to upload if owner)
+  const [uploadedAvatar, setUploadedAvatar] = useState(avatar || '/default-avatar.png')
 
   // Social fields
-  const [editTwitter, setEditTwitter] = useState(twitter);
-  const [editWebsite, setEditWebsite] = useState(website);
-  const [editWarpcast, setEditWarpcast] = useState(warpcast);
-  const [editTag, setEditTag] = useState(tag);
+  const [editTwitter, setEditTwitter] = useState(twitter)
+  const [editWebsite, setEditWebsite] = useState(website)
+  const [editWarpcast, setEditWarpcast] = useState(warpcast)
+
+  // Tag
+  const [editTag, setEditTag] = useState(tag)
 
   // Bio
-  const [editBio, setEditBio] = useState(bio || ensBio);
+  const [editBio, setEditBio] = useState(bio || ensBio)
 
-  // Work experience array
-  const [editExp, setEditExp] = useState(workExperience);
+  // Experience
+  const [editExp, setEditExp] = useState(workExperience)
 
-  // Is user the owner (passed in or from wagmi check)
-  const isOwner = ownsProfile;
+  // 2) POAP data in local state
+  const [poapData, setPoapData] = useState(poaps)
+  const [showAllPoaps, setShowAllPoaps] = useState(false)
 
-  // 1) On mount or address change, fetch fallback avatar from OpenSea + fresh POAP
+  // 3) Are we the owner
+  const isOwner = ownsProfile
+
+  /**
+   * On mount or address change, optionally fetch fresh POAP data
+   * + fallback avatar from OpenSea.
+   */
   useEffect(() => {
-    if (!address) return;
+    if (!address) return
 
-    // POAP fetch
+    // POAP
     axios
       .get(`https://api.poap.tech/actions/scan/${address}`, {
-        headers: { 'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo' },
+        headers: {
+          'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo',
+        },
       })
       .then((r) => setPoapData(r.data || []))
-      .catch(() => setPoapData([]));
+      .catch(() => setPoapData([]))
 
-    // fallback avatar from OpenSea if none provided
+    // fallback avatar if none provided
     if (!avatar) {
       axios
         .get(`https://api.opensea.io/api/v1/user/${address}`)
         .then((r) => {
-          const img = r.data?.account?.profile_img_url || r.data?.profile_img_url;
-          if (img) setUploadedAvatar(img);
+          const img = r.data?.account?.profile_img_url || r.data?.profile_img_url
+          if (img) setUploadedAvatar(img)
         })
-        .catch(() => {/* fallback */});
+        .catch(() => {
+          // fallback
+        })
     }
-  }, [address, avatar]);
+  }, [address, avatar])
 
-  // handle upload
-  const handleAvatarUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setUploadedAvatar(reader.result);
-    reader.readAsDataURL(file);
-  };
+  /**
+   * handleAvatarUpload – read as DataURL and store
+   */
+  function handleAvatarUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onloadend = () => setUploadedAvatar(reader.result)
+    reader.readAsDataURL(file)
+  }
 
-  // handle “Save Profile” => post to /api/save-profile
-  const handleSave = async () => {
+  /**
+   * handleSave – post to /api/save-profile
+   */
+  async function handleSave() {
     try {
       const res = await fetch('/api/save-profile', {
         method: 'POST',
@@ -147,6 +168,7 @@ export default function ProfileCard({ data = {} }) {
           bio: editBio,
           custom_avatar: uploadedAvatar,
           lookingForWork: editLookingForWork,
+          // map experience properly
           experience: editExp.map((exp) => ({
             ...exp,
             startDate: exp.startDate || '',
@@ -156,26 +178,25 @@ export default function ProfileCard({ data = {} }) {
             description: exp.description || '',
           })),
         }),
-      });
+      })
       if (!res.ok) {
-        throw new Error('Profile save failed');
+        throw new Error('Profile save failed')
       }
-      // If success:
-      setEditing(false);
-      setJustSaved(true);
-      setTimeout(() => setJustSaved(false), 2500);
+      setEditing(false)
+      setJustSaved(true)
+      setTimeout(() => setJustSaved(false), 2500)
     } catch (err) {
-      console.error('save-profile error:', err);
+      console.error('save-profile error:', err)
     }
-  };
+  }
 
-  // Experience updaters
-  const updateExp = (idx, field, val) => {
+  // Work Experience updaters
+  function updateExp(idx, field, val) {
     setEditExp((prev) =>
       prev.map((item, i) => (i === idx ? { ...item, [field]: val } : item))
-    );
-  };
-  const toggleCurrent = (idx) => {
+    )
+  }
+  function toggleCurrent(idx) {
     setEditExp((prev) =>
       prev.map((item, i) => {
         if (i === idx) {
@@ -183,13 +204,13 @@ export default function ProfileCard({ data = {} }) {
             ...item,
             currentlyWorking: !item.currentlyWorking,
             endDate: item.currentlyWorking ? item.endDate : '',
-          };
+          }
         }
-        return item;
+        return item
       })
-    );
-  };
-  const addExp = () => {
+    )
+  }
+  function addExp() {
     setEditExp((prev) => [
       ...prev,
       {
@@ -201,20 +222,17 @@ export default function ProfileCard({ data = {} }) {
         description: '',
         currentlyWorking: false,
       },
-    ]);
-  };
-  const removeExp = (idx) => {
-    setEditExp((prev) => prev.filter((_, i) => i !== idx));
-  };
+    ])
+  }
+  function removeExp(idx) {
+    setEditExp((prev) => prev.filter((_, i) => i !== idx))
+  }
 
-  // slice POAP display
-  const poapsToShow = Array.isArray(poapData)
-    ? showAllPoaps
-      ? poapData
-      : poapData.slice(0, 4)
-    : [];
+  // slice POAPs
+  const poapsToShow = showAllPoaps ? poapData : poapData.slice(0, 4)
+
   // slice NFTs
-  const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : [];
+  const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : []
 
   return (
     <motion.div
@@ -228,11 +246,10 @@ export default function ProfileCard({ data = {} }) {
         bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800
       "
     >
-      {/* Subtle background effect */}
+      {/* subtle background effect */}
       <div className="absolute inset-0 opacity-40 animate-pulse-slow pointer-events-none" />
 
       <div className="relative z-10 p-10 sm:p-12 text-center backdrop-blur-xl">
-        
         {/* Avatar */}
         <div className="relative w-36 h-36 mx-auto -mt-16 mb-4">
           <img
@@ -241,7 +258,7 @@ export default function ProfileCard({ data = {} }) {
             className="w-36 h-36 rounded-full border-4 border-white dark:border-gray-700 shadow-md object-cover"
           />
           {isOwner && editing && (
-            <label className="absolute bottom-2 right-2 p-1 bg-gray-800/80 rounded-full cursor-pointer hover:bg-gray-700/80">
+            <label className="absolute bottom-2 right-2 p-1 bg-gray-800/80 rounded-full cursor-pointer hover:bg-gray-700/80 transition-colors">
               <Upload size={14} className="text-white" />
               <input
                 type="file"
@@ -258,10 +275,10 @@ export default function ProfileCard({ data = {} }) {
           {name || shortenAddress(address)}
         </h2>
 
-        {/* Address copy to clipboard */}
+        {/* Address copy */}
         {address && (
           <p
-            className="inline-flex items-center gap-1 text-xs sm:text-sm mx-auto text-indigo-600 dark:text-indigo-300 mt-1 cursor-pointer justify-center"
+            className="inline-flex items-center gap-1 text-xs sm:text-sm mx-auto text-indigo-600 dark:text-indigo-300 mt-1 cursor-pointer justify-center hover:text-indigo-500 transition-colors"
             title="Copy address"
             onClick={() => navigator.clipboard.writeText(address)}
           >
@@ -269,11 +286,13 @@ export default function ProfileCard({ data = {} }) {
           </p>
         )}
 
-        {/* (Optional) "Message" button if user is not self */}
+        {/* Optional "Message" button if user is not owner */}
         {address && !isOwner && (
           <div className="mt-2">
             <button
-              onClick={() => router.push(`/messages?to=${address}`)}
+              onClick={() =>
+                router.push(`/messages?to=${address}`)
+              }
               className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg"
             >
               Message
@@ -328,7 +347,6 @@ export default function ProfileCard({ data = {} }) {
               />
             </div>
           ) : (
-            // If not editing, display them
             <div className="flex flex-wrap justify-center gap-3">
               {editTwitter && (
                 <p className="text-sm text-blue-600 dark:text-blue-400">
@@ -363,7 +381,7 @@ export default function ProfileCard({ data = {} }) {
           )}
         </div>
 
-        {/* "Looking for Work" */}
+        {/* Looking for Work */}
         <div className="mt-4">
           {editing ? (
             <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
@@ -411,7 +429,7 @@ export default function ProfileCard({ data = {} }) {
                   <div className="grid sm:grid-cols-2 gap-2">
                     <input
                       className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm"
-                      placeholder="Job Title"
+                      placeholder="Job title"
                       value={exp.title}
                       onChange={(e) => updateExp(i, 'title', e.target.value)}
                     />
@@ -485,7 +503,7 @@ export default function ProfileCard({ data = {} }) {
         </div>
 
         {/* POAPs */}
-        {poapsToShow.length > 0 && (
+        {poapsToShow && poapsToShow.length > 0 && (
           <div className="mt-12 text-left">
             <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-100">
               POAPs
@@ -520,13 +538,13 @@ export default function ProfileCard({ data = {} }) {
         )}
 
         {/* NFTs */}
-        {Array.isArray(nfts) && nfts.length > 0 && (
+        {nftsToShow && nftsToShow.length > 0 && (
           <div className="mt-12 text-left">
             <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-100">
               NFTs (recent)
             </h3>
             <div className="grid grid-cols-3 gap-3">
-              {nfts.slice(0, 6).map((nft, idx) => (
+              {nftsToShow.map((nft, idx) => (
                 <img
                   key={idx}
                   src={nft.image || nft.image_url || '/nft-placeholder.png'}
@@ -538,7 +556,7 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Link to OpenSea if address is present */}
+        {/* OpenSea link if address is present */}
         {address && (
           <div className="mt-6 text-center">
             <a
@@ -553,71 +571,52 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Edit / Save / Cancel if owner */}
+        {/* Edit / Save / Cancel if isOwner */}
         {isOwner && (
           <div className="mt-8 flex justify-center gap-3">
             {editing ? (
               <>
                 <button
                   onClick={handleSave}
-                  className="
-                    inline-flex items-center gap-1 px-4 py-2 
-                    bg-indigo-600 hover:bg-indigo-700
-                    text-white text-sm font-medium 
-                    rounded-lg shadow-sm transition-colors
-                  "
+                  className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
                 >
-                  <Save size={16} />
-                  Save
+                  <Save size={16} /> Save
                 </button>
                 <button
                   onClick={() => {
-                    setEditing(false);
-                    // Revert changes
-                    setEditBio(bio || ensBio);
-                    setEditExp(workExperience);
-                    setEditTag(tag);
-                    setEditTwitter(twitter);
-                    setEditWarpcast(warpcast);
-                    setEditWebsite(website);
-                    setEditLookingForWork(lookingForWork);
+                    setEditing(false)
+                    // revert changes
+                    setEditBio(bio || ensBio)
+                    setEditExp(workExperience)
+                    setEditTag(tag)
+                    setEditTwitter(twitter)
+                    setEditWarpcast(warpcast)
+                    setEditWebsite(website)
+                    setEditLookingForWork(lookingForWork)
                   }}
-                  className="
-                    inline-flex items-center gap-1 px-4 py-2
-                    bg-gray-300 hover:bg-gray-400
-                    text-gray-800 text-sm font-medium
-                    rounded-lg shadow-sm transition-colors
-                  "
+                  className="inline-flex items-center gap-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg shadow-sm transition-colors"
                 >
-                  <X size={16} />
-                  Cancel
+                  <X size={16} /> Cancel
                 </button>
               </>
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                className="
-                  inline-flex items-center gap-1 px-4 py-2
-                  bg-indigo-600 hover:bg-indigo-700
-                  text-white text-sm font-medium
-                  rounded-lg shadow-sm transition-colors
-                "
+                className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
               >
-                <Edit size={16} />
-                Edit Profile
+                <Edit size={16} /> Edit Profile
               </button>
             )}
           </div>
         )}
 
-        {/* “Profile saved!” confirmation */}
+        {/* “Profile saved!” */}
         {justSaved && (
           <div className="mt-4 flex justify-center items-center text-green-600 text-sm">
-            <CheckCircle size={16} className="mr-1" />
-            Profile saved!
+            <CheckCircle size={16} className="mr-1" /> Profile saved!
           </div>
         )}
       </div>
     </motion.div>
-  );
+  )
 }
