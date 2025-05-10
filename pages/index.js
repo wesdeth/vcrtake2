@@ -1,26 +1,26 @@
 // pages/index.js
 
-import Head from 'next/head';
-import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/router';
-import axios from 'axios';
+import Head from 'next/head'
+import Link from 'next/link'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/router'
+import axios from 'axios'
 
 export default function Home() {
-  const router = useRouter();
+  const router = useRouter()
 
   // For user input (ENS or 0x wallet)
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState('')
 
   // Floating profiles data
-  const [floatingProfiles, setFloatingProfiles] = useState([]);
+  const [floatingProfiles, setFloatingProfiles] = useState([])
   // 5-card rotation
-  const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2, 3, 4]);
-  const [fade, setFade] = useState(true);
-  const timerRef = useRef(null);
+  const [currentIndexes, setCurrentIndexes] = useState([0, 1, 2, 3, 4])
+  const [fade, setFade] = useState(true)
+  const timerRef = useRef(null)
 
   // Badge count for “onchain resumes created”
-  const [resumeCount, setResumeCount] = useState(12380);
+  const [resumeCount, setResumeCount] = useState(12380)
 
   /**
    * ----------------------------------------------------------------
@@ -28,62 +28,62 @@ export default function Home() {
    * ----------------------------------------------------------------
    */
   useEffect(() => {
-    const storageKey = 'resumeCountData';
-    const now = Date.now();
-    const oneDay = 24 * 60 * 60 * 1000;
+    const storageKey = 'resumeCountData'
+    const now = Date.now()
+    const oneDay = 24 * 60 * 60 * 1000
 
-    const stored = localStorage.getItem(storageKey);
+    const stored = localStorage.getItem(storageKey)
     if (stored) {
-      const parsed = JSON.parse(stored);
-      const { count, lastUpdate } = parsed;
+      const parsed = JSON.parse(stored)
+      const { count, lastUpdate } = parsed
 
+      // If more than a day has passed, increment
       if (now - lastUpdate > oneDay) {
-        const randomIncrement = Math.floor(Math.random() * (10 - 5 + 1)) + 5; // 5-10
-        const newCount = count + randomIncrement;
-        setResumeCount(newCount);
+        const randomIncrement = Math.floor(Math.random() * (10 - 5 + 1)) + 5 // 5-10
+        const newCount = count + randomIncrement
+        setResumeCount(newCount)
         localStorage.setItem(
           storageKey,
           JSON.stringify({ count: newCount, lastUpdate: now })
-        );
+        )
       } else {
-        setResumeCount(parsed.count);
+        // otherwise just use the existing count
+        setResumeCount(parsed.count)
       }
     } else {
-      // initialize
+      // initialize if not found
       localStorage.setItem(
         storageKey,
         JSON.stringify({ count: 12380, lastUpdate: now })
-      );
+      )
     }
-  }, []);
+  }, [])
 
   /**
    * ----------------------------------------------------------------
    * 2) Fetch recent updates + POAP + ENS name
-   *    (Honors the `lookingForWork` boolean from the DB)
+   *    (Honors the `lookingForWork` logic from DB)
    * ----------------------------------------------------------------
    */
   useEffect(() => {
     const fetchRecentUpdates = async () => {
       try {
-        const res = await fetch('/api/recent-updates?limit=15');
-        const data = await res.json();
-        let updatedData = data || [];
+        const res = await fetch('/api/recent-updates?limit=15')
+        const data = await res.json()
+        let updatedData = data || []
 
         // Enrich each profile
         const enrichedData = await Promise.all(
           updatedData.map(async (profile) => {
-            // Some default tag logic
-            let tagColor = 'text-[#635BFF]';
-            let borderColor = 'border-[#A5B4FC]';
-            let finalTag = profile.tag || 'Active Builder';
+            let tagColor = 'text-[#635BFF]'
+            let borderColor = 'border-[#A5B4FC]'
+            let finalTag = profile.tag || 'Active Builder'
 
-            // Check if they are "Looking for Work" from DB
-            // (assuming your backend returns a boolean profile.lookingForWork)
+            // Check "lookingForWork" (if your DB returns this)
             if (profile.lookingForWork) {
-              finalTag = 'Looking for Work';
-              tagColor = 'text-[#FFC542]';
-              borderColor = 'border-[#FDE68A]';
+              finalTag = 'Looking for Work'
+              tagColor = 'text-[#FFC542]'
+              borderColor = 'border-[#FDE68A]'
             }
 
             // POAP fetch
@@ -95,25 +95,25 @@ export default function Home() {
                     'X-API-Key': process.env.NEXT_PUBLIC_POAP_API_KEY || 'demo'
                   }
                 }
-              );
-              const hasPoaps = (poapRes.data || []).length > 0;
+              )
+              const hasPoaps = (poapRes.data || []).length > 0
               if (hasPoaps && !profile.lookingForWork) {
-                finalTag = 'POAP Verified';
-                tagColor = 'text-[#A259FF]';
-                borderColor = 'border-[#D8B4FE]';
+                finalTag = 'POAP Verified'
+                tagColor = 'text-[#A259FF]'
+                borderColor = 'border-[#D8B4FE]'
               }
             } catch {
-              // fallback to whatever finalTag was
+              // fallback to finalTag
             }
 
             // ENS name fetch
-            let resolvedEns = profile.name;
+            let resolvedEns = profile.name
             try {
               const ensRes = await axios.get(
                 `https://api.ensideas.com/ens/resolve/${profile.address}`
-              );
+              )
               if (ensRes.data?.name) {
-                resolvedEns = ensRes.data.name;
+                resolvedEns = ensRes.data.name
               }
             } catch {
               // fallback
@@ -125,9 +125,9 @@ export default function Home() {
               tag: finalTag,
               color: tagColor,
               border: borderColor
-            };
+            }
           })
-        );
+        )
 
         // If we have <5 real profiles, fill with placeholders
         const placeholders = [
@@ -166,16 +166,16 @@ export default function Home() {
             color: 'text-[#635BFF]',
             border: 'border-[#A5B4FC]'
           }
-        ];
+        ]
 
-        let finalData = enrichedData;
+        let finalData = enrichedData
         if (finalData.length < 5) {
-          finalData = [...finalData, ...placeholders].slice(0, 5);
+          finalData = [...finalData, ...placeholders].slice(0, 5)
         }
 
-        setFloatingProfiles(finalData);
+        setFloatingProfiles(finalData)
       } catch (err) {
-        console.error('Failed to fetch recent updates:', err);
+        console.error('Failed to fetch recent updates:', err)
 
         // fallback: placeholders only
         setFloatingProfiles([
@@ -214,12 +214,12 @@ export default function Home() {
             color: 'text-[#635BFF]',
             border: 'border-[#A5B4FC]'
           }
-        ]);
+        ])
       }
-    };
+    }
 
-    fetchRecentUpdates();
-  }, []);
+    fetchRecentUpdates()
+  }, [])
 
   /**
    * ----------------------------------------------------------------
@@ -227,33 +227,29 @@ export default function Home() {
    * ----------------------------------------------------------------
    */
   useEffect(() => {
-    if (!floatingProfiles.length) return;
+    if (!floatingProfiles.length) return
 
     timerRef.current = setInterval(() => {
-      setFade(false);
+      setFade(false)
       setTimeout(() => {
-        setCurrentIndexes((prev) =>
-          prev.map((i) => (i + 5) % floatingProfiles.length)
-        );
-        setFade(true);
-      }, 400);
-    }, 7000);
+        setCurrentIndexes((prev) => prev.map((i) => (i + 5) % floatingProfiles.length))
+        setFade(true)
+      }, 400)
+    }, 7000)
 
-    return () => clearInterval(timerRef.current);
-  }, [floatingProfiles]);
+    return () => clearInterval(timerRef.current)
+  }, [floatingProfiles])
 
-  const pauseRotation = () => clearInterval(timerRef.current);
+  const pauseRotation = () => clearInterval(timerRef.current)
   const resumeRotation = () => {
     timerRef.current = setInterval(() => {
-      setFade(false);
+      setFade(false)
       setTimeout(() => {
-        setCurrentIndexes((prev) =>
-          prev.map((i) => (i + 5) % floatingProfiles.length)
-        );
-        setFade(true);
-      }, 400);
-    }, 7000);
-  };
+        setCurrentIndexes((prev) => prev.map((i) => (i + 5) % floatingProfiles.length))
+        setFade(true)
+      }, 400)
+    }, 7000)
+  }
 
   /**
    * ----------------------------------------------------------------
@@ -261,16 +257,14 @@ export default function Home() {
    * ----------------------------------------------------------------
    */
   const handleSearch = (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (input.endsWith('.eth') || input.startsWith('0x')) {
-      router.push(`/preview/${input}`);
+      router.push(`/preview/${input}`)
     }
-  };
+  }
 
   // current set of profiles in rotation
-  const currentProfiles = currentIndexes
-    .map((i) => floatingProfiles[i])
-    .filter(Boolean);
+  const currentProfiles = currentIndexes.map((i) => floatingProfiles[i]).filter(Boolean)
 
   return (
     <>
@@ -339,9 +333,7 @@ export default function Home() {
           onMouseLeave={resumeRotation}
         >
           {currentProfiles.map((profile, index) => {
-            const gotoSlug = profile.name?.trim()
-              ? profile.name
-              : profile.address;
+            const gotoSlug = profile.name?.trim() ? profile.name : profile.address
             return (
               <Link key={index} href={`/preview/${gotoSlug}`} passHref>
                 <a
@@ -371,7 +363,7 @@ export default function Home() {
                   <p className={`text-xs ${profile.color}`}>{profile.tag}</p>
                 </a>
               </Link>
-            );
+            )
           })}
         </div>
 
@@ -407,7 +399,7 @@ export default function Home() {
               Your Web3 identity, beautifully packaged.
             </p>
             <p className="text-sm sm:text-md text-[#6B7280] mb-6 leading-relaxed">
-              Discover a new kind of resume—fully onchain. 
+              Discover a new kind of resume—fully onchain.
               Powered by ENS, POAPs, Gitcoin Grants, and DAOs.
               <br className="hidden sm:block" />
               Enter your ENS or wallet to preview a Web3 resume.
@@ -478,5 +470,5 @@ export default function Home() {
         </footer>
       </div>
     </>
-  );
+  )
 }
