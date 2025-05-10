@@ -1,55 +1,101 @@
 // pages/profile.js
-import { useEffect, useState } from 'react';
-import Head from 'next/head';
-import { useAccount } from 'wagmi';
-import ENSProfile from '../components/ENSProfile';
+import { useEffect, useState } from 'react'
+import Head from 'next/head'
+import { useAccount } from 'wagmi'
+import ENSProfile from '../components/ENSProfile'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
 
 export default function ProfilePage() {
-  const { address, isConnected } = useAccount();
-  const [ensInput, setEnsInput] = useState('');
-  const [ensResolved, setEnsResolved] = useState('');
+  const { address, isConnected } = useAccount()
+  const [ensName, setEnsName] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [ensRecord, setEnsRecord] = useState(null)
 
-  // Example: if connected, default to your own address
+  /**
+   * 1) Attempt to resolve the wallet address → an ENS name (via ensideas)
+   */
   useEffect(() => {
-    if (isConnected && address) {
-      setEnsInput(address);
-      setEnsResolved(address);
+    const resolveENS = async () => {
+      if (!address) {
+        setLoading(false)
+        return
+      }
+      try {
+        // “ensideas” endpoint: "https://mainnet.ensideas.com/ens/resolve/:address"
+        const res = await fetch(`https://mainnet.ensideas.com/ens/resolve/${address}`)
+        const data = await res.json()
+        if (data?.name) {
+          setEnsName(data.name)
+        } else {
+          // fallback to just address if not found
+          setEnsName(address)
+        }
+      } catch (err) {
+        console.error('❌ Failed to resolve ENS name:', err)
+        setEnsName(address)
+      }
     }
-  }, [address, isConnected]);
+    resolveENS()
+  }, [address])
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (ensInput.trim()) {
-      setEnsResolved(ensInput.trim());
+  /**
+   * 2) Once we have an ensName, fetch a row from supabase’s “VCR” table
+   */
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!ensName) {
+        setLoading(false)
+        return
+      }
+      try {
+        const { data, error } = await supabase
+          .from('VCR')
+          .select('*')
+          .eq('ens_name', ensName)
+          .single()
+
+        if (!error && data) {
+          setEnsRecord(data)
+        }
+      } catch (err) {
+        console.error('❌ Supabase fetch error:', err)
+      }
+      setLoading(false)
     }
-  }
+    fetchProfile()
+  }, [ensName])
 
   return (
     <>
       <Head>
-        <title>Your Profile – VCR</title>
+        <title>Your Profile – Verified Chain Resume</title>
       </Head>
-      <div className="min-h-screen pt-20 px-4 bg-white text-gray-800">
-        <div className="max-w-xl mx-auto text-center mt-10">
-          <h1 className="text-3xl font-bold mb-6">Profile</h1>
 
-          <form onSubmit={handleSubmit} className="flex gap-2 justify-center mb-8">
-            <input
-              type="text"
-              value={ensInput}
-              onChange={(e) => setEnsInput(e.target.value)}
-              placeholder="Enter ENS or 0x address"
-              className="border p-2 rounded w-64"
+      <div className="min-h-screen pt-20 px-4 bg-gradient-to-br from-white via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white font-calsans">
+        <div className="max-w-3xl mx-auto text-center mt-16">
+          {/* Display states depending on wallet & loading */}
+          {!isConnected ? (
+            <p className="text-lg text-gray-500 dark:text-gray-400">
+              Connect your wallet to view &amp; edit your profile.
+            </p>
+          ) : loading ? (
+            <p className="text-lg text-gray-500 dark:text-gray-400">
+              Loading your profile…
+            </p>
+          ) : (
+            <ENSProfile
+              ensName={ensName}
+              overrideRecord={ensRecord}
+              // forceOwnerView = { ... }  // if you want to forcibly allow editing
             />
-            <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded">
-              Load
-            </button>
-          </form>
-
-          {/* If we have an ensResolved, show the ENSProfile */}
-          {ensResolved && <ENSProfile ensNameOrAddress={ensResolved} />}
+          )}
         </div>
       </div>
     </>
-  );
+  )
 }
