@@ -1,14 +1,15 @@
 // pages/api/save-profile.js
-import { createClient } from '@supabase/supabase-js';
+
+import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+)
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
   const {
@@ -20,26 +21,29 @@ export default async function handler(req, res) {
     tag,
     bio,
     custom_avatar,
-    experience
-  } = req.body;
+    experience,
+    lookingForWork = false, // from front-end
+  } = req.body
 
-  console.log('[Incoming Request Body]', JSON.stringify(req.body, null, 2));
+  console.log('[Incoming Request Body]', JSON.stringify(req.body, null, 2))
 
   if (!ensName || !address) {
-    return res.status(400).json({ error: 'ENS name and address are required.' });
+    return res.status(400).json({ error: 'ENS name and address are required.' })
   }
 
   try {
+    // Normalize work experience array
     const normalizedExperience = (experience || []).map((item) => ({
       title: item.title || '',
       company: item.company || '',
       startDate: item.startDate || '',
-      endDate: item.currentlyWorking ? null : item.endDate || '',
+      endDate: item.currentlyWorking ? null : (item.endDate || ''),
       currentlyWorking: !!item.currentlyWorking,
       location: item.location || '',
-      description: item.description || ''
-    }));
+      description: item.description || '',
+    }))
 
+    // Upsert into VCR table by ens_name
     const { data, error } = await supabase
       .from('VCR')
       .upsert(
@@ -52,20 +56,27 @@ export default async function handler(req, res) {
           tag,
           bio,
           custom_avatar,
-          experience: normalizedExperience
+          lookingForWork,       // store the boolean
+          experience: normalizedExperience,
         },
-        { onConflict: 'ens_name', returning: 'representation' }
-      );
+        {
+          onConflict: 'ens_name',
+          returning: 'representation', // or 'minimal' if you prefer
+        }
+      )
 
     if (error) {
-      console.error('[Supabase Error]', error.message, error.details, error.hint);
-      return res.status(500).json({ error: 'Database error', details: error });
+      console.error('[Supabase Error]', error.message, error.details, error.hint)
+      return res.status(500).json({ error: 'Database error', details: error })
     }
 
-    console.log('[Supabase Response]', data);
-    return res.status(200).json({ message: 'Profile saved successfully', data });
+    console.log('[Supabase Response]', data)
+    return res.status(200).json({ message: 'Profile saved successfully', data })
   } catch (err) {
-    console.error('[Unhandled Exception]', err);
-    return res.status(500).json({ error: 'Unexpected server error', message: err.message });
+    console.error('[Unhandled Exception]', err)
+    return res.status(500).json({
+      error: 'Unexpected server error',
+      message: err.message,
+    })
   }
 }
