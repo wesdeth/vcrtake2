@@ -3,73 +3,51 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useAccount } from 'wagmi';
 import ENSProfile from '../components/ENSProfile';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
 
 export default function ProfilePage() {
   const { address, isConnected } = useAccount();
-  const [ensName, setEnsName] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [ensRecord, setEnsRecord] = useState(null);
+  const [ensInput, setEnsInput] = useState('');
+  const [ensResolved, setEnsResolved] = useState('');
 
-  /* 1️⃣ Resolve ENS name when a wallet is connected */
+  // Example: if connected, default to your own address
   useEffect(() => {
-    const resolveENS = async () => {
-      if (!address) return setLoading(false); // no wallet → stop loading
+    if (isConnected && address) {
+      setEnsInput(address);
+      setEnsResolved(address);
+    }
+  }, [address, isConnected]);
 
-      try {
-        const res = await fetch(`https://mainnet.ensideas.com/ens/resolve/${address}`);
-        const data = await res.json();
-        setEnsName(data?.name || address);
-      } catch (err) {
-        console.error('Failed to resolve ENS:', err);
-        setEnsName(address);
-      }
-    };
-
-    resolveENS();
-  }, [address]);
-
-  /* 2️⃣ Grab the on‑chain / Supabase VCR record when we have a name */
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!ensName) return;
-      const { data, error } = await supabase
-        .from('VCR')
-        .select('*')
-        .eq('ens_name', ensName)
-        .single();
-
-      if (error) console.error('Supabase fetch error:', error);
-      setEnsRecord(data);
-      setLoading(false);
-    };
-
-    fetchProfile();
-  }, [ensName]);
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (ensInput.trim()) {
+      setEnsResolved(ensInput.trim());
+    }
+  }
 
   return (
     <>
       <Head>
-        <title>Your Profile – Verified Chain Resume</title>
+        <title>Your Profile – VCR</title>
       </Head>
+      <div className="min-h-screen pt-20 px-4 bg-white text-gray-800">
+        <div className="max-w-xl mx-auto text-center mt-10">
+          <h1 className="text-3xl font-bold mb-6">Profile</h1>
 
-      <div className="min-h-screen pt-20 px-4 bg-gradient-to-br from-white via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white font-calsans">
-        <div className="max-w-3xl mx-auto text-center mt-16">
-          {/* 3️⃣ UX states */}
-          {!isConnected ? (
-            <p className="text-lg text-gray-500 dark:text-gray-400">
-              Connect your wallet to view&nbsp;&amp;&nbsp;edit your profile.
-            </p>
-          ) : loading ? (
-            <p className="text-lg text-gray-500 dark:text-gray-400">Loading your profile…</p>
-          ) : (
-            <ENSProfile ensName={ensName} forceOwnerView overrideRecord={ensRecord} />
-          )}
+          <form onSubmit={handleSubmit} className="flex gap-2 justify-center mb-8">
+            <input
+              type="text"
+              value={ensInput}
+              onChange={(e) => setEnsInput(e.target.value)}
+              placeholder="Enter ENS or 0x address"
+              className="border p-2 rounded w-64"
+            />
+            <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded">
+              Load
+            </button>
+          </form>
+
+          {/* If we have an ensResolved, show the ENSProfile */}
+          {ensResolved && <ENSProfile ensNameOrAddress={ensResolved} />}
         </div>
       </div>
     </>
