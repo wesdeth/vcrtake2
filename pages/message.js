@@ -1,260 +1,191 @@
 // pages/messages.js
-import { useState, useEffect } from 'react';
-import Head from 'next/head';
-import { useRouter } from 'next/router';
-import { useSigner } from 'wagmi';
-import { motion } from 'framer-motion';
-// The XMTP JS (core) library:
-import { Client as XmtpClient } from '@xmtp/xmtp-js';
 
-export default function Messages() {
-  const { data: signer } = useSigner();
-  const router = useRouter();
-  const [xmtp, setXmtp] = useState(null);
-  const [conversations, setConversations] = useState([]);
-  const [loading, setLoading] = useState(false);
+import React, { useState, useEffect } from 'react'
+import Head from 'next/head'
+import { useRouter } from 'next/router'
+import { ethers } from 'ethers' // v5 style
+import { Client } from '@xmtp/xmtp-js' // core XMTP library
 
-  // For an active conversation
-  const [activeConvo, setActiveConvo] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [newMsg, setNewMsg] = useState('');
+export default function MessagesPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
 
-  // 1) On mount, if we have a signer => init XMTP client
+  // The address or ENS we want to chat with
+  const [recipient, setRecipient] = useState('')
+  // XMTP client instance
+  const [xmtp, setXmtp] = useState(null)
+  // Active conversation
+  const [conversation, setConversation] = useState(null)
+  // Array of messages
+  const [messages, setMessages] = useState([])
+  // Our typed message
+  const [inputText, setInputText] = useState('')
+
+  /**
+   * On mount, parse “?to=addressOrEns” from query
+   */
   useEffect(() => {
-    if (!signer) return;
-    let isCancelled = false;
+    if (router.query.to) {
+      setRecipient(router.query.to)
+    }
+  }, [router.query.to])
 
-    (async () => {
+  /**
+   * On mount or if user interacts, attempt to connect wallet & create XMTP client
+   * No wagmi "useSigner" is used; we do a direct ethers v5 approach in the browser.
+   */
+  useEffect(() => {
+    const initXmtp = async () => {
+      if (typeof window === 'undefined') return // SSR guard
+      if (!window.ethereum) {
+        console.warn('No injected wallet found.')
+        return
+      }
       try {
-        setLoading(true);
-        // Create XMTP client (this stores ephemeral keys in memory)
-        const client = await XmtpClient.create(signer, {
-          env: 'production', // or "dev", see xmtp docs
-        });
-        if (!isCancelled) {
-          setXmtp(client);
-        }
+        setLoading(true)
+        // Create an ethers v5 provider + signer
+        const provider = new ethers.providers.Web3Provider(window.ethereum) // v5 style
+        await provider.send('eth_requestAccounts', [])
+        const signer = provider.getSigner()
+
+        // Create XMTP client
+        const xmtpClient = await Client.create(signer, {
+          // optional configuration
+        })
+        setXmtp(xmtpClient)
       } catch (err) {
-        console.error('Error creating XMTP client:', err);
+        console.error('XMTP init error:', err)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    })();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [signer]);
-
-  // 2) Once xmtp is ready, load the user’s existing conversations—unless we’re going straight to `router.query.to`
-  useEffect(() => {
-    if (!xmtp) return;
-    let isCancelled = false;
-
-    (async () => {
-      try {
-        if (router.query.to) {
-          // If there's a `to` param, we skip loading all convos & open directly
-          await startConversation(router.query.to);
-          return;
-        }
-        // Otherwise, fetch conversation list
-        const convos = await xmtp.conversations.list();
-        // Sort them by last message time (descending)
-        convos.sort((a, b) => (b.createdAt - a.createdAt));
-        if (!isCancelled) {
-          setConversations(convos);
-        }
-      } catch (err) {
-        console.error('Error listing convos:', err);
-      }
-    })();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [xmtp, router.query.to]);
-
-  // 3) function to start (or load) a conversation with a given address
-  const startConversation = async (peerAddress) => {
-    try {
-      const convo = await xmtp.conversations.newConversation(peerAddress);
-      setActiveConvo(convo);
-    } catch (err) {
-      console.error('Error creating conversation:', err);
     }
-  };
+    initXmtp()
+  }, [])
 
-  // 4) Once `activeConvo` is set, load the existing messages + stream new ones
+  /**
+   * Whenever xmtp + recipient are ready, load or create conversation
+   */
   useEffect(() => {
-    if (!activeConvo) {
-      setMessages([]);
-      return;
-    }
-    let isCancelled = false;
-    let stream;
-
-    (async () => {
+    const loadConversation = async () => {
+      if (!xmtp || !recipient) return
       try {
-        // fetch existing
-        const msgs = await activeConvo.messages();
-        // sort by sent time
-        msgs.sort((a, b) => a.sent - b.sent);
-        if (!isCancelled) setMessages(msgs);
+        setLoading(true)
+        // Create/fetch the conversation
+        const convo = await xmtp.conversations.newConversation(recipient)
+        setConversation(convo)
 
-        // stream new
-        stream = await activeConvo.streamMessages();
-        for await (const newMsg of stream) {
-          if (isCancelled) break;
-          // add to local state
-          setMessages((prev) => [...prev, newMsg]);
-        }
+        // Load existing messages
+        const msgs = await convo.messages()
+        setMessages(msgs)
+
+        // Optionally: stream new messages in real-time
+        convo.streamMessages().then(async (stream) => {
+          for await (const msg of stream) {
+            setMessages((prev) => [...prev, msg])
+          }
+        })
       } catch (err) {
-        console.error('Error loading or streaming msgs:', err);
+        console.error('loadConversation error:', err)
+      } finally {
+        setLoading(false)
       }
-    })();
+    }
+    loadConversation()
+  }, [xmtp, recipient])
 
-    return () => {
-      isCancelled = true;
-      if (stream) {
-        stream.return(); // close the async generator
-      }
-    };
-  }, [activeConvo]);
-
-  // 5) send a message
+  /**
+   * Handle sending new message
+   */
   const handleSend = async () => {
-    if (!activeConvo || !newMsg.trim()) return;
+    if (!conversation || !inputText.trim()) return
     try {
-      await activeConvo.send(newMsg.trim());
-      setNewMsg('');
+      setLoading(true)
+      await conversation.send(inputText.trim())
+      setInputText('')
     } catch (err) {
-      console.error('Send error:', err);
+      console.error('Send message error:', err)
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
-  // 6) Basic UI
   return (
     <>
       <Head>
-        <title>Messages | Verified Chain Resume</title>
+        <title>Messages - Verified Chain Resume</title>
       </Head>
 
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="
-          min-h-screen 
-          pt-20 
-          px-4 
-          bg-gradient-to-br from-white via-gray-50 to-white 
-          dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 
-          text-gray-900 dark:text-white 
-          font-calsans
-        "
-      >
-        <div className="max-w-4xl mx-auto mt-12 mb-16 p-6 sm:p-10 bg-white/80 dark:bg-gray-800/80 
-                        border border-gray-200 dark:border-gray-700 
-                        shadow-2xl rounded-3xl relative backdrop-blur-sm">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-center mb-4">
-            On‑chain Inbox
-          </h1>
-          <p className="text-center text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-8">
-            Powered by XMTP — connect your wallet to begin chatting.
-          </p>
+      <div className="min-h-screen pt-20 px-4 bg-gradient-to-br from-white via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white">
+        <div className="max-w-2xl mx-auto mt-10">
+          <h1 className="text-3xl font-bold mb-4 text-center">On‑chain Messages</h1>
 
-          {/* Check signer / xmtp */}
-          {!signer ? (
-            <p className="text-center">Please connect your wallet.</p>
-          ) : loading ? (
-            <p className="text-center">Setting up XMTP…</p>
-          ) : !xmtp ? (
-            <p className="text-center">XMTP client not ready.</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Left column: conversation list */}
-              <div className="sm:col-span-1 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl shadow-inner h-[480px] overflow-auto">
-                {!router.query.to && ( // If user isn't auto-redirected
-                  <>
-                    <h2 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">
-                      My Conversations
-                    </h2>
-                    {conversations.length === 0 ? (
-                      <p className="text-sm text-gray-500 dark:text-gray-300">
-                        No conversations yet.
-                      </p>
-                    ) : (
-                      conversations.map((convo) => (
-                        <div
-                          key={convo.peerAddress}
-                          onClick={() => {
-                            setActiveConvo(convo);
-                          }}
-                          className="
-                            p-2 mb-2 rounded-lg cursor-pointer 
-                            hover:bg-gray-200 dark:hover:bg-gray-600 
-                            transition-colors
-                          "
-                        >
-                          {convo.peerAddress}
-                        </div>
-                      ))
-                    )}
-                  </>
-                )}
-              </div>
+          {loading && <p className="text-center text-sm text-gray-500 mb-2">Loading…</p>}
 
-              {/* Right column: active conversation */}
-              <div className="sm:col-span-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl shadow-inner h-[480px] flex flex-col">
-                {activeConvo ? (
-                  <>
-                    <h2 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">
-                      Conversation w/ {activeConvo.peerAddress}
-                    </h2>
-                    <div className="flex-1 overflow-auto bg-white dark:bg-gray-600 p-3 mb-2 rounded-lg">
-                      {messages.map((m, i) => (
-                        <div key={i} className="mb-1 text-sm">
-                          <strong>{shorten(m.senderAddress)}:</strong> {m.content}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex">
-                      <input
-                        className="flex-1 border border-gray-300 dark:border-gray-600 rounded-l px-2 text-sm"
-                        placeholder="Type a message..."
-                        value={newMsg}
-                        onChange={(e) => setNewMsg(e.target.value)}
-                      />
-                      <button
-                        onClick={handleSend}
-                        className="
-                          bg-indigo-600 hover:bg-indigo-700 
-                          text-white px-4 py-2 text-sm 
-                          rounded-r shadow-sm transition-colors
-                        "
-                      >
-                        Send
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center flex-1">
-                    <p className="text-gray-500 dark:text-gray-300 text-sm">
-                      Select a conversation, or use <code>?to=0x…</code> to open a new one.
-                    </p>
-                  </div>
-                )}
-              </div>
+          {/* If no XMTP or no conversation */}
+          {!xmtp ? (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-md text-center">
+              <p className="text-gray-500 dark:text-gray-400">Connect wallet to initiate XMTP chat.</p>
             </div>
+          ) : (
+            <>
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-md mb-6">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Recipient:</p>
+                <p className="text-md font-medium text-gray-800 dark:text-white break-words">
+                  {recipient || 'No recipient specified'}
+                </p>
+              </div>
+
+              {/* Messages list */}
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-md mb-4 h-64 overflow-auto">
+                {messages.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400">No messages yet.</p>
+                ) : (
+                  messages.map((msg, idx) => {
+                    const fromMe = msg.senderAddress === xmtp.address
+                    return (
+                      <div
+                        key={idx}
+                        className={`mb-2 flex ${
+                          fromMe ? 'justify-end' : 'justify-start'
+                        }`}
+                      >
+                        <div
+                          className={`px-3 py-2 rounded-lg ${
+                            fromMe
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+
+              {/* Input to send new message */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className="flex-1 p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 placeholder-gray-400 text-sm"
+                  placeholder="Type a message…"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  disabled={!conversation}
+                />
+                <button
+                  onClick={handleSend}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={!conversation || !inputText.trim()}
+                >
+                  Send
+                </button>
+              </div>
+            </>
           )}
         </div>
-      </motion.div>
+      </div>
     </>
-  );
-}
-
-// Simple helper to shorten addresses
-function shorten(addr = '') {
-  return addr.slice(0, 6) + '…' + addr.slice(-4);
+  )
 }
