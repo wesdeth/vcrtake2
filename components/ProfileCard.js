@@ -26,7 +26,7 @@ import {
 -------------------------------------------------------------------*/
 function shortenAddress(addr = '') {
   if (!addr) return ''
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
+  return addr.slice(0, 6) + '…' + addr.slice(-4)
 }
 function parseDate(d) {
   if (!d) return null
@@ -42,42 +42,17 @@ function formatRange(s, e, current) {
   return `${start} – ${end}`
 }
 
-/** A small sub-component to handle standard DB-based link display. */
-function DbSocialLink({ href, icon: Icon, label }) {
-  if (!href) return null
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline transition-colors"
-    >
-      <Icon size={16} />
-      {label}
-    </a>
-  )
-}
-
-/**
- * A simple fallback for recognized EFP record keys => label + prefix
- * Adjust if you want more advanced mapping or icons.
- */
+/** For recognized EFP record keys -> label/prefix. */
 const EFP_MAP = {
   'com.twitter': { label: 'Twitter', icon: Twitter, prefix: 'https://twitter.com/' },
   'com.discord': { label: 'Discord', icon: UserPlus2, prefix: null },
   'com.github': { label: 'GitHub', icon: UserPlus2, prefix: 'https://github.com/' },
   'org.telegram': { label: 'Telegram', icon: UserPlus2, prefix: 'https://t.me/' },
-  'url': { label: 'Website', icon: LinkIcon, prefix: '' },
-  // You can add more if you want e.g. "com.instagram" => ...
+  'url': { label: 'Website', icon: LinkIcon, prefix: '' }
 }
-
-/**
- * Convert a single EFP record key & value to a rendered link or text
- */
 function RenderEfpSocial({ recordKey, recordValue }) {
   const mapping = EFP_MAP[recordKey] || null
   if (!mapping) {
-    // fallback for unknown keys
     return (
       <div className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
         <LinkIcon size={16} />
@@ -87,7 +62,6 @@ function RenderEfpSocial({ recordKey, recordValue }) {
   }
   const { label, icon: Icon, prefix } = mapping
   if (!prefix) {
-    // no direct link (like Discord)
     return (
       <div className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
         <Icon size={16} />
@@ -95,7 +69,6 @@ function RenderEfpSocial({ recordKey, recordValue }) {
       </div>
     )
   } else {
-    // clickable link
     return (
       <a
         href={prefix + recordValue.replace(/^@/, '')}
@@ -110,23 +83,34 @@ function RenderEfpSocial({ recordKey, recordValue }) {
   }
 }
 
-/* If you want a list of tag options for editing. */
+function DbSocialLink({ href, icon: Icon, label }) {
+  if (!href) return null
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+    >
+      <Icon size={16} />
+      {label}
+    </a>
+  )
+}
+
 const TAG_OPTIONS = [
-  'Front-End Developer', 'Back-End Developer', 'Full-Stack Engineer',
-  'Smart Contract Engineer', 'Solidity Auditor', 'Protocol Researcher',
-  'DevOps & Infra', 'Security Engineer', 'Product Manager', 'Designer / UX',
-  'Technical Writer', 'Growth Lead', 'Marketing Manager', 'Social Media Strategist',
-  'Community Manager', 'Developer Relations', 'DAO Governor', 'Governance Analyst',
-  'Tokenomics Designer', 'Partnerships Lead', 'Business Development', 'Support',
-  'Discord', 'Memecoins', 'Trader', 'Ecosystem', 'Legal', 'Protocol',
-  'CEO', 'COO', 'CFO', 'Founder / Co-Founder'
+  'Front-End Developer','Back-End Developer','Full-Stack Engineer','Smart Contract Engineer',
+  'Solidity Auditor','Protocol Researcher','DevOps & Infra','Security Engineer','Product Manager',
+  'Designer / UX','Technical Writer','Growth Lead','Marketing Manager','Social Media Strategist',
+  'Community Manager','Developer Relations','DAO Governor','Governance Analyst','Tokenomics Designer',
+  'Partnerships Lead','Business Development','Support','Discord','Memecoins','Trader','Ecosystem','Legal',
+  'Protocol','CEO','COO','CFO','Founder / Co-Founder'
 ]
 
 export default function ProfileCard({ data = {} }) {
   const router = useRouter()
   const { address: connected } = useAccount()
 
-  // destruct
   const {
     name,
     address,
@@ -143,16 +127,14 @@ export default function ProfileCard({ data = {} }) {
     nfts = []
   } = data
 
-  // Determine if user can edit
+  // Editing logic
   const isOwner =
     ownsProfile ||
     (connected && address && connected.toLowerCase() === address.toLowerCase())
 
-  // local state for editing
   const [editing, setEditing] = useState(false)
   const [justSaved, setJustSaved] = useState(false)
-
-  // DB-based socials
+  // DB-based social fields
   const [editTwitter, setEditTwitter] = useState(twitter)
   const [editWebsite, setEditWebsite] = useState(website)
   const [editWarpcast, setEditWarpcast] = useState(warpcast)
@@ -166,24 +148,22 @@ export default function ProfileCard({ data = {} }) {
   // POAP
   const [poapData, setPoapData] = useState(poaps)
   const [showAllPoaps, setShowAllPoaps] = useState(false)
-  // NFT
-  const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : []
 
   // EFP
   const [followersCount, setFollowersCount] = useState(null)
-  const [efpRecords, setEfpRecords] = useState({}) // store all EFP records
+  const [efpRecords, setEfpRecords] = useState({})
 
-  /* ------------------ Effects ------------------ */
+  /* -------------- Effects -------------- */
   useEffect(() => {
     if (!address) return
 
-    // 1) fetch EFP data (ens => records, plus followers)
+    // 1) EFP fetch
     ;(async () => {
       try {
         const userKey = name?.endsWith('.eth') ? name.toLowerCase() : address
         if (!userKey) return
 
-        // fetch EFP ens
+        // EFP ens records
         const ensRes = await axios.get(
           `https://api.ethfollow.xyz/api/v1/users/${userKey}/ens?cache=fresh`
         )
@@ -191,7 +171,7 @@ export default function ProfileCard({ data = {} }) {
         const recordsObj = efpEns.records || {}
         setEfpRecords(recordsObj)
 
-        // fetch EFP followers
+        // EFP followers
         const follRes = await axios.get(
           `https://api.ethfollow.xyz/api/v1/users/${userKey}/followers?limit=9999&cache=fresh`
         )
@@ -203,7 +183,7 @@ export default function ProfileCard({ data = {} }) {
       }
     })()
 
-    // 2) fetch POAP
+    // 2) POAP
     ;(async () => {
       try {
         const r = await axios.get(`https://api.poap.tech/actions/scan/${address}`, {
@@ -217,7 +197,7 @@ export default function ProfileCard({ data = {} }) {
       }
     })()
 
-    // 3) fallback avatar from OpenSea
+    // 3) fallback avatar from OpenSea if none
     if (!avatar) {
       axios
         .get(`https://api.opensea.io/api/v1/user/${address}`)
@@ -231,7 +211,7 @@ export default function ProfileCard({ data = {} }) {
     }
   }, [address, avatar, name])
 
-  /* ------------------ Handlers ------------------ */
+  /* -------------- Handlers -------------- */
   function handleAvatarUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -262,10 +242,8 @@ export default function ProfileCard({ data = {} }) {
           }))
         })
       })
-      if (!res.ok) {
-        const msg = (await res.json()).error || 'Unknown error'
-        throw new Error(msg)
-      }
+      if (!res.ok) throw new Error('Profile save failed')
+
       setEditing(false)
       setJustSaved(true)
       setTimeout(() => setJustSaved(false), 2500)
@@ -296,22 +274,14 @@ export default function ProfileCard({ data = {} }) {
   function addExp() {
     setEditExp((prev) => [
       ...prev,
-      {
-        title: '',
-        company: '',
-        startDate: '',
-        endDate: '',
-        location: '',
-        description: '',
-        currentlyWorking: false
-      }
+      { title: '', company: '', startDate: '', endDate: '', location: '', description: '', currentlyWorking: false }
     ])
   }
   function removeExp(i) {
     setEditExp((prev) => prev.filter((_, idx) => idx !== i))
   }
 
-  /* ------------------ Derived  ------------------ */
+  /* -------------- Derived -------------- */
   const poapsToShow = Array.isArray(poapData)
     ? showAllPoaps
       ? poapData
@@ -319,16 +289,7 @@ export default function ProfileCard({ data = {} }) {
     : []
   const nftsToShow = Array.isArray(nfts) ? nfts.slice(0, 6) : []
 
-  // Convert EFP records object => array for rendering
-  // Example: { 'com.twitter': 'someone', 'com.discord': 'someone#1234', ... }
-  // We'll skip "avatar" or "description" or "email" if you want. Let's just skip "avatar" & "description"
-  const efpSocialEntries = Object.entries(efpRecords).filter(([key, val]) => {
-    if (!val || typeof val !== 'string') return false
-    if (key === 'avatar' || key === 'description') return false
-    return true
-  })
-
-  /* ------------------ Render  ------------------ */
+  /* -------------- Render -------------- */
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -375,14 +336,14 @@ export default function ProfileCard({ data = {} }) {
           </p>
         )}
 
-        {/* Show EFP-based follower count if we have it */}
-        {followersCount !== null && followersCount >= 0 && (
+        {/* EFP follower count, if any */}
+        {followersCount !== null && (
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
             {followersCount} Follower{followersCount === 1 ? '' : 's'}
           </p>
         )}
 
-        {/* Possibly a "Message" button if user is not owner */}
+        {/* Message button if not owner */}
         {address && !isOwner && (
           <div className="mt-2">
             <button
@@ -400,11 +361,7 @@ export default function ProfileCard({ data = {} }) {
             value={editBio}
             onChange={(e) => setEditBio(e.target.value)}
             rows={4}
-            className="
-              mt-4 w-full bg-white dark:bg-gray-900 
-              border border-gray-200 dark:border-gray-700 
-              rounded-lg p-3 text-sm placeholder-gray-400
-            "
+            className="mt-4 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-sm placeholder-gray-400"
             placeholder="Add a short bio..."
           />
         ) : (
@@ -415,49 +372,33 @@ export default function ProfileCard({ data = {} }) {
           )
         )}
 
-        {/* Socials & Tag */}
+        {/* DB-based Socials + EFP-based */}
         <div className="mt-6">
           {editing ? (
-            /* Editing => show DB-based input fields */
+            // In edit mode => show input fields for DB-based
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
               <input
                 placeholder="Twitter handle"
                 value={editTwitter}
                 onChange={(e) => setEditTwitter(e.target.value)}
-                className="
-                  bg-white dark:bg-gray-900 border 
-                  border-gray-200 dark:border-gray-700 
-                  rounded-lg p-2 text-sm w-full
-                "
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
               />
               <input
                 placeholder="Warpcast handle"
                 value={editWarpcast}
                 onChange={(e) => setEditWarpcast(e.target.value)}
-                className="
-                  bg-white dark:bg-gray-900 border 
-                  border-gray-200 dark:border-gray-700 
-                  rounded-lg p-2 text-sm w-full
-                "
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
               />
               <input
                 placeholder="Website"
                 value={editWebsite}
                 onChange={(e) => setEditWebsite(e.target.value)}
-                className="
-                  bg-white dark:bg-gray-900 border 
-                  border-gray-200 dark:border-gray-700 
-                  rounded-lg p-2 text-sm w-full
-                "
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
               />
               <select
                 value={editTag}
                 onChange={(e) => setEditTag(e.target.value)}
-                className="
-                  bg-white dark:bg-gray-900 border 
-                  border-gray-200 dark:border-gray-700
-                  rounded-lg p-2 text-sm w-full
-                "
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-sm w-full"
               >
                 <option value="">Select a Tag</option>
                 {TAG_OPTIONS.map((opt) => (
@@ -468,9 +409,9 @@ export default function ProfileCard({ data = {} }) {
               </select>
             </div>
           ) : (
-            /* View mode => DB-based + EFP-based */
+            // View mode => DB-based links + EFP records
             <div className="flex flex-col gap-3 items-center justify-center">
-              {/* DB-based fields */}
+              {/* DB-based */}
               <div className="flex flex-wrap gap-3 justify-center">
                 <DbSocialLink
                   href={
@@ -512,11 +453,9 @@ export default function ProfileCard({ data = {} }) {
               {Object.entries(efpRecords).length > 0 && (
                 <div className="flex flex-wrap gap-3 justify-center">
                   {Object.entries(efpRecords).map(([rk, rv]) => {
-                    if (!rv || typeof rv !== 'string' || !rv.trim()) return null
+                    if (!rv || typeof rv !== 'string') return null
                     if (rk === 'avatar' || rk === 'description') return null
-                    return (
-                      <RenderEfpSocial key={rk} recordKey={rk} recordValue={rv} />
-                    )
+                    return <RenderEfpSocial key={rk} recordKey={rk} recordValue={rv} />
                   })}
                 </div>
               )}
@@ -541,6 +480,7 @@ export default function ProfileCard({ data = {} }) {
           {editExp.length === 0 && !editing && (
             <p className="text-sm text-gray-500">No experience added yet.</p>
           )}
+
           {editExp.map((exp, i) => (
             <div key={i} className="mb-6 last:mb-0">
               {editing ? (
@@ -628,9 +568,9 @@ export default function ProfileCard({ data = {} }) {
               POAPs
             </h3>
             <div className="grid grid-cols-2 gap-2">
-              {poapsToShow.map((poap, i) => (
+              {poapsToShow.map((poap, idx) => (
                 <div
-                  key={i}
+                  key={idx}
                   className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg shadow-sm p-2 text-sm text-gray-700 dark:text-gray-300"
                 >
                   <img
@@ -675,7 +615,7 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* OpenSea link if address */}
+        {/* Link to OpenSea if address */}
         {address && (
           <div className="mt-6 text-center">
             <a
@@ -690,26 +630,21 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Edit / Save / Cancel */}
+        {/* Edit / Save / Cancel if isOwner */}
         {isOwner && (
           <div className="mt-8 flex justify-center gap-3">
             {editing ? (
               <>
                 <button
                   onClick={handleSave}
-                  className="
-                    inline-flex items-center gap-1 px-4 py-2 
-                    bg-indigo-600 hover:bg-indigo-700 
-                    text-white text-sm font-medium 
-                    rounded-lg shadow-sm transition-colors
-                  "
+                  className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
                 >
                   <Save size={16} /> Save
                 </button>
                 <button
                   onClick={() => {
                     setEditing(false)
-                    // revert changes
+                    // revert
                     setEditTwitter(twitter)
                     setEditWebsite(website)
                     setEditWarpcast(warpcast)
@@ -717,12 +652,7 @@ export default function ProfileCard({ data = {} }) {
                     setEditBio(bio || ensBio)
                     setEditExp(workExperience)
                   }}
-                  className="
-                    inline-flex items-center gap-1 px-4 py-2 
-                    bg-gray-300 hover:bg-gray-400 
-                    text-gray-800 text-sm font-medium 
-                    rounded-lg shadow-sm transition-colors
-                  "
+                  className="inline-flex items-center gap-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg shadow-sm transition-colors"
                 >
                   <X size={16} /> Cancel
                 </button>
@@ -730,12 +660,7 @@ export default function ProfileCard({ data = {} }) {
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                className="
-                  inline-flex items-center gap-1 px-4 py-2 
-                  bg-indigo-600 hover:bg-indigo-700 
-                  text-white text-sm font-medium 
-                  rounded-lg shadow-sm transition-colors
-                "
+                className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
               >
                 <Edit size={16} /> Edit Profile
               </button>
@@ -743,7 +668,6 @@ export default function ProfileCard({ data = {} }) {
           </div>
         )}
 
-        {/* Save Confirmation */}
         {justSaved && (
           <div className="mt-4 flex justify-center items-center text-green-600 text-sm">
             <CheckCircle size={16} className="mr-1" /> Profile saved!
